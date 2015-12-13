@@ -1,0 +1,38 @@
+{
+  "help": [
+    "Hi! I will notify you about the beginning of the broadcasts on Youtube Gaming, Twitch, Hitbox and GoodGame!",
+    "",
+    "You can control me by sending these commands:",
+    "",
+    "/online - Online channel list",
+    "/add - Add channel in list",
+    "/delete - Delete channel from list",
+    "/list - Show list of channel",
+    "/top - Top 10",
+    "/clear - Clear channel list",
+    "/liveTime - How long will it works"
+  ],
+  "offline": "All channels in offline",
+  "emptyServiceList": "You don't have channels in watch list, yet.",
+  "enterChannelName": "Enter the channel URL or name (example: opergamer):",
+  "enterService": "Enter a live streaming video platform",
+  "serviceIsNotSupported": "Oops! Platform {serviceName} is not supported!",
+  "channelExists": "This channel already exists!",
+  "channelAdded": "Success! Channel {channelName} ({serviceName}) added!",
+  "commandCanceled": "The command {command} has been cancelled.",
+  "channelDontExist": "Oops! Can't find channel in watch list!",
+  "channelDeleted": "Success! Channel {channelName} ({serviceName}) deleted!",
+  "cleared": "Success! The channel list has been cleared.",
+  "channelNameIsEmpty": "Oops! Channel name is empty!",
+  "selectDelChannel": "Select the channel that you want to delete",
+  "channelIsNotFound": "Oops! Channel {channelName} ({serviceName}) is not found!",
+  "clearSure": [
+    "If your are sure, enter:",
+    "/clear yes"
+  ],
+  "users": "Users: {count}",
+  "channels": "Channels: {count}",
+  "preview": "preview",
+  "watchOn": "Watch {channelName} on {serviceName}",
+  "online": "Online: {count}"
+}

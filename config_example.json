@@ -1,0 +1,8 @@
+{
+  "token": "",
+  "interval": 5,
+  "timeout": 900,
+  "notifyTimeout": 180,
+  "botanToken": "",
+  "ytToken": ""
+}
