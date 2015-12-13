@@ -392,9 +392,6 @@ var commands = {
         textArr.push(_this.gOptions.language.users.replace('{count}', userCount));
         textArr.push(_this.gOptions.language.channels.replace('{count}', channelCount));
 
-        var onlineCount = 0;
-        textArr.push(_this.gOptions.language.online.replace('{count}', onlineCount));
-
         for (service in topArr) {
             textArr.push('');
             textArr.push(_this.gOptions.serviceToTitle[service] + ':');
