@@ -332,48 +332,6 @@ var commands = {
             }
         );
     },
-    online: function (msg) {
-        "use strict";
-        var _this = this;
-        var chatId = msg.chat.id;
-        var chatItem = _this.gOptions.storage.chatList[chatId];
-
-        if (!chatItem) {
-            return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
-        }
-
-        var onLineList = [];
-        var lastStreamList = _this.gOptions.storage.lastStreamList;
-
-        for (var service in chatItem.serviceList) {
-            var userChannelList = chatItem.serviceList[service];
-
-            var channelList = [];
-
-            for (var i = 0, stream; stream = lastStreamList[i]; i++) {
-                if (stream._isOffline || stream._service !== service) {
-                    continue;
-                }
-
-                if (userChannelList.indexOf(stream._channelName) !== -1) {
-                    channelList.push(base.getStreamText(_this.gOptions, stream));
-                }
-            }
-
-            channelList.length && onLineList.push(channelList.join('\n\n'));
-        }
-
-        if (!onLineList.length) {
-            onLineList.unshift(_this.gOptions.language.offline);
-        }
-
-        var text = onLineList.join('\n\n');
-
-        return _this.gOptions.bot.sendMessage(chatId, text, {
-            disable_web_page_preview: true,
-            parse_mode: 'Markdown'
-        });
-    },
     top: function (msg) {
         "use strict";
         var service, channelList, channelName;
@@ -435,13 +393,6 @@ var commands = {
         textArr.push(_this.gOptions.language.channels.replace('{count}', channelCount));
 
         var onlineCount = 0;
-        var lastStreamList = _this.gOptions.storage.lastStreamList;
-        lastStreamList.forEach(function (item) {
-            if (item._isOffline) {
-                return;
-            }
-            onlineCount++;
-        });
         textArr.push(_this.gOptions.language.online.replace('{count}', onlineCount));
 
         for (service in topArr) {

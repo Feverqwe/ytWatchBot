@@ -39,7 +39,7 @@ var Daemon = require('./daemon');
  * watchOn: string,
  * online: string
  * },
- * storage: {chatList: {}, lastStreamList: Array},
+ * storage: {chatList: {}, stateList: Array},
  * serviceList: string[],
  * serviceToTitle: {goodgame: string, twitch: string, youtube: string, hitbox: string}}
  * }
@@ -49,20 +49,14 @@ var options = {
     language: {},
     storage: {
         chatList: {},
-        lastStreamList: []
+        stateList: {}
     },
-    serviceList: ['twitch', 'goodgame', 'youtube', 'hitbox'],
+    serviceList: ['youtube'],
     serviceToTitle: {
-        goodgame: 'GoodGame',
-        twitch: 'Twitch',
-        youtube: 'Youtube',
-        hitbox: 'Hitbox'
+        youtube: 'Youtube'
     },
     serviceMatchRe: {
-        goodgame: /goodgame\.ru\/channel\/([^\/]+)/i,
-        twitch: /twitch\.tv\/([^\/]+)/i,
-        youtube: [/youtube\.com\/user\/([^\/]+)/i, /youtube\.com\/channel\/([^\/]+)/i],
-        hitbox: /hitbox\.tv\/([^\/]+)/i
+        youtube: [/youtube\.com\/user\/([^\/]+)/i, /youtube\.com\/channel\/([^\/]+)/i]
     },
     services: {},
     events: null

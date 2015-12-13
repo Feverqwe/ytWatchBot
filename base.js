@@ -130,23 +130,23 @@ module.exports.getDate = function() {
         + s;
 };
 
-module.exports.getNowStreamPhotoText = function(gOptions, stream) {
+module.exports.getNowStreamPhotoText = function(gOptions, videoItem) {
     "use strict";
     var textArr = [];
 
     var line = [];
-    if (stream.channel.status) {
-        line.push(stream.channel.status);
+    if (videoItem.title) {
+        line.push(videoItem.title);
     }
-    if (stream.game) {
-        line.push(stream.game);
+    if (videoItem.channel.title) {
+        line.push(videoItem.channel.title);
     }
     if (line.length) {
         textArr.push(line.join(', '));
     }
 
-    if (stream.channel.url) {
-        textArr.push(stream.channel.url);
+    if (videoItem.url) {
+        textArr.push(videoItem.url);
     }
 
     return textArr.join('\n');
@@ -154,31 +154,28 @@ module.exports.getNowStreamPhotoText = function(gOptions, stream) {
 
 
 
-module.exports.getNowStreamText = function(gOptions, stream) {
+module.exports.getNowStreamText = function(gOptions, videoItem) {
     "use strict";
     var textArr = [];
 
     var line = [];
-    if (stream.channel.status) {
-        line.push(this.markDownSanitize(stream.channel.status));
-    }
-    if (stream.game) {
-        line.push('_'+this.markDownSanitize(stream.game, '_') + '_');
+    if (videoItem.title) {
+        line.push(this.markDownSanitize(videoItem.title));
     }
     if (line.length) {
         textArr.push(line.join(', '));
     }
 
     line = [];
-    if (stream.channel.url) {
-        var channelName = '*' + this.markDownSanitize(stream.channel.display_name || stream.channel.name, '*') + '*';
+    if (videoItem.url) {
+        var channelName = '*' + this.markDownSanitize(videoItem.channel.title, '*') + '*';
         line.push(gOptions.language.watchOn
             .replace('{channelName}', channelName)
-            .replace('{serviceName}', '['+gOptions.serviceToTitle[stream._service]+']'+'('+stream.channel.url+')')
+            .replace('{serviceName}', '['+gOptions.serviceToTitle[videoItem._service]+']'+'('+videoItem.url+')')
         );
     }
-    if (stream.preview) {
-        line.push('['+gOptions.language.preview+']' + '('+stream.preview+')');
+    if (videoItem.preview) {
+        line.push('['+gOptions.language.preview+']' + '('+videoItem.preview+')');
     }
     if (line.length) {
         textArr.push(line.join(', '));
@@ -204,27 +201,21 @@ module.exports.getNowStreamText = function(gOptions, stream) {
 module.exports.getStreamText = function(gOptions, stream) {
     var textArr = [];
 
-    textArr.push('*' + this.markDownSanitize(stream.channel.display_name || stream.channel.name, '*') + '*');
+    textArr.push('*' + this.markDownSanitize(stream.channel.title, '*') + '*');
 
     var line = [];
-    if (stream.viewers || stream.viewers === 0) {
-        line.push(stream.viewers);
-    }
-    if (stream.channel.status) {
-        line.push(this.markDownSanitize(stream.channel.status));
-    }
-    if (stream.game) {
-        line.push('_' + this.markDownSanitize(stream.game, '_') + '_');
+    if (stream.title) {
+        line.push(this.markDownSanitize(stream.title));
     }
     if (line.length) {
         textArr.push(line.join(', '));
     }
 
     line = [];
-    if (stream.channel.url) {
+    if (stream.url) {
         line.push(gOptions.language.watchOn
             .replace('{channelName} ', '')
-            .replace('{serviceName}', '['+gOptions.serviceToTitle[stream._service]+']'+'('+stream.channel.url+')')
+            .replace('{serviceName}', '['+gOptions.serviceToTitle[stream._service]+']'+'('+stream.url+')')
         );
     }
     if (stream.preview) {

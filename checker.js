@@ -22,6 +22,7 @@ Checker.prototype.getChannelList = function() {
     "use strict";
     var serviceList = {};
     var chatList = this.gOptions.storage.chatList;
+    var stateList = this.gOptions.storage.stateList;
 
     for (var chatId in chatList) {
         var chatItem = chatList[chatId];
@@ -36,6 +37,25 @@ Checker.prototype.getChannelList = function() {
                 channelList.push(channelName);
             }
         }
+    }
+
+    for (service in serviceList) {
+        var serviceObj = stateList[service];
+        if (!serviceObj) {
+            serviceObj = stateList[service] = {};
+        }
+
+        serviceList[service] = serviceList[service].map(function(channelId) {
+            var channelObj = serviceObj[channelId];
+            if (!channelObj) {
+                channelObj = serviceObj[channelId] = {};
+            }
+
+            return {
+                channelId: channelId,
+                lastRequestTime: channelObj.lastRequestTime
+            }
+        });
     }
 
     return serviceList;
@@ -173,11 +193,11 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
     });
 };
 
-Checker.prototype.onNewStream = function(stream) {
+Checker.prototype.onNewVideo = function(videoItem) {
     "use strict";
     var _this = this;
-    var text = base.getNowStreamPhotoText(this.gOptions, stream);
-    var noPhotoText = base.getNowStreamText(this.gOptions, stream);
+    var text = base.getNowStreamPhotoText(this.gOptions, videoItem);
+    var noPhotoText = base.getNowStreamText(this.gOptions, videoItem);
 
     var chatList = this.gOptions.storage.chatList;
 
@@ -186,12 +206,12 @@ Checker.prototype.onNewStream = function(stream) {
     for (var chatId in chatList) {
         var chatItem = chatList[chatId];
 
-        var userChannelList = chatItem.serviceList && chatItem.serviceList[stream._service];
+        var userChannelList = chatItem.serviceList && chatItem.serviceList[videoItem._service];
         if (!userChannelList) {
             continue;
         }
 
-        if (userChannelList.indexOf(stream._channelName) === -1) {
+        if (userChannelList.indexOf(videoItem._channelName) === -1) {
             continue;
         }
 
@@ -202,16 +222,16 @@ Checker.prototype.onNewStream = function(stream) {
         return;
     }
 
-    return this.sendNotify(chatIdList, text, noPhotoText, stream);
+    return this.sendNotify(chatIdList, text, noPhotoText, videoItem);
 };
 
-Checker.prototype.notifyAll = function(streamList) {
+Checker.prototype.notifyAll = function(videoList) {
     "use strict";
     var _this = this;
 
     var promiseList = [];
-    streamList.forEach(function (stream) {
-        promiseList.push(_this.onNewStream(stream));
+    videoList.forEach(function (videoItem) {
+        promiseList.push(_this.onNewVideo(videoItem));
     });
 
     return Promise.all(promiseList);
@@ -220,60 +240,13 @@ Checker.prototype.notifyAll = function(streamList) {
 Checker.prototype.updateList = function() {
     "use strict";
     var _this = this;
-    var lastStreamList = this.gOptions.storage.lastStreamList;
-    var notifyTimeout = _this.gOptions.config.notifyTimeout;
+    var stateList = this.gOptions.storage.stateList;
 
-    var onGetStreamList = function(streamList) {
-        var notifyList = [];
-        var now = parseInt(Date.now() / 1000);
-        streamList.forEach(function(item) {
-            var cItem = null;
-
-            lastStreamList.some(function(exItem, index) {
-                if (exItem._service === item._service && exItem._id === item._id) {
-                    cItem = exItem;
-                    lastStreamList.splice(index, 1);
-                    return true;
-                }
-            });
-
-            if (!cItem) {
-                if (item._isNotified = _this.isNotDblItem(item)) {
-                    notifyList.push(item);
-                    debugLog('[s]', 'Nn', item._service, item._channelName, '#', item.channel.status, '#', item.game);
-                } else {
-                    debugLog('[s]', 'D-', item._service, item._channelName, '#', item.channel.status, '#', item.game);
-                }
-            } else {
-                item._isNotified = cItem._isNotified;
-                item._notifyTimeout = cItem._notifyTimeout;
-                item._createTime = cItem._createTime;
-
-                if (item._isNotified && item._notifyTimeout < now) {
-                    item._isNotified = false;
-                    delete item._notifyTimeout;
-                }
-
-                if (!item._isNotified && _this.isStatusChange(cItem, item)) {
-                    item._isNotified = true;
-                    notifyList.push(item);
-                    debugLog('[s]', 'En', item._service, item._channelName, '#', item.channel.status, '#', item.game);
-                }
-            }
-
-            if (item._isNotified && !item._notifyTimeout) {
-                item._notifyTimeout = now + notifyTimeout * 60;
-            }
-
-            lastStreamList.push(item);
-        });
-
-        return _this.notifyAll(notifyList);
+    var onGetVideoList = function(videoList) {
+        return _this.notifyAll(videoList);
     };
 
-    this.cleanStreamList(lastStreamList);
-
-    return base.storage.set({lastStreamList: lastStreamList}).then(function() {
+    return Promise.resolve().then(function() {
         var serviceChannelList = _this.getChannelList();
         var services = _this.gOptions.services;
 
@@ -289,33 +262,45 @@ Checker.prototype.updateList = function() {
                 continue;
             }
 
-            var channelList = serviceChannelList[service];
+            var channelList = JSON.parse(JSON.stringify(serviceChannelList[service]));
             while (channelList.length) {
                 var arr = channelList.splice(0, 100);
-                var streamListPromise = (function getStreamList(service, arr, retry) {
-                    return services[service].getStreamList(arr).catch(function(err) {
-                        retry++;
-                        if (retry >= 5) {
-                            debug("Request stream list %s error! %s", service, err);
-                            return [];
-                        }
+                (function(service, arr) {
+                    var videoListPromise = (function getVideoList(service, arr, retry) {
+                        return services[service].getVideoList(arr).catch(function(err) {
+                            retry++;
+                            if (retry >= 5) {
+                                debug("Request stream list %s error! %s", service, err);
+                                return [];
+                            }
 
-                        return new Promise(function(resolve) {
-                            setTimeout(resolve, 5 * 1000);
-                        }).then(function() {
-                            debug("Retry %s request stream list %s! %s", retry, service, err);
-                            return getStreamList(service, arr, retry);
+                            return new Promise(function(resolve) {
+                                setTimeout(resolve, 5 * 1000);
+                            }).then(function() {
+                                debug("Retry %s request stream list %s! %s", retry, service, err);
+                                return getVideoList(service, arr, retry);
+                            });
                         });
-                    });
-                })(service, arr, 0);
-                promiseList.push(streamListPromise.then(function(streamList) {
-                    return onGetStreamList(streamList);
-                }));
+                    })(service, arr, 0);
+
+                    promiseList.push(videoListPromise.then(function(videoList) {
+                        var serviceObj = stateList[service];
+                        arr.forEach(function(item) {
+                            var channelObj = serviceObj && serviceObj[item.channelId];
+                            if (channelObj) {
+                                channelObj.lastRequestTime = Date.now();
+                            }
+                        });
+                        return videoList;
+                    }).then(function(videoList) {
+                        return onGetVideoList(videoList);
+                    }));
+                })(service, arr);
             }
         }
 
         return Promise.all(promiseList).then(function() {
-            return base.storage.set({lastStreamList: lastStreamList});
+            return base.storage.set({stateList: stateList});
         });
     });
 };

@@ -127,8 +127,12 @@ Youtube.prototype.getVideoList = function(userList) {
         var streamList = [];
 
         var requestList = userList.map(function(item) {
-            var userId = item.userId;
-            var publishedAfter = new Date(item.lastRequestTime).toISOString();
+            var userId = item.channelId;
+            var lastRequestTime = item.lastRequestTime;
+            if (!lastRequestTime) {
+                lastRequestTime = Date.now() - 24 * 60 * 60 * 1000;
+            }
+            var publishedAfter = new Date(lastRequestTime).toISOString();
             return _this.getChannelId(userId).then(function(channelId) {
                 return requestPromise({
                     method: 'GET',
