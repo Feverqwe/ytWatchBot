@@ -12,7 +12,7 @@
     "/liveTime - How long will it works"
   ],
   "emptyServiceList": "You don't have channels in watch list, yet.",
-  "enterChannelName": "Enter the channel URL or name (example: opergamer):",
+  "enterChannelName": "Enter the channel URL or name (example: blacksilverufa):",
   "enterService": "Enter a video platform",
   "serviceIsNotSupported": "Oops! Platform {serviceName} is not supported!",
   "channelExists": "This channel already exists!",
