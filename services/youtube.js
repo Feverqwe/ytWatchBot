@@ -29,7 +29,9 @@ Youtube.prototype.apiNormalization = function(userId, data) {
     var stateList = this.gOptions.storage.stateList;
     var serviceObj = stateList.youtube;
     var channelObj = serviceObj && serviceObj[userId];
-    var lastRequestTime = new Date(channelObj && channelObj.lastRequestTime || null).getTime();
+    if (channelObj) {
+        channelObj.lastRequestTime = Date.now();
+    }
 
     var videoList = [];
     data.items.reverse();
@@ -39,13 +41,6 @@ Youtube.prototype.apiNormalization = function(userId, data) {
         if (!snippet) {
             debug('Snippet is not found! %j', origItem);
             return;
-        }
-
-        if (channelObj && snippet.publishedAt) {
-            var requestTime = new Date(snippet.publishedAt).getTime();
-            if (requestTime > lastRequestTime) {
-                channelObj.lastRequestTime = lastRequestTime = requestTime;
-            }
         }
 
         if (snippet.type !== 'upload') {
