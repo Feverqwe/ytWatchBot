@@ -131,6 +131,14 @@ var commands = {
 
                 data.push('"' + msg.text + '"');
 
+                if (_this.gOptions.serviceList.length === 1) {
+                    var serviceName = _this.gOptions.serviceList[0];
+                    data.push('"' + serviceName + '"');
+
+                    msg.text = '/a ' + data.join(' ');
+                    return _this.onMessage(msg);
+                }
+
                 return waitServiceName();
             };
             onMessage.command = 'add';
