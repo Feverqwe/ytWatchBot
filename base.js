@@ -139,7 +139,9 @@ module.exports.getNowStreamPhotoText = function(gOptions, videoItem) {
         line.push(videoItem.title);
     }
     if (videoItem.channel.title) {
-        line.push(videoItem.channel.title);
+        if (!videoItem.title || videoItem.title.indexOf(videoItem.channel.title) === -1) {
+            line.push(videoItem.channel.title);
+        }
     }
     if (line.length) {
         textArr.push(line.join(', '));
@@ -151,8 +153,6 @@ module.exports.getNowStreamPhotoText = function(gOptions, videoItem) {
 
     return textArr.join('\n');
 };
-
-
 
 module.exports.getNowStreamText = function(gOptions, videoItem) {
     "use strict";
@@ -176,50 +176,6 @@ module.exports.getNowStreamText = function(gOptions, videoItem) {
     }
     if (videoItem.preview) {
         line.push('['+gOptions.language.preview+']' + '('+videoItem.preview+')');
-    }
-    if (line.length) {
-        textArr.push(line.join(', '));
-    }
-
-    return textArr.join('\n');
-};
-
-/**
- *
- * @param gOptions
- * @param {{
- * channel: {display_name},
- * viewers,
- * game,
- * _service,
- * preview,
- * _isOffline,
- * _channelName
- * }} stream
- * @returns {string}
- */
-module.exports.getStreamText = function(gOptions, stream) {
-    var textArr = [];
-
-    textArr.push('*' + this.markDownSanitize(stream.channel.title, '*') + '*');
-
-    var line = [];
-    if (stream.title) {
-        line.push(this.markDownSanitize(stream.title));
-    }
-    if (line.length) {
-        textArr.push(line.join(', '));
-    }
-
-    line = [];
-    if (stream.url) {
-        line.push(gOptions.language.watchOn
-            .replace('{channelName} ', '')
-            .replace('{serviceName}', '['+gOptions.serviceToTitle[stream._service]+']'+'('+stream.url+')')
-        );
-    }
-    if (stream.preview) {
-        line.push('['+gOptions.language.preview+']' + '('+stream.preview+')');
     }
     if (line.length) {
         textArr.push(line.join(', '));
