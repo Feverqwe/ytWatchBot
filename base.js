@@ -183,3 +183,15 @@ module.exports.getNowStreamText = function(gOptions, videoItem) {
 
     return textArr.join('\n');
 };
+
+module.exports.extend = function() {
+    "use strict";
+    var obj = arguments[0];
+    for (var i = 1, len = arguments.length; i < len; i++) {
+        var item = arguments[i];
+        for (var key in item) {
+            obj[key] = item[key];
+        }
+    }
+    return obj;
+};
