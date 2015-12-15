@@ -162,23 +162,24 @@ module.exports.getNowStreamText = function(gOptions, videoItem) {
     if (videoItem.title) {
         line.push(this.markDownSanitize(videoItem.title));
     }
+    if (videoItem.channel.title) {
+        if (!videoItem.title || videoItem.title.indexOf(videoItem.channel.title) === -1) {
+            line.push('_' + this.markDownSanitize(videoItem.channel.title, '_') + '_');
+        }
+    }
     if (line.length) {
         textArr.push(line.join(', '));
     }
 
     line = [];
     if (videoItem.url) {
-        var channelName = '*' + this.markDownSanitize(videoItem.channel.title, '*') + '*';
-        line.push(gOptions.language.watchOn
-            .replace('{channelName}', channelName)
-            .replace('{serviceName}', '['+gOptions.serviceToTitle[videoItem._service]+']'+'('+videoItem.url+')')
-        );
+        line.push(this.markDownSanitize(videoItem.url));
     }
     if (videoItem.preview) {
         line.push('['+gOptions.language.preview+']' + '('+videoItem.preview+')');
     }
     if (line.length) {
-        textArr.push(line.join(', '));
+        textArr.push(line.join(' , '));
     }
 
     return textArr.join('\n');
