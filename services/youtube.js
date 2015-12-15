@@ -13,14 +13,16 @@ Youtube = function(options) {
     this.gOptions = options;
     this.config = {};
 
-    this.onReady = base.storage.get('userIdToChannelId').then(function(storage) {
+    this.onReady = base.storage.get(['userIdToChannelId', 'channelIdToTitle']).then(function(storage) {
         _this.config.token = options.config.ytToken;
         _this.config.userIdToChannelId = storage.userIdToChannelId || {};
+        _this.config.channelIdToTitle = storage.channelIdToTitle || {};
     });
 };
 
 Youtube.prototype.apiNormalization = function(userId, data) {
     "use strict";
+    var _this = this;
     if (!data || !Array.isArray(data.items)) {
         debug('Response is empty! %j', data);
         throw 'Response is empty!';
@@ -79,9 +81,33 @@ Youtube.prototype.apiNormalization = function(userId, data) {
             }
         };
 
+        _this.setChannelTitle(userId, snippet.channelTitle);
+
         videoList.push(item);
     });
     return videoList;
+};
+
+Youtube.prototype.setChannelTitle = function(channelId, channelTitle) {
+    "use strict";
+    var channelIdToTitle = this.config.channelIdToTitle;
+    if (!channelTitle) {
+        debug('channelTitle is empty!');
+        return;
+    }
+    if (channelIdToTitle[channelId] === channelTitle) {
+        return;
+    }
+
+    channelIdToTitle[channelId] = channelTitle;
+    base.storage.set({channelIdToTitle: channelIdToTitle});
+};
+
+Youtube.prototype.getChannelTitle = function(channelId) {
+    "use strict";
+    var channelIdToTitle = this.config.channelIdToTitle;
+
+    return channelIdToTitle[channelId] || channelId;
 };
 
 Youtube.prototype.searchChannelByTitle = function(channelTitle) {
@@ -215,7 +241,7 @@ Youtube.prototype.getChannelName = function(userId) {
             url: 'https://www.googleapis.com/youtube/v3/search',
             qs: {
                 part: 'snippet',
-                id: channelId,
+                channelId: channelId,
                 maxResults: 1,
                 fields: 'items(id,snippet)',
                 key: _this.config.token
@@ -223,13 +249,15 @@ Youtube.prototype.getChannelName = function(userId) {
             json: true
         }).then(function(response) {
             response = response.body;
-            var id = response && response.items && response.items[0] && response.items[0].id;
-            if (!id) {
+            var firstItem = response && response.items && response.items[0];
+            if (!firstItem || !firstItem.id || !firstItem.snippet) {
                 debug('Channel "%s" is not found! %j', channelId, response);
                 throw 'Channel is not found!';
             }
 
-            return Promise.resolve(userId, id === userId ? undefined : id);
+            _this.setChannelTitle(userId, firstItem.snippet.channelTitle);
+
+            return [userId, channelId === userId ? undefined : channelId];
         });
     });
 };

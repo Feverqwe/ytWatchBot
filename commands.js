@@ -33,7 +33,13 @@ var commands = {
         var chatId = msg.chat.id;
         var chatList = _this.gOptions.storage.chatList;
 
-        return _this.gOptions.services[service].getChannelName(channelName).then(function (channelName, channelId) {
+        return _this.gOptions.services[service].getChannelName(channelName).then(function (channelName) {
+            var channelId = null;
+            if (Array.isArray(channelName)) {
+                channelId = channelName[1];
+                channelName = channelName[0];
+            }
+
             var chatItem = chatList[chatId] = chatList[chatId] || {};
             chatItem.chatId = chatId;
 
@@ -229,27 +235,25 @@ var commands = {
             return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList, _this.templates.hideKeyboard);
         }
 
+        var oneServiceMode = _this.gOptions.serviceList.length === 1;
+
         var onTimeout = function() {
             debug("Wait message timeout, %j", msg);
             msg.text = 'Cancel';
             return _this.onMessage(msg);
         };
 
+        var responseMap = {};
         var onMessage = _this.stateList[chatId] = function (msg) {
-            var re = /^(.+) \((.+)\)$/;
-            if (oneServiceMode) {
-                re = /^(.+)$/;
-            }
-            var data = msg.text.match(re);
-            if (!data) {
+            var item = responseMap[msg.text];
+            if (!item) {
                 debug("Can't match delete channel %j", msg);
                 return;
             }
-            data.shift();
 
-            data = data.map(function(item) {
-                return '"' + item + '"';
-            });
+            var data = [];
+            data.push('"' + item.name + '"');
+            data.push('"' + item.service + '"');
 
             msg.text = '/d ' + data.join(' ');
             return _this.onMessage(msg);
@@ -263,11 +267,20 @@ var commands = {
         for (var service in chatItem.serviceList) {
             var channelList = chatItem.serviceList[service];
             for (var i = 0, channelName; channelName = channelList[i]; i++) {
-                if (oneServiceMode) {
-                    btnList.push([channelName]);
-                } else {
-                    btnList.push([channelName + ' (' + _this.gOptions.serviceToTitle[service] + ')']);
+                var title = channelName;
+                var services = _this.gOptions.services;
+                if (services[service].getChannelTitle) {
+                    title = services[service].getChannelTitle(channelName);
                 }
+
+                if (!oneServiceMode) {
+                    title += ' (' + _this.gOptions.serviceToTitle[service] + ')';
+                }
+
+                title = base.getDdblTitle(responseMap, title);
+                responseMap[title] = {name: channelName, service: service};
+
+                btnList.push([title]);
             }
         }
         btnList.push(['Cancel']);
