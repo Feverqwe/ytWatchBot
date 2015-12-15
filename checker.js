@@ -218,6 +218,8 @@ Checker.prototype.onNewVideo = function(videoItem) {
         return;
     }
 
+    debugLog('[s] %j', videoItem);
+
     return this.sendNotify(chatIdList, text, noPhotoText, videoItem);
 };
 

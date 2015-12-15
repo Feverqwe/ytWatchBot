@@ -72,7 +72,7 @@ Youtube.prototype.apiNormalization = function(userId, data) {
             publishedAt: snippet.publishedAt,
             title: snippet.title,
             preview: previewUrl,
-            description: snippet.description,
+            // description: snippet.description,
             channel: {
                 title: snippet.channelTitle,
                 id: snippet.channelId
