@@ -146,9 +146,6 @@ var commands = {
 
         var waitServiceName = function() {
             if (_this.gOptions.serviceList.length === 1) {
-                var serviceName = _this.gOptions.serviceList[0];
-                data.push('"' + serviceName + '"');
-
                 msg.text = '/a ' + data.join(' ');
                 return _this.onMessage(msg);
             }
@@ -239,7 +236,11 @@ var commands = {
         };
 
         var onMessage = _this.stateList[chatId] = function (msg) {
-            var data = msg.text.match(/^(.+) \((.+)\)$/);
+            var re = /^(.+) \((.+)\)$/;
+            if (oneServiceMode) {
+                re = /^(.+)$/;
+            }
+            var data = msg.text.match(re);
             if (!data) {
                 debug("Can't match delete channel %j", msg);
                 return;
@@ -262,7 +263,11 @@ var commands = {
         for (var service in chatItem.serviceList) {
             var channelList = chatItem.serviceList[service];
             for (var i = 0, channelName; channelName = channelList[i]; i++) {
-                btnList.push([channelName + ' (' + _this.gOptions.serviceToTitle[service] + ')']);
+                if (oneServiceMode) {
+                    btnList.push([channelName]);
+                } else {
+                    btnList.push([channelName + ' (' + _this.gOptions.serviceToTitle[service] + ')']);
+                }
             }
         }
         btnList.push(['Cancel']);
