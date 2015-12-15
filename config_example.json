@@ -2,5 +2,6 @@
   "token": "",
   "interval": 10,
   "botanToken": "",
-  "ytToken": ""
+  "ytToken": "",
+  "checkOnRun": false
 }
