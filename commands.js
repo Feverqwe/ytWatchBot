@@ -439,7 +439,6 @@ var commands = {
                 return a[1] === b[1] ? 0 : a[1] > b[1] ? -1 : 1
             }).splice(10);
             topArr[service].map(function (item, index) {
-
                 var title = item[0];
 
                 var services = _this.gOptions.services;
