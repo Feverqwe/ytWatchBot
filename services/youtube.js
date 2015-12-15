@@ -81,18 +81,19 @@ Youtube.prototype.apiNormalization = function(userId, data) {
             }
         };
 
-        _this.setChannelTitle(userId, snippet.channelTitle);
+        _this.setChannelTitle(userId, snippet);
 
         videoList.push(item);
     });
     return videoList;
 };
 
-Youtube.prototype.setChannelTitle = function(channelId, channelTitle) {
+Youtube.prototype.setChannelTitle = function(channelId, snippet) {
     "use strict";
     var channelIdToTitle = this.config.channelIdToTitle;
+    var channelTitle = snippet && snippet.channelTitle;
     if (!channelTitle) {
-        debug('channelTitle is empty!');
+        debug('channelTitle is empty! %j', snippet);
         return;
     }
     if (channelIdToTitle[channelId] === channelTitle) {
@@ -255,7 +256,7 @@ Youtube.prototype.getChannelName = function(userId) {
                 throw 'Channel is not found!';
             }
 
-            _this.setChannelTitle(userId, firstItem.snippet.channelTitle);
+            _this.setChannelTitle(userId, firstItem.snippet);
 
             return [userId, channelId === userId ? undefined : channelId];
         });
