@@ -34,7 +34,6 @@ Youtube.prototype.apiNormalization = function(userId, data) {
     }
 
     var videoList = [];
-    data.items.reverse();
     data.items.forEach(function(origItem) {
         var snippet = origItem.snippet;
 
