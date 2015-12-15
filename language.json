@@ -30,6 +30,5 @@
   ],
   "users": "Users: {count}",
   "channels": "Channels: {count}",
-  "preview": "preview",
-  "watchOn": "Watch {channelName} on {serviceName}"
+  "preview": "preview"
 }
