@@ -268,6 +268,7 @@ var commands = {
             var channelList = chatItem.serviceList[service];
             for (var i = 0, channelName; channelName = channelList[i]; i++) {
                 var title = channelName;
+
                 var services = _this.gOptions.services;
                 if (services[service].getChannelTitle) {
                     title = services[service].getChannelTitle(channelName);
@@ -352,7 +353,14 @@ var commands = {
                     debug('URL is empty!');
                     return base.markDownSanitize(channelName);
                 }
-                return '[' + base.markDownSanitize(channelName, '[') + ']' + '(' + url + ')';
+                var title = channelName;
+
+                var services = _this.gOptions.services;
+                if (services[service].getChannelTitle) {
+                    title = services[service].getChannelTitle(channelName);
+                }
+
+                return '[' + base.markDownSanitize(title, '[') + ']' + '(' + url + ')';
             });
             serviceList.push('*' + _this.gOptions.serviceToTitle[service] + '*' + ':\n' + channelList.join('\n'));
         }
@@ -431,7 +439,15 @@ var commands = {
                 return a[1] === b[1] ? 0 : a[1] > b[1] ? -1 : 1
             }).splice(10);
             topArr[service].map(function (item, index) {
-                textArr.push((index + 1) + '. ' + item[0]);
+
+                var title = item[0];
+
+                var services = _this.gOptions.services;
+                if (services[service].getChannelTitle) {
+                    title = services[service].getChannelTitle(item[0]);
+                }
+
+                textArr.push((index + 1) + '. ' + title);
             });
         }
 

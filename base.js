@@ -219,10 +219,10 @@ module.exports.getDdblTitle = function(map, title) {
         return title;
     }
     var index = 1;
-    var newTitle = title + '(' + index + ')';
+    var newTitle = title + ' (' + index + ')';
     while(map[newTitle]) {
         index++;
-        newTitle = title + '(' + index + ')';
+        newTitle = title + ' (' + index + ')';
     }
 
     return newTitle;
