@@ -196,3 +196,19 @@ module.exports.extend = function() {
     }
     return obj;
 };
+
+module.exports.getChannelUrl = function(service, channelName) {
+    "use strict";
+    var url = '';
+    if (service === 'youtube') {
+        url = 'https://youtube.com/';
+        if (/^UC/.test(channelName)) {
+            url += 'channel/';
+        } else {
+            url += 'user/';
+        }
+        url += channelName;
+    }
+
+    return url;
+};
