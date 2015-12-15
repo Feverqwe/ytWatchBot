@@ -84,6 +84,33 @@ Youtube.prototype.apiNormalization = function(userId, data) {
     return videoList;
 };
 
+Youtube.prototype.searchChannelByTitle = function(channelTitle) {
+    "use strict";
+    var _this = this;
+    return requestPromise({
+        method: 'GET',
+        url: 'https://www.googleapis.com/youtube/v3/search',
+        qs: {
+            part: 'snippet',
+            q: '"' + channelTitle + '"',
+            type: 'channel',
+            maxResults: 1,
+            fields: 'items(id)',
+            key: _this.config.token
+        },
+        json: true
+    }).then(function(response) {
+        response = response.body;
+        var id = response && response.items && response.items[0] && response.items[0].id && response.items[0].id.channelId;
+        if (!id) {
+            debug('Channel ID "%s" is not found by query! %j', channelTitle, response);
+            throw 'Channel ID is not found by query!';
+        }
+
+        return id;
+    });
+};
+
 Youtube.prototype.getChannelId = function(userId) {
     "use strict";
     var _this = this;
@@ -177,7 +204,12 @@ Youtube.prototype.getChannelName = function(userId) {
     "use strict";
     var _this = this;
 
-    return _this.getChannelId(userId).then(function(channelId) {
+    return _this.getChannelId(userId).catch(function() {
+        return _this.searchChannelByTitle(userId).then(function(newUserId) {
+            userId = newUserId;
+            return _this.getChannelId(userId);
+        });
+    }).then(function(channelId) {
         return requestPromise({
             method: 'GET',
             url: 'https://www.googleapis.com/youtube/v3/search',
