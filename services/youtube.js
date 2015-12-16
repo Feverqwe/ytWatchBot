@@ -277,7 +277,7 @@ Youtube.prototype.getChannelName = function(userId) {
             }).then(function() {
                 _this.setChannelTitle(userId, channelTitle);
 
-                return [userId, channelId === userId ? undefined : channelId];
+                return userId;
             });
         });
     });

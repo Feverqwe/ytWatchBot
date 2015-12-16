@@ -197,6 +197,18 @@ module.exports.extend = function() {
     return obj;
 };
 
+module.exports.getChannelTitle = function(gOptions, service, channelName) {
+    "use strict";
+    var title = channelName;
+
+    var services = gOptions.services;
+    if (services[service].getChannelTitle) {
+        title = services[service].getChannelTitle(channelName);
+    }
+
+    return title;
+};
+
 module.exports.getChannelUrl = function(service, channelName) {
     "use strict";
     var url = '';

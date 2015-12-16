@@ -34,12 +34,6 @@ var commands = {
         var chatList = _this.gOptions.storage.chatList;
 
         return _this.gOptions.services[service].getChannelName(channelName).then(function (channelName) {
-            var channelId = null;
-            if (Array.isArray(channelName)) {
-                channelId = channelName[1];
-                channelName = channelName[0];
-            }
-
             var chatItem = chatList[chatId] = chatList[chatId] || {};
             chatItem.chatId = chatId;
 
@@ -52,18 +46,22 @@ var commands = {
 
             channelList.push(channelName);
 
-            var displayName = [channelName];
-            if (channelId) {
-                displayName.push('(' + channelId + ')');
-            }
+            var title = base.getChannelTitle(_this.gOptions, service, channelName);
+            var url = base.getChannelUrl(service, channelName);
+
+            var displayName = '['+base.markDownSanitize(title, '[')+']'+'('+url+')';
 
             return base.storage.set({chatList: chatList}).then(function () {
                 return _this.gOptions.bot.sendMessage(
                     chatId,
                     _this.gOptions.language.channelAdded
-                        .replace('{channelName}', displayName.join(' '))
+                        .replace('{channelName}', displayName)
                         .replace('{serviceName}', _this.gOptions.serviceToTitle[service]),
-                    _this.templates.hideKeyboard
+                    {
+                        disable_web_page_preview: true,
+                        parse_mode: 'Markdown',
+                        reply_markup: _this.templates.hideKeyboard.reply_markup
+                    }
                 );
             });
         }).catch(function(err) {
@@ -242,12 +240,7 @@ var commands = {
         for (var service in chatItem.serviceList) {
             var channelList = chatItem.serviceList[service];
             channelList.forEach(function(channelName) {
-                var title = channelName;
-
-                var services = _this.gOptions.services;
-                if (services[service].getChannelTitle) {
-                    title = services[service].getChannelTitle(channelName);
-                }
+                var title = base.getChannelTitle(_this.gOptions, service, channelName);
 
                 if (!oneServiceMode) {
                     title += ' (' + _this.gOptions.serviceToTitle[service] + ')';
@@ -387,12 +380,8 @@ var commands = {
                     debug('URL is empty!');
                     return base.markDownSanitize(channelName);
                 }
-                var title = channelName;
 
-                var services = _this.gOptions.services;
-                if (services[service].getChannelTitle) {
-                    title = services[service].getChannelTitle(channelName);
-                }
+                var title = base.getChannelTitle(_this.gOptions, service, channelName);
 
                 return '[' + base.markDownSanitize(title, '[') + ']' + '(' + url + ')';
             });
@@ -473,12 +462,7 @@ var commands = {
                 return a[1] === b[1] ? 0 : a[1] > b[1] ? -1 : 1
             }).splice(10);
             topArr[service].map(function (item, index) {
-                var title = item[0];
-
-                var services = _this.gOptions.services;
-                if (services[service].getChannelTitle) {
-                    title = services[service].getChannelTitle(item[0]);
-                }
+                var title = base.getChannelTitle(_this.gOptions, service, item[0]);
 
                 textArr.push((index + 1) + '. ' + title);
             });
