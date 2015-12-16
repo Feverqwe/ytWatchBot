@@ -81,23 +81,17 @@ Youtube.prototype.apiNormalization = function(userId, data) {
             }
         };
 
-        _this.setChannelTitle(userId, snippet, 1);
-
         videoList.push(item);
     });
     return videoList;
 };
 
-Youtube.prototype.setChannelTitle = function(channelId, snippet, ifEmpty) {
+Youtube.prototype.setChannelTitle = function(channelId, snippet) {
     "use strict";
     var channelIdToTitle = this.config.channelIdToTitle;
     var channelTitle = snippet && snippet.channelTitle;
     if (!channelTitle) {
         debug('channelTitle is empty! %j', snippet);
-        return;
-    }
-
-    if (ifEmpty && channelIdToTitle[channelId]) {
         return;
     }
 
