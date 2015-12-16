@@ -3,5 +3,6 @@
   "interval": 10,
   "botanToken": "",
   "ytToken": "",
-  "checkOnRun": false
+  "checkOnRun": false,
+  "botName": "ytWatchBot"
 }

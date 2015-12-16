@@ -69,6 +69,8 @@ var options = {
     }).then(function() {
         return base.loadConfig().then(function(config) {
             options.config = config;
+
+            config.botName && (config.botName = config.botName.toLowerCase());
         });
     }).then(function() {
         return base.loadLanguage().then(function(language) {
