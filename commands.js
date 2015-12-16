@@ -320,6 +320,8 @@ var commands = {
             if (info) {
                 data.push('"' + info.name + '"');
                 data.push('"' + info.service + '"');
+            } else {
+                debug('Delete channel is not found "%s" "%s"', channelName, serviceName);
             }
         }
 
