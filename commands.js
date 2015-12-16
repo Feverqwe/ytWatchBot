@@ -507,6 +507,44 @@ var commands = {
 
             return _this.gOptions.bot.sendMessage(chatId, message);
         });
+    },
+    refreshTitle: function(msg) {
+        "use strict";
+        var _this = this;
+        var chatId = msg.chat.id;
+        var services = _this.gOptions.services;
+
+        var queue = Promise.resolve();
+
+        var serviceChannelList = _this.gOptions.checker.getChannelList();
+        for (var service in serviceChannelList) {
+            if (!serviceChannelList.hasOwnProperty(service)) {
+                continue;
+            }
+
+            if (!services[service]) {
+                debug('Service "%s" is not found!', service);
+                continue;
+            }
+
+            var channelList = JSON.parse(JSON.stringify(serviceChannelList[service]));
+            while (channelList.length) {
+                var arr = channelList.splice(0, 100);
+                (function(service, arr) {
+                    queue = queue.finally(function() {
+                        var promiseList = arr.map(function(item) {
+                            var userId = item.channelId;
+                            return services[service].getChannelName(userId);
+                        });
+                        return Promise.all(promiseList);
+                    });
+                })(service, arr);
+            }
+        }
+
+        return queue.finally(function() {
+            return _this.gOptions.bot.sendMessage(chatId, 'Done!');
+        });
     }
 };
 
