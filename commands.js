@@ -487,7 +487,9 @@ var commands = {
             });
         }
 
-        return _this.gOptions.bot.sendMessage(chatId, textArr.join('\n'));
+        return _this.gOptions.bot.sendMessage(chatId, textArr.join('\n'), {
+            disable_web_page_preview: true
+        });
     },
     livetime: function (msg) {
         "use strict";
