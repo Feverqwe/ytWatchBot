@@ -25,7 +25,7 @@ var commands = {
         var _this = this;
         var chatId = msg.chat.id;
 
-        return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.help);
+        return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.help + _this.gOptions.language.rateMe);
     },
     a: function (msg, channelName, service) {
         "use strict";
@@ -144,10 +144,7 @@ var commands = {
                 return onTimeout();
             }, 3 * 60 * 1000);
 
-            return _this.gOptions.bot.sendMessage(
-                chatId,
-                _this.gOptions.language.enterChannelName
-            );
+            return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.enterChannelName);
         };
 
         var waitServiceName = function() {
@@ -504,6 +501,8 @@ var commands = {
             var count = parseInt((endTime - Date.now()) / 1000 / 60 / 60 / 24 / 30 * 10) / 10;
 
             var message = liveTime.message.join('\n').replace('{count}', count);
+
+            message += _this.gOptions.language.rateMe;
 
             return _this.gOptions.bot.sendMessage(chatId, message);
         });

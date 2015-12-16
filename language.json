@@ -9,10 +9,7 @@
     "/list - Show list of channel",
     "/top - Top 10",
     "/clear - Clear channel list",
-    "/liveTime - How long will it works",
-    "",
-    "⭐️ If you like this bot, please rate us 5 stars in store:",
-    "https://telegram.me/storebot?start=ytwatchbot"
+    "/liveTime - How long will it works"
   ],
   "emptyServiceList": "You don't have channels in watch list, yet.",
   "enterChannelName": "Enter the channel URL or name (example: blacksilverufa):",
@@ -33,5 +30,10 @@
   ],
   "users": "Users: {count}",
   "channels": "Channels: {count}",
-  "preview": "preview"
+  "preview": "preview",
+  "rateMe": [
+    "", "",
+    "⭐️ If you like this bot, please rate us 5 stars in store:",
+    "https://telegram.me/storebot?start=ytwatchbot"
+  ]
 }
