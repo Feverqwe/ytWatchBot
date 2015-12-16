@@ -156,14 +156,14 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
     };
 
     var send = function() {
-        var hasPhoto = stream._photoId;
+        var photoId = stream._photoId;
         var promiseList = [];
 
         while (chatId = chatIdList.shift()) {
-            if (!hasPhoto) {
+            if (!photoId) {
                 promiseList.push(sendMsg(chatId));
             } else {
-                promiseList.push(sendPic(chatId, hasPhoto));
+                promiseList.push(sendPic(chatId, photoId));
             }
         }
 
@@ -258,7 +258,7 @@ Checker.prototype.updateList = function() {
         var serviceChannelList = _this.getChannelList();
         var services = _this.gOptions.services;
 
-        var promiseList = [];
+        var queue = Promise.resolve();
 
         for (var service in serviceChannelList) {
             if (!serviceChannelList.hasOwnProperty(service)) {
@@ -273,30 +273,34 @@ Checker.prototype.updateList = function() {
             var channelList = JSON.parse(JSON.stringify(serviceChannelList[service]));
             while (channelList.length) {
                 var arr = channelList.splice(0, 100);
-                var videoListPromise = (function getVideoList(service, arr, retry) {
-                    return services[service].getVideoList(arr).catch(function(err) {
-                        retry++;
-                        if (retry >= 5) {
-                            debug("Request stream list %s error! %s", service, err);
-                            return [];
-                        }
+                (function(service, arr) {
+                    var videoListPromise = (function getVideoList(service, arr, retry) {
+                        return services[service].getVideoList(arr).catch(function(err) {
+                            retry++;
+                            if (retry >= 5) {
+                                debug("Request stream list %s error! %s", service, err);
+                                return [];
+                            }
 
-                        return new Promise(function(resolve) {
-                            setTimeout(resolve, 5 * 1000);
-                        }).then(function() {
-                            debug("Retry %s request stream list %s! %s", retry, service, err);
-                            return getVideoList(service, arr, retry);
+                            return new Promise(function(resolve) {
+                                setTimeout(resolve, 5 * 1000);
+                            }).then(function() {
+                                debug("Retry %s request stream list %s! %s", retry, service, err);
+                                return getVideoList(service, arr, retry);
+                            });
                         });
-                    });
-                })(service, arr, 0);
+                    })(service, arr, 0);
 
-                promiseList.push(videoListPromise.then(function(videoList) {
-                    return onGetVideoList(videoList);
-                }));
+                    queue = queue.finally(function() {
+                        return videoListPromise.then(function(videoList) {
+                            return onGetVideoList(videoList);
+                        })
+                    });
+                })(service, arr);
             }
         }
 
-        return Promise.all(promiseList).then(function() {
+        return queue.finally(function() {
             return base.storage.set({stateList: stateList});
         });
     });

@@ -191,7 +191,7 @@ Youtube.prototype.getVideoList = function(userList) {
             var userId = item.channelId;
             var lastRequestTime = item.lastRequestTime;
             if (!lastRequestTime) {
-                lastRequestTime = Date.now() - 3 * 24 * 60 * 60 * 1000;
+                lastRequestTime = Date.now() - 1 * 24 * 60 * 60 * 1000;
             }
             var publishedAfter = new Date(lastRequestTime).toISOString();
             return _this.getChannelId(userId).then(function(channelId) {
