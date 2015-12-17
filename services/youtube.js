@@ -28,12 +28,7 @@ Youtube.prototype.apiNormalization = function(userId, data) {
         throw 'Response is empty!';
     }
 
-    var stateList = this.gOptions.storage.stateList;
-    var serviceObj = stateList.youtube;
-    var channelObj = serviceObj && serviceObj[userId];
-    if (channelObj) {
-        channelObj.lastRequestTime = Date.now();
-    }
+    var lastPubTime = 0;
 
     var videoList = [];
     data.items.forEach(function(origItem) {
@@ -42,6 +37,11 @@ Youtube.prototype.apiNormalization = function(userId, data) {
         if (!snippet) {
             debug('Snippet is not found! %j', origItem);
             return;
+        }
+
+        var pubTime = new Date(snippet.publishedAt).getTime();
+        if (pubTime && lastPubTime < pubTime) {
+            lastPubTime = pubTime;
         }
 
         if (snippet.type !== 'upload') {
@@ -83,6 +83,18 @@ Youtube.prototype.apiNormalization = function(userId, data) {
 
         videoList.push(item);
     });
+
+    if (!lastPubTime) {
+        lastPubTime = Date.now();
+    }
+
+    var stateList = this.gOptions.storage.stateList;
+    var serviceObj = stateList.youtube;
+    var channelObj = serviceObj && serviceObj[userId];
+    if (channelObj) {
+        channelObj.lastRequestTime = lastPubTime + 1;
+    }
+
     return videoList;
 };
 
