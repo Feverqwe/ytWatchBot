@@ -134,14 +134,14 @@ module.exports.getNowStreamPhotoText = function(gOptions, videoItem) {
     "use strict";
     var textArr = [];
 
+    var title = '';
+
     var line = [];
     if (videoItem.title) {
-        line.push(videoItem.title);
+        line.push(title = videoItem.title);
     }
-    if (videoItem.channel.title) {
-        if (!videoItem.title || videoItem.title.indexOf(videoItem.channel.title) === -1) {
-            line.push(videoItem.channel.title);
-        }
+    if (videoItem.channel.title && title.indexOf(videoItem.channel.title) === -1) {
+        line.push(videoItem.channel.title);
     }
     if (line.length) {
         textArr.push(line.join(', '));
@@ -158,14 +158,14 @@ module.exports.getNowStreamText = function(gOptions, videoItem) {
     "use strict";
     var textArr = [];
 
+    var title = '';
+
     var line = [];
     if (videoItem.title) {
-        line.push(this.markDownSanitize(videoItem.title));
+        line.push(this.markDownSanitize(title = videoItem.title));
     }
-    if (videoItem.channel.title) {
-        if (!videoItem.title || videoItem.title.indexOf(videoItem.channel.title) === -1) {
-            line.push('_' + this.markDownSanitize(videoItem.channel.title, '_') + '_');
-        }
+    if (videoItem.channel.title && title.indexOf(videoItem.channel.title) === -1) {
+        line.push('_' + this.markDownSanitize(videoItem.channel.title, '_') + '_');
     }
     if (line.length) {
         textArr.push(line.join(', '));
