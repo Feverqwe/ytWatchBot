@@ -20,7 +20,7 @@ Youtube = function(options) {
     });
 };
 
-Youtube.prototype.apiNormalization = function(userId, data, requestTime) {
+Youtube.prototype.apiNormalization = function(userId, data) {
     "use strict";
     var _this = this;
     if (!data || !Array.isArray(data.items)) {
@@ -86,14 +86,10 @@ Youtube.prototype.apiNormalization = function(userId, data, requestTime) {
         videoList.push(item);
     });
 
-    if (!lastPubTime) {
-        lastPubTime = requestTime;
-    }
-
     var stateList = this.gOptions.storage.stateList;
     var serviceObj = stateList.youtube;
     var channelObj = serviceObj && serviceObj[userId];
-    if (channelObj) {
+    if (channelObj && lastPubTime) {
         channelObj.lastRequestTime = lastPubTime + 1000;
     }
 
@@ -207,7 +203,6 @@ Youtube.prototype.getVideoList = function(userList) {
             }
             var publishedAfter = new Date(lastRequestTime).toISOString();
             return _this.getChannelId(userId).then(function(channelId) {
-                var requestTime = Date.now();
                 return requestPromise({
                     method: 'GET',
                     url: 'https://www.googleapis.com/youtube/v3/activities',
@@ -224,7 +219,7 @@ Youtube.prototype.getVideoList = function(userList) {
                     response = response.body;
 
                     return Promise.resolve().then(function() {
-                        return _this.apiNormalization(userId, response, requestTime);
+                        return _this.apiNormalization(userId, response);
                     }).then(function(stream) {
                         streamList.push.apply(streamList, stream);
                     });
