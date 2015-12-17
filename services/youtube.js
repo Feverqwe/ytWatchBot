@@ -39,9 +39,11 @@ Youtube.prototype.apiNormalization = function(userId, data, requestTime) {
             return;
         }
 
-        var pubTime = new Date(snippet.publishedAt).getTime();
-        if (pubTime && lastPubTime < pubTime) {
-            lastPubTime = pubTime;
+        if (snippet.publishedAt) {
+            var pubTime = new Date(snippet.publishedAt).getTime();
+            if (pubTime && lastPubTime < pubTime) {
+                lastPubTime = pubTime;
+            }
         }
 
         if (snippet.type !== 'upload') {
