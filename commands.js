@@ -38,7 +38,7 @@ var commands = {
                 return channelName;
             }
 
-            return _this.gOptions.pushApi.getChannelId(channelName).then(function(channelId) {
+            return _this.gOptions.services.youtube.getChannelId(channelName).then(function(channelId) {
                 return _this.gOptions.pushApi.subscribe([channelId]).then(function() {
                     return channelName;
                 });
