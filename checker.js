@@ -278,7 +278,7 @@ Checker.prototype.notifyAll = function(videoList) {
     return Promise.all(promiseList);
 };
 
-Checker.prototype.updateList = function(channelList) {
+Checker.prototype.updateList = function(filterServiceChannelList) {
     "use strict";
     var _this = this;
     var stateList = this.gOptions.storage.stateList;
@@ -298,7 +298,7 @@ Checker.prototype.updateList = function(channelList) {
     };
 
     return Promise.try(function() {
-        var serviceChannelList = channelList || _this.getChannelList();
+        var serviceChannelList = _this.getChannelList();
         var services = _this.gOptions.services;
 
         var queue = Promise.resolve();
@@ -314,6 +314,25 @@ Checker.prototype.updateList = function(channelList) {
             }
 
             var channelList = JSON.parse(JSON.stringify(serviceChannelList[service]));
+
+            var filterChannelList = filterServiceChannelList && filterServiceChannelList[service];
+            if (filterChannelList) {
+                channelList = channelList.filter(function(filterChannelList, item) {
+                   return filterChannelList.indexOf(item.channelId) !== -1;
+                }.bind(null, filterChannelList));
+
+                if (!channelList.length) {
+                    filterChannelList.forEach(function(channelId) {
+                        if (!/^UC/.test(channelId)) {
+                            return;
+                        }
+                        _this.gOptions.pushApi.unSubscribe([channelId]).catch(function(err) {
+                            debug('unSubscribe error! %s', err);
+                        });
+                    });
+                }
+            }
+
             while (channelList.length) {
                 var arr = channelList.splice(0, 100);
                 (function(service, arr) {

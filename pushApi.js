@@ -135,8 +135,6 @@ PushApi.prototype.prepareData = function(xml) {
     "use strict";
     var document = new xmldoc.XmlDocument(xml);
 
-    debug('xml: ', document.toString({compressed: true}));
-
     var getChildNode = function(root, name) {
         var el = null;
         if (!root || !root.children) {
