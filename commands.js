@@ -33,7 +33,15 @@ var commands = {
         var chatId = msg.chat.id;
         var chatList = _this.gOptions.storage.chatList;
 
-        return _this.gOptions.services[service].getChannelName(channelName).then(function (channelName) {
+        return _this.gOptions.services[service].getChannelName(channelName).then(function(channelName) {
+            if (service !== 'youtube') {
+                return channelName;
+            }
+
+            return _this.gOptions.pushApi.subscribe([channelName]).then(function() {
+                return channelName;
+            });
+        }).then(function (channelName) {
             var chatItem = chatList[chatId] = chatList[chatId] || {};
             chatItem.chatId = chatId;
 

@@ -9,6 +9,8 @@
     "request": "^2.65",
     "botanio": "^0.0.6",
     "path": "^0.12.7",
-    "events": "^1.1.0"
+    "events": "^1.1.0",
+    "pubsubhubbub": "0.4.1",
+    "xmldoc": "0.4.0"
   }
 }

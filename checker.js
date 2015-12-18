@@ -14,7 +14,27 @@ var Checker = function(options) {
     this.gOptions = options;
 
     options.events.on('check', function() {
-        _this.updateList();
+        _this.updateList().catch(function(err) {
+            debug('updateList error! "%s"', err);
+        });
+    });
+
+    options.events.on('feed', function(data) {
+        var channelList = [];
+
+        var channelId = data['yt:channelId'];
+        if (channelId) {
+            channelList.push(channelId);
+        }
+
+        var userId = options.services.youtube.getUserId(channelId);
+        if (userId) {
+            channelList.push(userId);
+        }
+
+        _this.updateList({youtube: channelList}).catch(function(err) {
+            debug('updateList error! "%s"', err);
+        });
     });
 };
 
@@ -235,6 +255,9 @@ Checker.prototype.onNewVideo = function(videoItem) {
     }
 
     if (!chatIdList.length) {
+        /*if (videoItem._service === 'youtube' && /^UC/.test(videoItem._channelName)) {
+            return _this.gOptions.pushApi.unSubscribe([videoItem._channelName]);
+        }*/
         return;
     }
 
@@ -255,7 +278,7 @@ Checker.prototype.notifyAll = function(videoList) {
     return Promise.all(promiseList);
 };
 
-Checker.prototype.updateList = function() {
+Checker.prototype.updateList = function(channelList) {
     "use strict";
     var _this = this;
     var stateList = this.gOptions.storage.stateList;
@@ -274,8 +297,8 @@ Checker.prototype.updateList = function() {
         return _this.notifyAll(videoList);
     };
 
-    return Promise.resolve().then(function() {
-        var serviceChannelList = _this.getChannelList();
+    return Promise.try(function() {
+        var serviceChannelList = channelList || _this.getChannelList();
         var services = _this.gOptions.services;
 
         var queue = Promise.resolve();

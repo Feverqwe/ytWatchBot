@@ -4,5 +4,10 @@
   "botanToken": "",
   "ytToken": "",
   "checkOnRun": false,
-  "botName": "ytWatchBot"
+  "botName": "ytWatchBot",
+  "push": {
+    "port": 80,
+    "secret": "",
+    "callbackUrl": ""
+  }
 }

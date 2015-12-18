@@ -96,6 +96,18 @@ Youtube.prototype.apiNormalization = function(userId, data) {
     return videoList;
 };
 
+Youtube.prototype.getUserId = function(channelId) {
+    "use strict";
+    var userIdToChannelId = this.config.userIdToChannelId;
+    for (var title in userIdToChannelId) {
+        var id = userIdToChannelId[title];
+        if (id === channelId) {
+            return title;
+        }
+    }
+    return null;
+};
+
 Youtube.prototype.setChannelTitle = function(channelId, channelTitle) {
     "use strict";
     var channelIdToTitle = this.config.channelIdToTitle;

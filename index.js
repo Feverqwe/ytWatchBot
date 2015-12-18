@@ -6,6 +6,7 @@ var debugLog = require('debug')('index:log');
 debugLog.log = console.log.bind(console);
 var Promise = require('bluebird');
 var base = require('./base');
+var PushApi = require('./pushApi');
 var Checker = require('./checker');
 var Chat = require('./chat');
 var TelegramBotApi = require('node-telegram-bot-api');
@@ -120,6 +121,9 @@ var options = {
         options.chat = new Chat(options);
     }).then(function() {
         options.checker = new Checker(options);
+        options.pushApi = new PushApi(options);
+
+        return options.pushApi.onReady;
     }).catch(function(err) {
         debug('Loading error %s', err);
     });
