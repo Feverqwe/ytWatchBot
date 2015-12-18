@@ -38,8 +38,10 @@ var commands = {
                 return channelName;
             }
 
-            return _this.gOptions.pushApi.subscribe([channelName]).then(function() {
-                return channelName;
+            return _this.gOptions.pushApi.getChannelId(channelName).then(function(channelId) {
+                return _this.gOptions.pushApi.subscribe([channelId]).then(function() {
+                    return channelName;
+                });
             });
         }).then(function (channelName) {
             var chatItem = chatList[chatId] = chatList[chatId] || {};
