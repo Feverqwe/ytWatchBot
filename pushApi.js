@@ -30,10 +30,52 @@ var PushApi = function(options) {
                 });
 
                 return Promise.all(promiseList).then(function() {
-                    return options.pushApi.subscribe(channelIdList);
+                    return _this.subscribe(channelIdList);
                 });
             });
             resolve(promise);
+        });
+    });
+
+    _this.gOptions.events.on('subscribe', function(channelList) {
+        if (!Array.isArray(channelList)) {
+            channelList = [channelList];
+        }
+
+        var dDblList = [];
+
+        channelList.forEach(function(channelName) {
+            _this.gOptions.services.youtube.getChannelId(channelName).then(function (channelId) {
+                if (dDblList.indexOf(channelId) !== -1) {
+                    return;
+                }
+                dDblList.push(channelId);
+
+                return _this.subscribe(channelId);
+            }).catch(function (err) {
+                debug('Subscribe event error! %s %j', channelName, err);
+            });
+        });
+    });
+
+    _this.gOptions.events.on('unSubscribe', function(channelList) {
+        if (!Array.isArray(channelList)) {
+            channelList = [channelList];
+        }
+
+        var dDblList = [];
+
+        channelList.forEach(function(channelName) {
+            _this.gOptions.services.youtube.getChannelId(channelName).then(function (channelId) {
+                if (dDblList.indexOf(channelId) !== -1) {
+                    return;
+                }
+                dDblList.push(channelId);
+
+                return _this.unSubscribe(channelId);
+            }).catch(function (err) {
+                debug('Unsubscribe event error! %s %j', channelName, err);
+            });
         });
     });
 };
@@ -77,6 +119,10 @@ PushApi.prototype.subscribe = function(channelList) {
     var _this = this;
     var pubsub = this.pubsub;
 
+    if (!Array.isArray(channelList)) {
+        channelList = [channelList];
+    }
+
     return Promise.try(function() {
         var promiseList = [];
         channelList.forEach(function (channelId) {
@@ -86,10 +132,11 @@ PushApi.prototype.subscribe = function(channelList) {
                     if (err) {
                         return reject(err);
                     }
+                    // debug('Subscribe %s', channelId);
                     resolve();
                 });
             }).catch(function (err) {
-                debug('Subscribe error %j', err);
+                debug('Subscribe error %s %j', channelId, err);
 
                 throw 'Subscribe error!';
             });
@@ -106,6 +153,10 @@ PushApi.prototype.unSubscribe = function(channelList) {
     var _this = this;
     var pubsub = this.pubsub;
 
+    if (!Array.isArray(channelList)) {
+        channelList = [channelList];
+    }
+
     return Promise.try(function() {
         var promiseList = [];
         channelList.forEach(function (channelId) {
@@ -115,11 +166,11 @@ PushApi.prototype.unSubscribe = function(channelList) {
                     if (err) {
                         return reject(err);
                     }
-                    debug('Unsubscribed! %s', channelId);
+                    // debug('Unsubscribed! %s', channelId);
                     resolve();
                 });
             }).catch(function (err) {
-                debug('Unsubscribe error %j', err);
+                debug('Unsubscribe error %s %j', channelId, err);
 
                 throw 'Unsubscribe error!';
             });

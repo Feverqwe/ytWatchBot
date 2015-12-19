@@ -248,9 +248,6 @@ Checker.prototype.onNewVideo = function(videoItem) {
     }
 
     if (!chatIdList.length) {
-        /*if (videoItem._service === 'youtube' && /^UC/.test(videoItem._channelName)) {
-            return _this.gOptions.pushApi.unSubscribe([videoItem._channelName]);
-        }*/
         return;
     }
 
@@ -343,7 +340,7 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
     var queue = Promise.resolve();
 
     if (!filterServiceChannelList) {
-        queue.then(function() {
+        queue = queue.then(function() {
             return _this.cleanStateList().catch(function (err) {
                 debug('cleanStateList error! %j', err);
             });
@@ -373,14 +370,7 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
                 }.bind(null, filterChannelList));
 
                 if (!channelList.length) {
-                    filterChannelList.forEach(function(channelId) {
-                        if (!/^UC/.test(channelId)) {
-                            return;
-                        }
-                        _this.gOptions.pushApi.unSubscribe([channelId]).catch(function(err) {
-                            debug('unSubscribe error! %s', err);
-                        });
-                    });
+                    _this.gOptions.events.emit('unSubscribe', filterChannelList);
                 }
             }
 

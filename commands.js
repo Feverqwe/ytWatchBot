@@ -34,15 +34,10 @@ var commands = {
         var chatList = _this.gOptions.storage.chatList;
 
         return _this.gOptions.services[service].getChannelName(channelName).then(function(channelName) {
-            if (service !== 'youtube') {
-                return channelName;
+            if (service === 'youtube') {
+                _this.gOptions.events.emit('subscribe', channelName);
             }
-
-            return _this.gOptions.services.youtube.getChannelId(channelName).then(function(channelId) {
-                return _this.gOptions.pushApi.subscribe([channelId]).then(function() {
-                    return channelName;
-                });
-            });
+            return channelName;
         }).then(function (channelName) {
             var chatItem = chatList[chatId] = chatList[chatId] || {};
             chatItem.chatId = chatId;
@@ -218,6 +213,10 @@ var commands = {
             if (Object.keys(chatItem.serviceList).length === 0) {
                 delete chatList[chatId];
             }
+        }
+
+        if (service === 'youtube') {
+            _this.gOptions.events.emit('unSubscribe', channelName);
         }
 
         return base.storage.set({chatList: chatList}).then(function () {
