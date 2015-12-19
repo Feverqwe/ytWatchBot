@@ -215,10 +215,6 @@ var commands = {
             }
         }
 
-        if (service === 'youtube') {
-            _this.gOptions.events.emit('unSubscribe', channelName);
-        }
-
         return base.storage.set({chatList: chatList}).then(function () {
             return _this.gOptions.bot.sendMessage(
                 chatId,
