@@ -276,7 +276,6 @@ Checker.prototype.cleanStateList = function() {
     var currentService = null;
     var stateList = _this.gOptions.storage.stateList;
 
-    var timeout = Date.now() - 3 * 24 * 60 * 60 * 1000;
     for (var service in serviceChannelList) {
         if (!serviceChannelList.hasOwnProperty(service)) {
             continue;
@@ -299,12 +298,7 @@ Checker.prototype.cleanStateList = function() {
         });
 
         for (var channelId in serviceObj) {
-            var channelObj = serviceObj[channelId] || {};
-
-            if (channelIdList.indexOf(channelId) === -1 ||
-                !channelObj.lastRequestTime ||
-                channelObj.lastRequestTime < timeout
-            ) {
+            if (channelIdList.indexOf(channelId) === -1) {
                 delete serviceObj[channelId];
                 debug('Removed from stateList %s', channelId);
             }
