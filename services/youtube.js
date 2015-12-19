@@ -20,6 +20,32 @@ Youtube = function(options) {
     });
 };
 
+Youtube.prototype.clean = function(channelIdList) {
+    "use strict";
+    var _this = this;
+    var userIdToChannelId = _this.config.userIdToChannelId;
+    var channelIdToTitle = _this.config.channelIdToTitle;
+
+    for (var userId in userIdToChannelId) {
+        if (channelIdList.indexOf(userId) === -1) {
+            delete userIdToChannelId[userId];
+            debug('Removed from userIdToChannelId %s', userId);
+        }
+    }
+
+    for (var channelId in channelIdToTitle) {
+        if (channelIdList.indexOf(channelId) === -1) {
+            delete channelIdToTitle[channelId];
+            debug('Removed from channelIdToTitle %s', channelId);
+        }
+    }
+
+    return base.storage.set({
+        userIdToChannelId: userIdToChannelId,
+        channelIdToTitle: channelIdToTitle
+    });
+};
+
 Youtube.prototype.apiNormalization = function(userId, data) {
     "use strict";
     var _this = this;
@@ -87,9 +113,15 @@ Youtube.prototype.apiNormalization = function(userId, data) {
     });
 
     var stateList = this.gOptions.storage.stateList;
-    var serviceObj = stateList.youtube;
-    var channelObj = serviceObj && serviceObj[userId];
-    if (channelObj && lastPubTime) {
+    if (lastPubTime) {
+        var serviceObj = stateList.youtube;
+        if (!serviceObj) {
+            serviceObj = stateList.youtube = {};
+        }
+        var channelObj = serviceObj[userId];
+        if (!channelObj) {
+            channelObj = serviceObj[userId] = {};
+        }
         channelObj.lastRequestTime = lastPubTime + 1000;
     }
 

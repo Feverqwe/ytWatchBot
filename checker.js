@@ -60,16 +60,9 @@ Checker.prototype.getChannelList = function() {
     }
 
     for (service in serviceList) {
-        var serviceObj = stateList[service];
-        if (!serviceObj) {
-            serviceObj = stateList[service] = {};
-        }
-
+        var serviceObj = stateList[service] || {};
         serviceList[service] = serviceList[service].map(function(channelId) {
-            var channelObj = serviceObj[channelId];
-            if (!channelObj) {
-                channelObj = serviceObj[channelId] = {};
-            }
+            var channelObj = serviceObj[channelId] || {};
 
             return base.extend({}, channelObj, {
                 channelId: channelId
@@ -278,6 +271,56 @@ Checker.prototype.notifyAll = function(videoList) {
     return Promise.all(promiseList);
 };
 
+Checker.prototype.cleanStateList = function() {
+    "use strict";
+    var _this = this;
+    var serviceChannelList = _this.getChannelList();
+    var services = _this.gOptions.services;
+    var currentService = null;
+    var stateList = _this.gOptions.storage.stateList;
+
+    var timeout = Date.now() - 3 * 24 * 60 * 60 * 1000;
+    for (var service in serviceChannelList) {
+        if (!serviceChannelList.hasOwnProperty(service)) {
+            continue;
+        }
+
+        currentService = services[service];
+        if (!currentService) {
+            debug('Service "%s" is not found!', service);
+            continue;
+        }
+
+        var channelList = serviceChannelList[service];
+        var serviceObj = stateList[service] || {};
+
+        var channelIdList = [];
+
+        channelList.forEach(function(item) {
+            var channelId = item.channelId;
+            channelIdList.push(channelId);
+        });
+
+        for (var channelId in serviceObj) {
+            var channelObj = serviceObj[channelId] || {};
+
+            if (channelIdList.indexOf(channelId) === -1 ||
+                !channelObj.lastRequestTime ||
+                channelObj.lastRequestTime < timeout
+            ) {
+                delete serviceObj[channelId];
+                debug('Removed from stateList %s', channelId);
+            }
+        }
+
+        if (currentService.clean) {
+            currentService.clean(channelIdList);
+        }
+    }
+
+    return base.storage.set({stateList: stateList});
+};
+
 Checker.prototype.updateList = function(filterServiceChannelList) {
     "use strict";
     var _this = this;
@@ -297,11 +340,19 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
         return _this.notifyAll(videoList);
     };
 
+    var queue = Promise.resolve();
+
+    if (!filterServiceChannelList) {
+        queue.then(function() {
+            return _this.cleanStateList().catch(function (err) {
+                debug('cleanStateList error! %j', err);
+            });
+        });
+    }
+
     return Promise.try(function() {
         var serviceChannelList = _this.getChannelList();
         var services = _this.gOptions.services;
-
-        var queue = Promise.resolve();
 
         for (var service in serviceChannelList) {
             if (!serviceChannelList.hasOwnProperty(service)) {
