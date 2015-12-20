@@ -17,24 +17,7 @@ var PushApi = function(options) {
     this.pubsub = pubSubHubbub.createServer(this.gOptions.config.push);
 
     this.onReady = new Promise(function(resolve) {
-        _this.initListener(function() {
-            var promise = Promise.try(function() {
-                var channelIdList = [];
-                var promiseList = [];
-                var ytChannelList = options.checker.getChannelList().youtube || [];
-                ytChannelList.map(function(item) {
-                    var promise = options.services.youtube.getChannelId(item.channelId).then(function(channelId) {
-                        channelIdList.push(channelId);
-                    });
-                    promiseList.push(promise);
-                });
-
-                return Promise.all(promiseList).then(function() {
-                    return _this.subscribe(channelIdList);
-                });
-            });
-            resolve(promise);
-        });
+        _this.initListener(resolve);
     });
 
     _this.gOptions.events.on('subscribe', function(channelList) {

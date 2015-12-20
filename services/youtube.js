@@ -20,21 +20,21 @@ Youtube = function(options) {
     });
 };
 
-Youtube.prototype.clean = function(channelIdList) {
+Youtube.prototype.clean = function(channelList) {
     "use strict";
     var _this = this;
     var userIdToChannelId = _this.config.userIdToChannelId;
     var channelIdToTitle = _this.config.channelIdToTitle;
 
     for (var userId in userIdToChannelId) {
-        if (channelIdList.indexOf(userId) === -1) {
+        if (channelList.indexOf(userId) === -1) {
             delete userIdToChannelId[userId];
             debug('Removed from userIdToChannelId %s', userId);
         }
     }
 
     for (var channelId in channelIdToTitle) {
-        if (channelIdList.indexOf(channelId) === -1) {
+        if (channelList.indexOf(channelId) === -1) {
             delete channelIdToTitle[channelId];
             debug('Removed from channelIdToTitle %s', channelId);
         }

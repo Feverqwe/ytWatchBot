@@ -341,6 +341,19 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
     var stateList = this.gOptions.storage.stateList;
 
     var onGetVideoList = function(videoList) {
+        if (!filterServiceChannelList) {
+            var subscribeList = [];
+            videoList.forEach(function(item) {
+                var channelName = item._channelName;
+                if (item._service === 'youtube' && subscribeList.indexOf(channelName) === -1) {
+                    subscribeList.push(channelName);
+                }
+            });
+            if (subscribeList.length) {
+                _this.gOptions.events.emit('subscribe', subscribeList);
+            }
+        }
+
         videoList.sort(function(a, b) {
             var aDate = new Date(a.publishedAt);
             var bDate = new Date(b.publishedAt);
