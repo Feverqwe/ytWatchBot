@@ -394,7 +394,7 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
             var channelList = JSON.parse(JSON.stringify(serviceChannelList[service]));
 
             var filterChannelList = filterServiceChannelList && filterServiceChannelList[service];
-            if (filterChannelList) {
+            if (service === 'youtube' && filterChannelList) {
                 channelList = channelList.filter(function(filterChannelList, item) {
                    return filterChannelList.indexOf(item.channelId) !== -1;
                 }.bind(null, filterChannelList));
