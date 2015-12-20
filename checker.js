@@ -350,6 +350,7 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
                 }
             });
             if (subscribeList.length) {
+                debug('Subscribed %s channels! %j', subscribeList.length, subscribeList);
                 _this.gOptions.events.emit('subscribe', subscribeList);
             }
         }
