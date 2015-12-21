@@ -1,6 +1,6 @@
 {
   "token": "",
-  "interval": 10,
+  "interval": 360,
   "botanToken": "",
   "ytToken": "",
   "checkOnRun": false,
