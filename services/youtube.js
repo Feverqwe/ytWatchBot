@@ -64,12 +64,23 @@ Youtube.prototype.saveState = function() {
     });
 };
 
-Youtube.prototype.apiNormalization = function(userId, data) {
+Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastRequestTime) {
     "use strict";
     var _this = this;
     if (!data || !Array.isArray(data.items)) {
         debug('Response is empty! %j', data);
         throw 'Response is empty!';
+    }
+
+    var stateList = this.config.stateList;
+    var channelObj = stateList[userId];
+    if (!channelObj) {
+        channelObj = stateList[userId] = {}
+    }
+
+    var videoIdObj = channelObj.videoIdList;
+    if (!videoIdObj) {
+        videoIdObj = channelObj.videoIdList = {}
     }
 
     var lastPubTime = 0;
@@ -112,6 +123,12 @@ Youtube.prototype.apiNormalization = function(userId, data) {
             return;
         }
 
+        if (videoIdObj[videoId]) {
+            return;
+        }
+
+        videoIdObj[videoId] = Math.round(Date.now() / 1000);
+
         var item = {
             _service: 'youtube',
             _channelName: userId,
@@ -130,13 +147,18 @@ Youtube.prototype.apiNormalization = function(userId, data) {
         videoList.push(item);
     });
 
-    var stateList = this.config.stateList;
     if (lastPubTime) {
-        var channelObj = stateList[userId];
-        if (!channelObj) {
-            channelObj = stateList[userId] = {};
-        }
         channelObj.lastRequestTime = lastPubTime + 1000;
+    }
+
+    if (isFullCheck) {
+        lastRequestTime = Math.round(lastRequestTime / 1000);
+        for (var videoId in videoIdObj) {
+            var addTime = videoIdObj[videoId];
+            if (addTime < lastRequestTime) {
+                delete videoIdObj[videoId];
+            }
+        }
     }
 
     return videoList;
@@ -243,8 +265,11 @@ Youtube.prototype.getChannelId = function(userId) {
     });
 };
 
-Youtube.prototype.getVideoList = function(userList) {
+Youtube.prototype.getVideoList = function(userList, isFullCheck) {
     "use strict";
+    //todo: rm
+    isFullCheck = false;
+
     var _this = this;
     return Promise.resolve().then(function() {
         if (!userList.length) {
@@ -256,8 +281,8 @@ Youtube.prototype.getVideoList = function(userList) {
         var requestList = userList.map(function(userId) {
             var stateItem = _this.config.stateList[userId];
             var lastRequestTime = stateItem && stateItem.lastRequestTime;
-            if (!lastRequestTime) {
-                lastRequestTime = Date.now() - 1 * 24 * 60 * 60 * 1000;
+            if (isFullCheck || !lastRequestTime) {
+                lastRequestTime = Date.now() - 6 * 60 * 60 * 1000;
             }
             var publishedAfter = new Date(lastRequestTime).toISOString();
             return _this.getChannelId(userId).then(function(channelId) {
@@ -277,7 +302,7 @@ Youtube.prototype.getVideoList = function(userList) {
                     response = response.body;
 
                     return Promise.resolve().then(function() {
-                        return _this.apiNormalization(userId, response);
+                        return _this.apiNormalization(userId, response, isFullCheck, lastRequestTime);
                     }).then(function(stream) {
                         streamList.push.apply(streamList, stream);
                     });

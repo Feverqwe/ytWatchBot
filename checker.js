@@ -312,8 +312,10 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
     "use strict";
     var _this = this;
 
+    var isFullCheck = !filterServiceChannelList;
+
     var onGetVideoList = function(videoList) {
-        if (!filterServiceChannelList) {
+        if (isFullCheck) {
             var subscribeList = [];
             videoList.forEach(function(item) {
                 var channelName = item._channelName;
@@ -342,7 +344,7 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
 
     var queue = Promise.resolve();
 
-    if (!filterServiceChannelList) {
+    if (isFullCheck) {
         queue = queue.then(function() {
             return _this.cleanServices().catch(function (err) {
                 debug('cleanServices error! %j', err);
@@ -383,7 +385,7 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
                     var arr = channelList.splice(0, 100);
                     (function(arr) {
                         var videoListPromise = (function getVideoList(arr, retry) {
-                            return currentService.getVideoList(arr).catch(function(err) {
+                            return currentService.getVideoList(arr, isFullCheck).catch(function(err) {
                                 retry++;
                                 if (retry >= 5) {
                                     debug("Request stream list %s error! %s", service, err);
