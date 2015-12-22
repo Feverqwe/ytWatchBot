@@ -13,10 +13,16 @@ Youtube = function(options) {
     this.gOptions = options;
     this.config = {};
 
-    this.onReady = base.storage.get(['userIdToChannelId', 'channelIdToTitle']).then(function(storage) {
+    this.onReady = base.storage.get(['userIdToChannelId', 'channelIdToTitle', 'stateList']).then(function(storage) {
         _this.config.token = options.config.ytToken;
         _this.config.userIdToChannelId = storage.userIdToChannelId || {};
         _this.config.channelIdToTitle = storage.channelIdToTitle || {};
+        _this.config.stateList = storage.stateList || {};
+
+        //todo rm me!
+        if (_this.config.stateList.youtube) {
+            _this.config.stateList = _this.config.stateList.youtube;
+        }
     });
 };
 
@@ -25,6 +31,7 @@ Youtube.prototype.clean = function(channelList) {
     var _this = this;
     var userIdToChannelId = _this.config.userIdToChannelId;
     var channelIdToTitle = _this.config.channelIdToTitle;
+    var stateList = _this.config.stateList;
 
     for (var userId in userIdToChannelId) {
         if (channelList.indexOf(userId) === -1) {
@@ -40,9 +47,25 @@ Youtube.prototype.clean = function(channelList) {
         }
     }
 
+    for (var channelId in stateList) {
+        if (channelList.indexOf(channelId) === -1) {
+            delete stateList[channelId];
+            debug('Removed from stateList %s', channelId);
+        }
+    }
+
     return base.storage.set({
         userIdToChannelId: userIdToChannelId,
-        channelIdToTitle: channelIdToTitle
+        channelIdToTitle: channelIdToTitle,
+        stateList: stateList
+    });
+};
+
+Youtube.prototype.saveState = function() {
+    "use strict";
+    var stateList = this.config.stateList;
+    return base.storage.set({
+        stateList: stateList
     });
 };
 
@@ -112,15 +135,11 @@ Youtube.prototype.apiNormalization = function(userId, data) {
         videoList.push(item);
     });
 
-    var stateList = this.gOptions.storage.stateList;
+    var stateList = this.config.stateList;
     if (lastPubTime) {
-        var serviceObj = stateList.youtube;
-        if (!serviceObj) {
-            serviceObj = stateList.youtube = {};
-        }
-        var channelObj = serviceObj[userId];
+        var channelObj = stateList[userId];
         if (!channelObj) {
-            channelObj = serviceObj[userId] = {};
+            channelObj = stateList[userId] = {};
         }
         channelObj.lastRequestTime = lastPubTime + 1000;
     }
@@ -239,9 +258,9 @@ Youtube.prototype.getVideoList = function(userList) {
 
         var streamList = [];
 
-        var requestList = userList.map(function(item) {
-            var userId = item.channelId;
-            var lastRequestTime = item.lastRequestTime;
+        var requestList = userList.map(function(userId) {
+            var stateItem = _this.config.stateList[userId];
+            var lastRequestTime = stateItem && stateItem.lastRequestTime;
             if (!lastRequestTime) {
                 lastRequestTime = Date.now() - 1 * 24 * 60 * 60 * 1000;
             }

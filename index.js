@@ -39,7 +39,7 @@ var Daemon = require('./daemon');
  * preview: string,
  * rateMe: string
  * },
- * storage: {chatList: {}, stateList: Array},
+ * storage: {chatList: {}},
  * serviceList: string[],
  * serviceToTitle: {goodgame: string, twitch: string, youtube: string, hitbox: string}}
  * }
@@ -48,8 +48,7 @@ var options = {
     config: {},
     language: {},
     storage: {
-        chatList: {},
-        stateList: {}
+        chatList: {}
     },
     serviceList: ['youtube'],
     serviceToTitle: {

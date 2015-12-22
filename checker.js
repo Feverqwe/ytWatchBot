@@ -42,7 +42,6 @@ Checker.prototype.getChannelList = function() {
     "use strict";
     var serviceList = {};
     var chatList = this.gOptions.storage.chatList;
-    var stateList = this.gOptions.storage.stateList;
 
     for (var chatId in chatList) {
         var chatItem = chatList[chatId];
@@ -57,17 +56,6 @@ Checker.prototype.getChannelList = function() {
                 channelList.push(channelName);
             }
         }
-    }
-
-    for (service in serviceList) {
-        var serviceObj = stateList[service] || {};
-        serviceList[service] = serviceList[service].map(function(channelId) {
-            var channelObj = serviceObj[channelId] || {};
-
-            return base.extend({}, channelObj, {
-                channelId: channelId
-            });
-        });
     }
 
     return serviceList;
@@ -291,54 +279,38 @@ Checker.prototype.notifyAll = function(videoList) {
     return Promise.all(promiseList);
 };
 
-Checker.prototype.cleanStateList = function() {
+Checker.prototype.cleanServices = function() {
     "use strict";
     var _this = this;
     var serviceChannelList = _this.getChannelList();
     var services = _this.gOptions.services;
-    var currentService = null;
-    var stateList = _this.gOptions.storage.stateList;
+
+    var promiseList = [];
 
     for (var service in serviceChannelList) {
         if (!serviceChannelList.hasOwnProperty(service)) {
             continue;
         }
 
-        currentService = services[service];
+        var currentService = services[service];
         if (!currentService) {
             debug('Service "%s" is not found!', service);
             continue;
         }
 
         var channelList = serviceChannelList[service];
-        var serviceObj = stateList[service] || {};
-
-        var channelIdList = [];
-
-        channelList.forEach(function(item) {
-            var channelId = item.channelId;
-            channelIdList.push(channelId);
-        });
-
-        for (var channelId in serviceObj) {
-            if (channelIdList.indexOf(channelId) === -1) {
-                delete serviceObj[channelId];
-                debug('Removed from stateList %s', channelId);
-            }
-        }
 
         if (currentService.clean) {
-            currentService.clean(channelIdList);
+            promiseList.push(currentService.clean(channelList));
         }
     }
 
-    return base.storage.set({stateList: stateList});
+    return Promise.all(promiseList);
 };
 
 Checker.prototype.updateList = function(filterServiceChannelList) {
     "use strict";
     var _this = this;
-    var stateList = this.gOptions.storage.stateList;
 
     var onGetVideoList = function(videoList) {
         if (!filterServiceChannelList) {
@@ -372,8 +344,8 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
 
     if (!filterServiceChannelList) {
         queue = queue.then(function() {
-            return _this.cleanStateList().catch(function (err) {
-                debug('cleanStateList error! %j', err);
+            return _this.cleanServices().catch(function (err) {
+                debug('cleanServices error! %j', err);
             });
         });
     }
@@ -387,56 +359,61 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
                 continue;
             }
 
-            if (!services[service]) {
-                debug('Service "%s" is not found!', service);
-                continue;
-            }
-
-            var channelList = JSON.parse(JSON.stringify(serviceChannelList[service]));
-
-            var filterChannelList = filterServiceChannelList && filterServiceChannelList[service];
-            if (service === 'youtube' && filterChannelList) {
-                channelList = channelList.filter(function(filterChannelList, item) {
-                   return filterChannelList.indexOf(item.channelId) !== -1;
-                }.bind(null, filterChannelList));
-
-                if (!channelList.length) {
-                    _this.gOptions.events.emit('unSubscribe', filterChannelList);
+            (function(service){
+                var currentService = services[service];
+                if (!currentService) {
+                    debug('Service "%s" is not found!', service);
+                    return;
                 }
-            }
 
-            while (channelList.length) {
-                var arr = channelList.splice(0, 100);
-                (function(service, arr) {
-                    var videoListPromise = (function getVideoList(service, arr, retry) {
-                        return services[service].getVideoList(arr).catch(function(err) {
-                            retry++;
-                            if (retry >= 5) {
-                                debug("Request stream list %s error! %s", service, err);
-                                return [];
-                            }
+                var channelList = JSON.parse(JSON.stringify(serviceChannelList[service]));
 
-                            return new Promise(function(resolve) {
-                                setTimeout(resolve, 5 * 1000);
-                            }).then(function() {
-                                debug("Retry %s request stream list %s! %s", retry, service, err);
-                                return getVideoList(service, arr, retry);
+                var filterChannelList = filterServiceChannelList && filterServiceChannelList[service];
+                if (service === 'youtube' && filterChannelList) {
+                    channelList = channelList.filter(function(filterChannelList, channelId) {
+                        return filterChannelList.indexOf(channelId) !== -1;
+                    }.bind(null, filterChannelList));
+
+                    if (!channelList.length) {
+                        _this.gOptions.events.emit('unSubscribe', filterChannelList);
+                    }
+                }
+
+                while (channelList.length) {
+                    var arr = channelList.splice(0, 100);
+                    (function(arr) {
+                        var videoListPromise = (function getVideoList(arr, retry) {
+                            return currentService.getVideoList(arr).catch(function(err) {
+                                retry++;
+                                if (retry >= 5) {
+                                    debug("Request stream list %s error! %s", service, err);
+                                    return [];
+                                }
+
+                                return new Promise(function(resolve) {
+                                    setTimeout(resolve, 5 * 1000);
+                                }).then(function() {
+                                    debug("Retry %s request stream list %s! %s", retry, service, err);
+                                    return getVideoList(arr, retry);
+                                });
                             });
-                        });
-                    })(service, arr, 0);
+                        })(arr, 0);
 
-                    queue = queue.finally(function() {
-                        return videoListPromise.then(function(videoList) {
-                            return onGetVideoList(videoList);
-                        })
-                    });
-                })(service, arr);
-            }
+                        queue = queue.finally(function() {
+                            return videoListPromise.then(function(videoList) {
+                                return onGetVideoList(videoList);
+                            })
+                        });
+                    })(arr);
+                }
+
+                queue = queue.finally(function () {
+                    return currentService.saveState && currentService.saveState();
+                });
+            })(service);
         }
 
-        return queue.finally(function() {
-            return base.storage.set({stateList: stateList});
-        });
+        return queue;
     });
 };
 
