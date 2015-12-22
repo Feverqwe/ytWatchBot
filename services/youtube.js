@@ -42,10 +42,10 @@ Youtube.prototype.clean = function(channelList) {
         }
     }
 
-    for (var channelId in stateList) {
-        if (channelList.indexOf(channelId) === -1) {
-            delete stateList[channelId];
-            debug('Removed from stateList %s', channelId);
+    for (var channelName in stateList) {
+        if (channelList.indexOf(channelName) === -1) {
+            delete stateList[channelName];
+            debug('Removed from stateList %s', channelName);
         }
     }
 
