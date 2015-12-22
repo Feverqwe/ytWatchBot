@@ -370,9 +370,9 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
 
                 var filterChannelList = filterServiceChannelList && filterServiceChannelList[service];
                 if (service === 'youtube' && filterChannelList) {
-                    channelList = channelList.filter(function(filterChannelList, channelId) {
-                        return filterChannelList.indexOf(channelId) !== -1;
-                    }.bind(null, filterChannelList));
+                    channelList = filterChannelList.filter(function(channelName) {
+                        return channelList.indexOf(channelName) !== -1;
+                    });
 
                     if (!channelList.length) {
                         _this.gOptions.events.emit('unSubscribe', filterChannelList);
