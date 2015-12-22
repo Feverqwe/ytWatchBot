@@ -18,11 +18,6 @@ Youtube = function(options) {
         _this.config.userIdToChannelId = storage.userIdToChannelId || {};
         _this.config.channelIdToTitle = storage.channelIdToTitle || {};
         _this.config.stateList = storage.stateList || {};
-
-        //todo rm me!
-        if (_this.config.stateList.youtube) {
-            _this.config.stateList = _this.config.stateList.youtube;
-        }
     });
 };
 
