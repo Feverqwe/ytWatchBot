@@ -28,9 +28,12 @@ Youtube.prototype.clean = function(channelList) {
     var channelIdToTitle = _this.config.channelIdToTitle;
     var stateList = _this.config.stateList;
 
+    var needSave = false;
+
     for (var userId in userIdToChannelId) {
         if (channelList.indexOf(userId) === -1) {
             delete userIdToChannelId[userId];
+            needSave = true;
             debug('Removed from userIdToChannelId %s', userId);
         }
     }
@@ -38,6 +41,7 @@ Youtube.prototype.clean = function(channelList) {
     for (var channelId in channelIdToTitle) {
         if (channelList.indexOf(channelId) === -1) {
             delete channelIdToTitle[channelId];
+            needSave = true;
             debug('Removed from channelIdToTitle %s', channelId);
         }
     }
@@ -45,15 +49,24 @@ Youtube.prototype.clean = function(channelList) {
     for (var channelName in stateList) {
         if (channelList.indexOf(channelName) === -1) {
             delete stateList[channelName];
+            needSave = true;
             debug('Removed from stateList %s', channelName);
         }
     }
 
-    return base.storage.set({
-        userIdToChannelId: userIdToChannelId,
-        channelIdToTitle: channelIdToTitle,
-        stateList: stateList
-    });
+    var promise = Promise.resolve();
+
+    if (needSave) {
+        promise = promise.then(function() {
+            return base.storage.set({
+                userIdToChannelId: userIdToChannelId,
+                channelIdToTitle: channelIdToTitle,
+                stateList: stateList
+            });
+        });
+    }
+
+    return promise;
 };
 
 Youtube.prototype.saveState = function() {
