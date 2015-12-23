@@ -175,6 +175,14 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
         }
     }*/
 
+    if (Object.keys(videoIdObj).length === 0) {
+        delete channelObj.videoIdList;
+    }
+
+    if (Object.keys(channelObj).length === 0) {
+        delete stateList[userId];
+    }
+
     return videoList;
 };
 
