@@ -384,7 +384,7 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
                 while (channelList.length) {
                     var arr = channelList.splice(0, 100);
                     (function(arr) {
-                        var videoListPromise = (function getVideoList(arr, retry) {
+                        var videoListPromise = (function getVideoList(retry) {
                             return currentService.getVideoList(arr, isFullCheck).catch(function(err) {
                                 retry++;
                                 if (retry >= 5) {
@@ -396,10 +396,10 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
                                     setTimeout(resolve, 5 * 1000);
                                 }).then(function() {
                                     debug("Retry %s request stream list %s! %s", retry, service, err);
-                                    return getVideoList(arr, retry);
+                                    return getVideoList(retry);
                                 });
                             });
-                        })(arr, 0);
+                        })(0);
 
                         queue = queue.finally(function() {
                             return videoListPromise.then(function(videoList) {
