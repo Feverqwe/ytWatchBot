@@ -164,7 +164,8 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
         channelObj.lastRequestTime = lastPubTime + 1000;
     }
 
-    if (isFullCheck) {
+    // todo uncomment me!
+    /*if (isFullCheck) {
         lastRequestTime = Math.round(lastRequestTime / 1000);
         for (var videoId in videoIdObj) {
             var addTime = videoIdObj[videoId];
@@ -172,7 +173,7 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
                 delete videoIdObj[videoId];
             }
         }
-    }
+    }*/
 
     return videoList;
 };
