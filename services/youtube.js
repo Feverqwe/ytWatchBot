@@ -267,9 +267,6 @@ Youtube.prototype.getChannelId = function(userId) {
 
 Youtube.prototype.getVideoList = function(userList, isFullCheck) {
     "use strict";
-    //todo: rm
-    isFullCheck = false;
-
     var _this = this;
     return Promise.resolve().then(function() {
         if (!userList.length) {
@@ -282,7 +279,7 @@ Youtube.prototype.getVideoList = function(userList, isFullCheck) {
             var stateItem = _this.config.stateList[userId];
             var lastRequestTime = stateItem && stateItem.lastRequestTime;
             if (isFullCheck || !lastRequestTime) {
-                lastRequestTime = Date.now() - 6 * 60 * 60 * 1000;
+                lastRequestTime = Date.now() - _this.gOptions.config.interval * 60 * 1000;
             }
             var publishedAfter = new Date(lastRequestTime).toISOString();
             return _this.getChannelId(userId).then(function(channelId) {
