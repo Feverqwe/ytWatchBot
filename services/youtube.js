@@ -164,12 +164,11 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
         channelObj.lastRequestTime = lastPubTime + 1000;
     }
 
-    // todo uncomment me!
-    /*if (isFullCheck) {
+    /*todo: uncomment me!
+    if (isFullCheck && Object.keys(videoIdObj).length > 30) {
         lastRequestTime = Math.round(lastRequestTime / 1000);
         for (var videoId in videoIdObj) {
-            var addTime = videoIdObj[videoId];
-            if (addTime < lastRequestTime) {
+            if (videoIdObj[videoId] < lastRequestTime) {
                 delete videoIdObj[videoId];
             }
         }
