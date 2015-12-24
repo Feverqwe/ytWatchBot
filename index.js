@@ -37,7 +37,8 @@ var Daemon = require('./daemon');
  * users: string,
  * channels: string,
  * preview: string,
- * rateMe: string
+ * rateMe: string,
+ * selectGroupDelChannel: string
  * },
  * storage: {chatList: {}},
  * serviceList: string[],
