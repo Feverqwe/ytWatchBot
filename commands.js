@@ -401,7 +401,7 @@ var commands = {
         }
 
         if (data.length === 0) {
-            if (chatId < 0) {
+            if (chatId < 0 && false) {
                 return commands.groupDelete.apply(this, arguments);
             } else {
                 return waitChannelName();
