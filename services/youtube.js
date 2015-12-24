@@ -164,15 +164,14 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
         channelObj.lastRequestTime = lastPubTime + 1000;
     }
 
-    /*todo: uncomment me!
-    if (isFullCheck && Object.keys(videoIdObj).length > 30) {
+    if (isFullCheck) {
         lastRequestTime = Math.round(lastRequestTime / 1000);
         for (var videoId in videoIdObj) {
             if (videoIdObj[videoId] < lastRequestTime) {
                 delete videoIdObj[videoId];
             }
         }
-    }*/
+    }
 
     if (Object.keys(videoIdObj).length === 0) {
         delete channelObj.videoIdList;
@@ -300,7 +299,7 @@ Youtube.prototype.getVideoList = function(userList, isFullCheck) {
             var stateItem = _this.config.stateList[userId];
             var lastRequestTime = stateItem && stateItem.lastRequestTime;
             if (isFullCheck || !lastRequestTime) {
-                lastRequestTime = Date.now() - _this.gOptions.config.interval * 60 * 1000;
+                lastRequestTime = Date.now() - _this.gOptions.config.interval * 2 * 60 * 1000;
             }
             var publishedAfter = new Date(lastRequestTime).toISOString();
             return _this.getChannelId(userId).then(function(channelId) {
