@@ -151,10 +151,6 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
 
         videoIdObj[videoId] = Math.round(Date.now() / 1000);
 
-        if (isFullCheck && lastRequestTime > pubTime) {
-            return;
-        }
-
         var item = {
             _service: 'youtube',
             _channelName: userId,
@@ -176,7 +172,6 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
         channelObj.lastRequestTime = lastPubTime + 1000;
     }
 
-    /*todo: uncomment me
     if (isFullCheck) {
         lastRequestTime = Math.round(lastRequestTime / 1000);
         for (var videoId in videoIdObj) {
@@ -184,7 +179,7 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
                 delete videoIdObj[videoId];
             }
         }
-    }*/
+    }
 
     if (Object.keys(videoIdObj).length === 0) {
         delete channelObj.videoIdList;
@@ -316,20 +311,17 @@ Youtube.prototype.getVideoList = function(userList, isFullCheck) {
             }
             var publishedAfter = new Date(lastRequestTime).toISOString();
             return _this.getChannelId(userId).then(function(channelId) {
-                var qs = {
-                    part: 'snippet',
-                    channelId: channelId,
-                    maxResults: 50,
-                    fields: 'items(snippet)',
-                    key: _this.config.token
-                };
-                if (!isFullCheck) {
-                    qs.publishedAfter = publishedAfter;
-                }
                 return requestPromise({
                     method: 'GET',
                     url: 'https://www.googleapis.com/youtube/v3/activities',
-                    qs: qs,
+                    qs: {
+                        part: 'snippet',
+                        channelId: channelId,
+                        maxResults: 50,
+                        fields: 'items(snippet)',
+                        publishedAfter: publishedAfter,
+                        key: _this.config.token
+                    },
                     json: true
                 }).then(function(response) {
                     response = response.body;
