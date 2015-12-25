@@ -96,26 +96,35 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
         videoIdObj = channelObj.videoIdList = {}
     }
 
+    data.items = data.items.filter(function(origItem) {
+        var snippet = origItem.snippet;
+
+        if (!snippet) {
+            debug('Snippet is not found! %j', origItem);
+            return false;
+        }
+
+        if (!snippet.publishedAt) {
+            debug('publishedAt is not found! %j', origItem);
+            return false;
+        }
+
+        if (snippet.type !== 'upload') {
+            return false;
+        }
+
+        return true;
+    });
+
     var lastPubTime = 0;
 
     var videoList = [];
     data.items.forEach(function(origItem) {
         var snippet = origItem.snippet;
 
-        if (!snippet) {
-            debug('Snippet is not found! %j', origItem);
-            return;
-        }
-
-        if (snippet.publishedAt) {
-            var pubTime = new Date(snippet.publishedAt).getTime();
-            if (pubTime && lastPubTime < pubTime) {
-                lastPubTime = pubTime;
-            }
-        }
-
-        if (snippet.type !== 'upload') {
-            return;
+        var pubTime = new Date(snippet.publishedAt).getTime();
+        if (lastPubTime < pubTime) {
+            lastPubTime = pubTime;
         }
 
         var previewUrl = null;
@@ -142,6 +151,10 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
 
         videoIdObj[videoId] = Math.round(Date.now() / 1000);
 
+        if (isFullCheck && lastRequestTime > pubTime) {
+            return;
+        }
+
         var item = {
             _service: 'youtube',
             _channelName: userId,
@@ -150,7 +163,6 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
             publishedAt: snippet.publishedAt,
             title: snippet.title,
             preview: previewUrl,
-            // description: snippet.description,
             channel: {
                 title: snippet.channelTitle,
                 id: snippet.channelId
@@ -164,6 +176,7 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
         channelObj.lastRequestTime = lastPubTime + 1000;
     }
 
+    /*todo: uncomment me
     if (isFullCheck) {
         lastRequestTime = Math.round(lastRequestTime / 1000);
         for (var videoId in videoIdObj) {
@@ -171,7 +184,7 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
                 delete videoIdObj[videoId];
             }
         }
-    }
+    }*/
 
     if (Object.keys(videoIdObj).length === 0) {
         delete channelObj.videoIdList;
@@ -303,17 +316,20 @@ Youtube.prototype.getVideoList = function(userList, isFullCheck) {
             }
             var publishedAfter = new Date(lastRequestTime).toISOString();
             return _this.getChannelId(userId).then(function(channelId) {
+                var qs = {
+                    part: 'snippet',
+                    channelId: channelId,
+                    maxResults: 50,
+                    fields: 'items(snippet)',
+                    key: _this.config.token
+                };
+                if (!isFullCheck) {
+                    qs.publishedAfter = publishedAfter;
+                }
                 return requestPromise({
                     method: 'GET',
                     url: 'https://www.googleapis.com/youtube/v3/activities',
-                    qs: {
-                        part: 'snippet',
-                        channelId: channelId,
-                        maxResults: 50,
-                        fields: 'items(snippet)',
-                        publishedAfter: publishedAfter,
-                        key: _this.config.token
-                    },
+                    qs: qs,
                     json: true
                 }).then(function(response) {
                     response = response.body;
