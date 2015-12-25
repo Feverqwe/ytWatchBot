@@ -145,11 +145,13 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
             return;
         }
 
-        if (videoIdObj[videoId]) {
-            return;
-        }
+        var isExists = !!videoIdObj[videoId];
 
         videoIdObj[videoId] = Math.round(Date.now() / 1000);
+
+        if (isExists) {
+            return;
+        }
 
         var item = {
             _service: 'youtube',
