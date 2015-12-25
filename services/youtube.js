@@ -307,7 +307,7 @@ Youtube.prototype.getVideoList = function(userList, isFullCheck) {
             var stateItem = _this.config.stateList[userId];
             var lastRequestTime = stateItem && stateItem.lastRequestTime;
             if (isFullCheck || !lastRequestTime) {
-                lastRequestTime = Date.now() - _this.gOptions.config.interval * 2 * 60 * 1000;
+                lastRequestTime = Date.now() - 3 * 24 * 60 * 60 * 1000;
             }
             var publishedAfter = new Date(lastRequestTime).toISOString();
             return _this.getChannelId(userId).then(function(channelId) {
