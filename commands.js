@@ -280,7 +280,8 @@ var commands = {
                 var info = responseMap[index];
                 if (!info) {
                     debug("Can't match delete channel %j", msg);
-                    return;
+                    msg.text = '/cancel delete';
+                    return _this.onMessage(msg);
                 }
 
                 data.push('"' + info.name + '"');
