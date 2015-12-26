@@ -435,8 +435,6 @@ Youtube.prototype.getChannelName = function(userId) {
 
             var channelTitle = snippet.channelTitle;
 
-            var localTitle = snippet.title;
-
             return Promise.try(function() {
                 if (!channelTitle || !/^UC/.test(userId)) {
                     return;
@@ -453,7 +451,6 @@ Youtube.prototype.getChannelName = function(userId) {
                 });
             }).then(function() {
                 _this.setChannelTitle(userId, channelTitle);
-                _this.setChannelLocalTitle(userId, localTitle);
 
                 return userId;
             });
