@@ -13,11 +13,12 @@ Youtube = function(options) {
     this.gOptions = options;
     this.config = {};
 
-    this.onReady = base.storage.get(['userIdToChannelId', 'channelIdToTitle', 'stateList']).then(function(storage) {
+    this.onReady = base.storage.get(['userIdToChannelId', 'channelIdToTitle', 'stateList', 'titleList']).then(function(storage) {
         _this.config.token = options.config.ytToken;
         _this.config.userIdToChannelId = storage.userIdToChannelId || {};
         _this.config.channelIdToTitle = storage.channelIdToTitle || {};
         _this.config.stateList = storage.stateList || {};
+        _this.config.titleList = storage.titleList || {};
     });
 };
 
@@ -26,6 +27,7 @@ Youtube.prototype.clean = function(channelList) {
     var _this = this;
     var userIdToChannelId = _this.config.userIdToChannelId;
     var channelIdToTitle = _this.config.channelIdToTitle;
+    var titleList = _this.config.titleList;
     var stateList = _this.config.stateList;
 
     var needSave = false;
@@ -46,6 +48,14 @@ Youtube.prototype.clean = function(channelList) {
         }
     }
 
+    for (var channelName in titleList) {
+        if (channelList.indexOf(channelName) === -1) {
+            delete titleList[channelName];
+            needSave = true;
+            debug('Removed from titleList %s', channelName);
+        }
+    }
+
     for (var channelName in stateList) {
         if (channelList.indexOf(channelName) === -1) {
             delete stateList[channelName];
@@ -61,7 +71,8 @@ Youtube.prototype.clean = function(channelList) {
             return base.storage.set({
                 userIdToChannelId: userIdToChannelId,
                 channelIdToTitle: channelIdToTitle,
-                stateList: stateList
+                stateList: stateList,
+                titleList: titleList
             });
         });
     }
@@ -153,6 +164,8 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
             return;
         }
 
+        _this.setChannelLocalTitle(userId, snippet.channelTitle);
+
         var item = {
             _service: 'youtube',
             _channelName: userId,
@@ -227,6 +240,29 @@ Youtube.prototype.getChannelTitle = function(channelId) {
     var channelIdToTitle = this.config.channelIdToTitle;
 
     return channelIdToTitle[channelId] || channelId;
+};
+
+Youtube.prototype.setChannelLocalTitle = function(channelId, channelTitle) {
+    "use strict";
+    var titleList = this.config.titleList;
+    if (!channelTitle) {
+        debug('Local channelTitle is empty! %s', channelId);
+        return;
+    }
+
+    if (titleList[channelId] === channelTitle) {
+        return;
+    }
+
+    titleList[channelId] = channelTitle;
+    base.storage.set({titleList: titleList});
+};
+
+Youtube.prototype.getChannelLocalTitle = function(channelId) {
+    "use strict";
+    var titleList = this.config.titleList;
+
+    return titleList[channelId] || this.getChannelTitle(channelId);
 };
 
 Youtube.prototype.searchChannelIdByTitle = function(channelTitle) {

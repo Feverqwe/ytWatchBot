@@ -209,6 +209,18 @@ module.exports.getChannelTitle = function(gOptions, service, channelName) {
     return title;
 };
 
+module.exports.getChannelLocalTitle = function(gOptions, service, channelName) {
+    "use strict";
+    var title = channelName;
+
+    var services = gOptions.services;
+    if (services[service].getChannelLocalTitle) {
+        title = services[service].getChannelLocalTitle(channelName);
+    }
+
+    return title;
+};
+
 module.exports.getChannelUrl = function(service, channelName) {
     "use strict";
     var url = '';

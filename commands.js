@@ -250,7 +250,7 @@ var commands = {
         for (var service in chatItem.serviceList) {
             var channelList = chatItem.serviceList[service];
             channelList.forEach(function(channelName) {
-                var title = base.getChannelTitle(_this.gOptions, service, channelName);
+                var title = base.getChannelLocalTitle(_this.gOptions, service, channelName);
 
                 if (!oneServiceMode) {
                     title += ' (' + _this.gOptions.serviceToTitle[service] + ')';
@@ -370,7 +370,7 @@ var commands = {
                     return base.markDownSanitize(channelName);
                 }
 
-                var title = base.getChannelTitle(_this.gOptions, service, channelName);
+                var title = base.getChannelLocalTitle(_this.gOptions, service, channelName);
 
                 return '[' + base.markDownSanitize(title, '[') + ']' + '(' + url + ')';
             });
