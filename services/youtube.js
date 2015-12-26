@@ -325,7 +325,7 @@ Youtube.prototype.getVideoList = function(userList, isFullCheck) {
                             channelId: channelId,
                             maxResults: 50,
                             pageToken: pageToken,
-                            fields: 'items(snippet)',
+                            fields: 'items/snippet,nextPageToken',
                             publishedAfter: publishedAfter,
                             key: _this.config.token
                         },
@@ -337,17 +337,17 @@ Youtube.prototype.getVideoList = function(userList, isFullCheck) {
                             items.push.apply(items, response.items)
                         }
 
-                        if (pageLimit > 0) {
+                        if (pageLimit < 0) {
                             throw 'Page limited!';
                         }
 
-                        if (response.pageToken) {
+                        if (response.nextPageToken) {
                             pageLimit--;
-                            return getPage(response.pageToken);
+                            return getPage(response.nextPageToken);
                         }
                     });
                 }).catch(function(err) {
-                    debug('Stream list item "%s" page "%s" response error! %s', userId, pageToken, err);
+                    debug('Stream list item "%s" page "%s" response error! %s', userId, pageToken || 0, err);
                 });
             };
 
