@@ -51,7 +51,7 @@ var commands = {
 
             channelList.push(channelName);
 
-            var title = base.getChannelTitle(_this.gOptions, service, channelName);
+            var title = base.getChannelLocalTitle(_this.gOptions, service, channelName);
             var url = base.getChannelUrl(service, channelName);
 
             var displayName = '['+base.markDownSanitize(title, '[')+']'+'('+url+')';
