@@ -312,30 +312,49 @@ Youtube.prototype.getVideoList = function(userList, isFullCheck) {
                 lastRequestTime = Date.now() - 3 * 24 * 60 * 60 * 1000;
             }
             var publishedAfter = new Date(lastRequestTime).toISOString();
-            return _this.getChannelId(userId).then(function(channelId) {
-                return requestPromise({
-                    method: 'GET',
-                    url: 'https://www.googleapis.com/youtube/v3/activities',
-                    qs: {
-                        part: 'snippet',
-                        channelId: channelId,
-                        maxResults: 50,
-                        fields: 'items(snippet)',
-                        publishedAfter: publishedAfter,
-                        key: _this.config.token
-                    },
-                    json: true
-                }).then(function(response) {
-                    response = response.body;
 
-                    return Promise.resolve().then(function() {
-                        return _this.apiNormalization(userId, response, isFullCheck, lastRequestTime);
-                    }).then(function(stream) {
-                        streamList.push.apply(streamList, stream);
+            var pageLimit = 100;
+            var items = [];
+            var getPage = function(pageToken) {
+                return _this.getChannelId(userId).then(function(channelId) {
+                    return requestPromise({
+                        method: 'GET',
+                        url: 'https://www.googleapis.com/youtube/v3/activities',
+                        qs: {
+                            part: 'snippet',
+                            channelId: channelId,
+                            maxResults: 50,
+                            pageToken: pageToken,
+                            fields: 'items(snippet)',
+                            publishedAfter: publishedAfter,
+                            key: _this.config.token
+                        },
+                        json: true
+                    }).then(function(response) {
+                        response = response.body;
+
+                        if (Array.isArray(response.items)) {
+                            items.push.apply(items, response.items)
+                        }
+
+                        if (pageLimit > 0) {
+                            throw 'Page limited!';
+                        }
+
+                        if (response.pageToken) {
+                            pageLimit--;
+                            return getPage(response.pageToken);
+                        }
                     });
+                }).catch(function(err) {
+                    debug('Stream list item "%s" page "%s" response error! %s', userId, pageToken, err);
                 });
-            }).catch(function(err) {
-                debug('Stream list item "%s" response error! %s', userId, err);
+            };
+
+            return getPage().then(function() {
+                return _this.apiNormalization(userId, {items: items}, isFullCheck, lastRequestTime);
+            }).then(function(stream) {
+                streamList.push.apply(streamList, stream);
             });
         });
 
