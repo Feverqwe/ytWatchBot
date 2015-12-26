@@ -265,6 +265,30 @@ Youtube.prototype.getChannelLocalTitle = function(channelId) {
     return titleList[channelId] || this.getChannelTitle(channelId);
 };
 
+Youtube.prototype.requestChannelLocalTitle = function(userId, channelId) {
+    "use strict";
+    var _this = this;
+    return requestPromise({
+        method: 'GET',
+        url: 'https://www.googleapis.com/youtube/v3/search',
+        qs: {
+            part: 'snippet',
+            channelId: channelId,
+            type: 'channel',
+            maxResults: 1,
+            fields: 'items/snippet',
+            key: _this.config.token
+        },
+        json: true
+    }).then(function(response) {
+        response = response.body;
+        var title = response && response.items && response.items[0] && response.items[0].snippet && response.items[0].snippet.title;
+        _this.setChannelLocalTitle(userId, title);
+    }).catch(function(err) {
+        debug('requestChannelLocalTitle userId "%s" channelId "%s" error! %s', userId, channelId, err);
+    });
+};
+
 Youtube.prototype.searchChannelIdByTitle = function(channelTitle) {
     "use strict";
     var _this = this;
@@ -449,6 +473,8 @@ Youtube.prototype.getChannelName = function(userId) {
                 }).catch(function() {
                     debug('Channel title "%s" is not equal userId "%s"', channelTitleLow, userId);
                 });
+            }).then(function() {
+                return _this.requestChannelLocalTitle(userId, channelId);
             }).then(function() {
                 _this.setChannelTitle(userId, channelTitle);
 
