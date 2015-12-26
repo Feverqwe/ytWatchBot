@@ -230,7 +230,7 @@ var commands = {
             );
         });
     },
-    delete: function (msg, channelName, serviceName) {
+    delete: function (msg) {
         "use strict";
         var _this = this;
         var chatId = msg.chat.id;
@@ -256,8 +256,10 @@ var commands = {
                     title += ' (' + _this.gOptions.serviceToTitle[service] + ')';
                 }
 
-                title = base.getDdblTitle(responseMap, title);
-                responseMap[title] = {name: channelName, service: service};
+                var index = btnList.length + 1;
+                title = index + '. ' + title;
+
+                responseMap[index] = {name: channelName, service: service};
 
                 btnList.push([title]);
             });
@@ -272,7 +274,10 @@ var commands = {
             };
 
             var onMessage = _this.stateList[chatId] = function (msg) {
-                var info = responseMap[msg.text];
+                var index = msg.text.match(/(\d+)/);
+                index = index && index[1];
+
+                var info = responseMap[index];
                 if (!info) {
                     debug("Can't match delete channel %j", msg);
                     return;
@@ -299,38 +304,7 @@ var commands = {
             });
         };
 
-        if (channelName) {
-            var msgText = channelName;
-            if (!oneServiceMode && serviceName) {
-                msgText += ' (' + serviceName + ')';
-            }
-
-            var info = responseMap[msgText];
-            if (!info) {
-                msgText = msgText.toLowerCase();
-                for (var msgTextItem in responseMap) {
-                    var infoItem = responseMap[msgTextItem];
-                    if (msgTextItem.toLowerCase() === msgText) {
-                        info = infoItem;
-                        break;
-                    }
-                }
-            }
-
-            if (info) {
-                data.push('"' + info.name + '"');
-                data.push('"' + info.service + '"');
-            } else {
-                debug('Delete channel is not found "%s" "%s"', channelName, serviceName);
-            }
-        }
-
-        if (data.length === 0) {
-            return waitChannelName();
-        } else {
-            msg.text = '/d ' + data.join(' ');
-            return _this.onMessage(msg);
-        }
+        return waitChannelName();
     },
     cancel: function (msg, arg1) {
         "use strict";
