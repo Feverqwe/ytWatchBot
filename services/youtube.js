@@ -268,6 +268,12 @@ Youtube.prototype.getChannelLocalTitle = function(channelId) {
 Youtube.prototype.requestChannelLocalTitle = function(userId, channelId) {
     "use strict";
     var _this = this;
+    var titleList = this.config.titleList;
+
+    if (titleList[userId]) {
+        return Promise.resolve();
+    }
+
     return requestPromise({
         method: 'GET',
         url: 'https://www.googleapis.com/youtube/v3/search',
