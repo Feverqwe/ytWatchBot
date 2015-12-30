@@ -148,7 +148,7 @@ var commands = {
             }, 3 * 60 * 1000);
 
             var msgText = _this.gOptions.language.enterChannelName;
-            if (chatId < 0 || true) {
+            if (chatId < 0) {
                 msgText += _this.gOptions.language.enterChannelNameNote;
             }
 
@@ -301,7 +301,7 @@ var commands = {
             }, 3 * 60 * 1000);
 
             var msgText = _this.gOptions.language.selectDelChannel;
-            if (chatId < 0 || true) {
+            if (chatId < 0) {
                 msgText += _this.gOptions.language.selectDelChannelGroupNote;
             }
 
