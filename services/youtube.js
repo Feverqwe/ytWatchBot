@@ -126,12 +126,12 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
             return false;
         }
 
-        if (!snippet.publishedAt) {
-            debug('publishedAt is not found! %j', origItem);
+        if (snippet.type !== 'upload') {
             return false;
         }
 
-        if (snippet.type !== 'upload') {
+        if (!snippet.publishedAt) {
+            debug('publishedAt is not found! %j', origItem);
             return false;
         }
 
