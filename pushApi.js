@@ -193,7 +193,7 @@ PushApi.prototype.prepareData = function(xml) {
     }
 
     var data = {};
-    var success = [/*'yt:videoId', */'yt:channelId'].every(function(item) {
+    var success = ['yt:videoId', 'yt:channelId'].every(function(item) {
         var node = getChildNode(entry, item);
         if (!node) {
             return false;

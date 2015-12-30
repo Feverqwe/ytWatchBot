@@ -20,6 +20,8 @@ var Checker = function(options) {
     });
 
     options.events.on('feed', function(data) {
+        debug('Feed event, %j', data);
+
         var channelList = [];
 
         var channelId = data['yt:channelId'];
