@@ -80,6 +80,17 @@ Youtube.prototype.clean = function(channelList) {
     return promise;
 };
 
+Youtube.prototype.videoIdInList = function(channelName, videoId) {
+    "use strict";
+    var stateList = this.config.stateList;
+    var videoIdObj = stateList[channelName] && stateList[channelName].videoIdList;
+    if (!videoIdObj) {
+        return false;
+    }
+
+    return !!videoIdObj[videoId];
+};
+
 Youtube.prototype.saveState = function() {
     "use strict";
     var stateList = this.config.stateList;

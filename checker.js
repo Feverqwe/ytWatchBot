@@ -20,8 +20,6 @@ var Checker = function(options) {
     });
 
     options.events.on('feed', function(data) {
-        debug('Feed event, %j', data);
-
         var channelList = [];
 
         var channelId = data['yt:channelId'];
@@ -33,6 +31,18 @@ var Checker = function(options) {
         if (userId) {
             channelList.push(userId);
         }
+
+        var videoId = data['yt:videoId'];
+
+        var hasVideoId = channelList.some(function(channelName) {
+            return options.services.youtube.videoIdInList(channelName, videoId);
+        });
+
+        if (hasVideoId) {
+            return;
+        }
+
+        debug('Feed event, %j', data);
 
         _this.updateList({youtube: channelList}).catch(function(err) {
             debug('updateList error! "%s"', err);
