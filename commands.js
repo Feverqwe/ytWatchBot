@@ -147,7 +147,12 @@ var commands = {
                 return onTimeout();
             }, 3 * 60 * 1000);
 
-            return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.enterChannelName, {
+            var msgText = _this.gOptions.language.enterChannelName;
+            if (chatId < 0 || true) {
+                msgText += _this.gOptions.language.enterChannelNameNote;
+            }
+
+            return _this.gOptions.bot.sendMessage(chatId, msgText, {
                 reply_markup: JSON.stringify({
                     force_reply: true,
                     selective: true
@@ -295,7 +300,12 @@ var commands = {
                 onTimeout();
             }, 3 * 60 * 1000);
 
-            return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.selectDelChannel, {
+            var msgText = _this.gOptions.language.selectDelChannel;
+            if (chatId < 0 || true) {
+                msgText += _this.gOptions.language.selectDelChannelGroupNote;
+            }
+
+            return _this.gOptions.bot.sendMessage(chatId, msgText, {
                 reply_markup: JSON.stringify({
                     keyboard: btnList,
                     resize_keyboard: true,
