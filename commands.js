@@ -529,4 +529,6 @@ var commands = {
     }
 };
 
+commands.stop = commands.clear;
+
 module.exports = commands;
