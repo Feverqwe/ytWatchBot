@@ -9,5 +9,6 @@
     "port": 80,
     "secret": "",
     "callbackUrl": ""
-  }
+  },
+  "sendPhotoMaxRetry": 3
 }
