@@ -122,7 +122,6 @@ var commands = {
         }
 
         var onTimeout = function() {
-            debug("Wait message timeout, %j", msg);
             msg.text = 'Cancel';
             return _this.onMessage(msg);
         };
@@ -273,7 +272,6 @@ var commands = {
 
         var waitChannelName = function() {
             var onTimeout = function() {
-                debug("Wait message timeout, %j", msg);
                 msg.text = 'Cancel';
                 return _this.onMessage(msg);
             };

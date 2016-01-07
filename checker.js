@@ -42,7 +42,7 @@ var Checker = function(options) {
             return;
         }
 
-        debug('Feed event, %j', data);
+        // debug('Feed event, %j', data);
 
         _this.updateList({youtube: channelList}).catch(function(err) {
             debug('updateList error! "%s"', err);
@@ -80,7 +80,8 @@ Checker.prototype.onSendMsgError = function(err, chatId) {
         /Bad Request: wrong chat id/,
         /PEER_ID_INVALID/,
         /chat not found/,
-        /group is deactivated/
+        /group is deactivated/,
+        /can't write to chat with deleted user/
     ].some(function(re) {
         if (re.test(err)) {
             return true;
