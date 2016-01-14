@@ -78,6 +78,7 @@ Checker.prototype.onSendMsgError = function(err, chatId) {
         /Bot was kicked from a chat/,
         /bot was kicked from/,
         /Bad Request: wrong chat id/,
+        /Bot was blocked by the user/,
         /chat not found/,
         /group is deactivated/,
         /can't write to chat with deleted user/
