@@ -237,7 +237,6 @@ module.exports.getChannelUrl = function(service, channelName) {
     return url;
 };
 
-
 var getTime = function() {
     "use strict";
     return Math.round(Date.now() / 1000);
