@@ -130,6 +130,12 @@ Chat.prototype.onMessage = function(msg) {
     "use strict";
     var _this = this;
     var text = msg.text;
+
+    if (!text) {
+        debug('Msg without text! %j', msg);
+        return;
+    }
+
     var chatId = msg.chat.id;
 
     var responseFunc = this.stateList[chatId];
