@@ -12,6 +12,7 @@ var Chat = require('./chat');
 var TelegramBotApi = require('node-telegram-bot-api');
 var EventEmitter = require('events').EventEmitter;
 var Daemon = require('./daemon');
+var Tracker = require('./tracker');
 
 /**
  * @type {
@@ -117,11 +118,7 @@ var options = {
         options.bot.sendPhoto = base.quoteWrapper(options.bot.sendPhoto.bind(options.bot));
         options.bot.sendChatAction = base.quoteWrapper(options.bot.sendChatAction.bind(options.bot));
     }).then(function() {
-        if (options.config.botanToken) {
-            options.botan = require('botanio')(options.config.botanToken);
-        } else {
-            options.botan = {track: function(data, action){debugLog("Track %s, %j", action, data)}};
-        }
+        options.tracker = new Tracker(options);
     }).then(function() {
         options.chat = new Chat(options);
     }).then(function() {

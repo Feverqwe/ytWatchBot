@@ -1,6 +1,7 @@
 {
   "token": "",
   "interval": 360,
+  "gaId": "",
   "botanToken": "",
   "ytToken": "",
   "checkOnRun": false,

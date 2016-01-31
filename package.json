@@ -11,6 +11,7 @@
     "path": "^0.12.7",
     "events": "^1.1.0",
     "pubsubhubbub": "0.4.1",
-    "xmldoc": "0.4.0"
+    "xmldoc": "0.4.0",
+    "node-uuid": "^1.4.7"
   }
 }
