@@ -114,7 +114,7 @@ Tracker.prototype.send = function(params) {
 
     return requestPromise({
         url: 'https://www.google-analytics.com/collect',
-        type: 'POST',
+        method: 'POST',
         form: params
     });
 };
