@@ -4,7 +4,7 @@
 var Promise = require('bluebird');
 var debug = require('debug')('tracker');
 var request = require('request');
-var UUID = require('node-uuid');
+var Uuid = require('node-uuid');
 var requestPromise = Promise.promisify(request);
 
 var Tracker = function(options) {
@@ -12,8 +12,13 @@ var Tracker = function(options) {
     this.gOptions = options;
     this.cache = {};
 
-    if (options.config.botanToken) {
-        this.botan = require('botanio')(options.config.botanToken);
+    this.tid = options.config.gaId;
+    this.botanToken = options.config.botanToken;
+
+    if (this.botanToken) {
+        this.botan = require('botanio')(this.botanToken);
+    } else {
+        this.botan = {track: function(data, action){debug("Send in Botan %s, %j", action, data)}};
     }
 };
 
@@ -47,7 +52,7 @@ Tracker.prototype.getUuid = function(id) {
         arr[index] = parseInt(prefix + chank, 10);
     }
 
-    var cid = UUID.v4({
+    cid = Uuid.v4({
         random: arr
     });
 
@@ -58,22 +63,22 @@ Tracker.prototype.getUuid = function(id) {
 
 Tracker.prototype.track = function(msg, action) {
     "use strict";
+    return Promise.all([
+        this.trackerSend(msg, action),
+        this.botan.track(msg, action)
+    ]).catch(function(err) {
+        debug('Send error!', err);
+    });
+};
+
+Tracker.prototype.trackerSend = function(msg, action) {
+    "use strict";
     var id = msg.chat.id;
 
     var params =  this.sendEvent('bot', action, msg.text);
     params.cid = this.getUuid(id);
 
-    return Promise.all([
-        this.send(params),
-        this.botanSend(msg, action)
-    ]).catch(function(err) {
-        debug('Error!', err);
-    });
-};
-
-this.botanSend = function(msg, action) {
-    "use strict";
-    this.botan && this.botan(msg, action);
+    return this.send(params);
 };
 
 Tracker.prototype.sendEvent = function(category, action, label) {
@@ -82,8 +87,7 @@ Tracker.prototype.sendEvent = function(category, action, label) {
         ec: category,
         ea: action,
         el: label,
-        t: 'event',
-        cid: cid
+        t: 'event'
     };
 
     return params;
@@ -91,15 +95,16 @@ Tracker.prototype.sendEvent = function(category, action, label) {
 
 Tracker.prototype.send = function(params) {
     "use strict";
-    var defaultParams = {
-        v: 1,
-        tid: this.gOptions.config.gaId,
-        an: 'bot'
-    };
-
-    if (!defaultParams.tid) {
+    if (!this.tid) {
+        debug('Send in ga %j', params);
         return;
     }
+
+    var defaultParams = {
+        v: 1,
+        tid: this.tid,
+        an: 'bot'
+    };
 
     for (var key in defaultParams) {
         if(!params.hasOwnProperty(key)) {
@@ -108,10 +113,10 @@ Tracker.prototype.send = function(params) {
     }
 
     return requestPromise({
-        url: 'https://www.google-analytics.com/collect?z=' + Date.now(),
+        url: 'https://www.google-analytics.com/collect',
         type: 'POST',
         form: params
-    })
+    });
 };
 
 module.exports = Tracker;
