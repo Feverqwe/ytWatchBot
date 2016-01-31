@@ -39,7 +39,7 @@ Tracker.prototype.getUuid = function(id) {
 
     var prefix = 0;
     if (vId < 0) {
-        prefix= 1;
+        prefix = 1;
         vId *= -1;
     }
 
