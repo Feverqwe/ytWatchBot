@@ -75,7 +75,7 @@ Tracker.prototype.trackerSend = function(msg, action) {
     "use strict";
     var id = msg.chat.id;
 
-    var params =  this.sendEvent('bot', action, msg.text);
+    var params = this.sendEvent('bot', action, msg.text);
     params.cid = this.getUuid(id);
 
     return this.send(params);
