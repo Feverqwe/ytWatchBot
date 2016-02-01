@@ -61,7 +61,8 @@ var options = {
         youtube: /youtube\.com\/(?:#\/)?(?:user|channel)\/([0-9A-Za-z_-]+)/i
     },
     services: {},
-    events: null
+    events: null,
+    tracker: null
 };
 
 (function() {
