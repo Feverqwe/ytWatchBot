@@ -75,13 +75,14 @@ Checker.prototype.getChannelList = function() {
 };
 
 Checker.prototype.onSendMsgError = function(err, chatId) {
-    var needKick = /^Error:\s+403\s+/.test(err);
+    err = err && err.message || err;
+    var needKick = /^403\s+/.test(err);
 
-    var jsonRe = /^Error:\s+\d+\s+(\{.+})$/;
+    var jsonRe = /^\d+\s+(\{.+})$/;
     if (jsonRe.test(err)) {
         var msg = null;
         try {
-            msg = err.match(jsonRe);
+            msg = String(err.message || err).match(jsonRe);
             msg = msg && msg[1];
             msg = JSON.parse(msg);
         } catch (e) {
