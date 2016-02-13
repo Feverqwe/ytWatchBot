@@ -3,7 +3,6 @@
  */
 var Promise = require('bluebird');
 var debug = require('debug')('tracker');
-var debugBotan = require('debug')('botan');
 var request = require('request');
 var Uuid = require('node-uuid');
 var requestPromise = Promise.promisify(request);
@@ -66,16 +65,10 @@ Tracker.prototype.track = function(msg, action) {
     "use strict";
     return Promise.all([
         this.trackerSend(msg, action),
-        this.botanSend(msg, action)
+        this.botan.track(msg, action)
     ]).catch(function(err) {
         debug('Send error!', err);
     });
-};
-
-Tracker.prototype.botanSend = function(msg, action) {
-    "use strict";
-    debugBotan(this.botanToken, msg.from.id, action);
-    return this.botan.track(msg, action);
 };
 
 Tracker.prototype.trackerSend = function(msg, action) {
