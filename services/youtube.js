@@ -165,18 +165,14 @@ Youtube.prototype.apiNormalization = function(channelName, data, isFullCheck, la
         }
 
         var videoId = idItem.videoId;
-        var previewList = ['https://i.ytimg.com/vi/' + videoId  + '/maxresdefault.jpg'];
 
-        var previewUrl = null;
-        var thumbnail = snippet.thumbnails && (snippet.thumbnails.high || snippet.thumbnails.medium || snippet.thumbnails.default);
-        if (thumbnail) {
-            previewUrl = thumbnail.url;
-        }
+        var previewList = [];
+        ['maxresdefault', 'sddefault', 'hqdefault', 'mqdefault', 'default'].forEach(function(type) {
+            previewList.push('https://i.ytimg.com/vi/' + videoId + '/' + type + '.jpg');
+        });
 
-        if (previewUrl) {
-            previewList.push(previewUrl);
-        } else {
-            debug('Preview url is not found! %j', origItem);
+        if (!snippet.thumbnails) {
+            debug('Thumbnails is not found! %j', origItem);
         }
 
         var isExists = !!videoIdObj[videoId];

@@ -158,10 +158,7 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
             });
         };
 
-        return requestPromise({
-            url: previewUrl,
-            encoding: null
-        }).catch(function(err) {
+        var onRequestCatch = function(err) {
             debug('Request photo error! %s %s %s %s', index, stream._channelName, previewUrl, err);
 
             index++;
@@ -170,7 +167,16 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
             }
 
             return sendingPic(index, retry);
-        }).then(function(response) {
+        };
+
+        return requestPromise({
+            url: previewUrl,
+            encoding: null
+        }).catch(onRequestCatch).then(function(response) {
+            if (response.statusCode === 404) {
+                return onRequestCatch(new Error('404'));
+            }
+
             var image = new Buffer(response.body, 'binary');
             return sendPic(image);
         });
