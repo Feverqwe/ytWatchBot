@@ -115,12 +115,12 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
         retryLimit = maxRetry;
     }
 
-    var sendingPic = function(index, retry) {
-        var previewList = stream.preview;
-        if (!Array.isArray(previewList)) {
-            previewList = [previewList];
-        }
+    var previewList = stream.preview;
+    if (!Array.isArray(previewList)) {
+        previewList = [previewList];
+    }
 
+    var sendingPic = function(index, retry) {
         var previewUrl = previewList[index];
 
         var sendPic = function(request) {
