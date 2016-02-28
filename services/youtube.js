@@ -164,17 +164,20 @@ Youtube.prototype.apiNormalization = function(channelName, data, isFullCheck, la
             lastPubTime = pubTime;
         }
 
+        var videoId = idItem.videoId;
+        var previewList = ['https://i.ytimg.com/vi/' + videoId  + '/maxresdefault.jpg'];
+
         var previewUrl = null;
         var thumbnail = snippet.thumbnails && (snippet.thumbnails.high || snippet.thumbnails.medium || snippet.thumbnails.default);
         if (thumbnail) {
             previewUrl = thumbnail.url;
         }
 
-        if (!previewUrl) {
+        if (previewUrl) {
+            previewList.push(previewUrl);
+        } else {
             debug('Preview url is not found! %j', origItem);
         }
-
-        var videoId = idItem.videoId;
 
         var isExists = !!videoIdObj[videoId];
 
@@ -191,7 +194,7 @@ Youtube.prototype.apiNormalization = function(channelName, data, isFullCheck, la
             url: 'https://youtu.be/' + videoId,
             publishedAt: snippet.publishedAt,
             title: snippet.title,
-            preview: previewUrl,
+            preview: previewList,
             channel: {
                 title: channelLocalTitle,
                 id: snippet.channelId
