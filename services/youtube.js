@@ -430,6 +430,11 @@ Youtube.prototype.getVideoList = function(userList, isFullCheck) {
     });
 };
 
+/**
+ * Response userId in lowerCase or channelId (case sensitive)
+ * @param {String} channelName
+ * @returns {*}
+ */
 Youtube.prototype.getChannelName = function(channelName) {
     "use strict";
     var _this = this;
@@ -439,9 +444,9 @@ Youtube.prototype.getChannelName = function(channelName) {
             throw err;
         }
 
-        return _this.searchChannelIdByTitle(channelName).then(function(newUserId) {
-            channelName = newUserId;
-            return _this.getChannelId(channelName);
+        return _this.searchChannelIdByTitle(channelName).then(function(channelId) {
+            channelName = channelId;
+            return _this.getChannelId(channelId);
         });
     }).then(function(channelId) {
         return requestPromise({
@@ -465,7 +470,12 @@ Youtube.prototype.getChannelName = function(channelName) {
 
             var channelTitle = snippet.channelTitle;
 
+            if (!/^UC/.test(channelName)) {
+                channelName = channelName.toLowerCase();
+            }
+
             return Promise.try(function() {
+                // check channelTitle from snippet is equal userId
                 if (!channelTitle || !/^UC/.test(channelName)) {
                     return;
                 }
