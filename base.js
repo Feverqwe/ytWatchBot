@@ -239,7 +239,7 @@ module.exports.getChannelUrl = function(service, channelName) {
 
 var getTime = function() {
     "use strict";
-    return Math.round(Date.now() / 1000);
+    return parseInt(Date.now() / 1000);
 };
 
 var sendTime = {};
