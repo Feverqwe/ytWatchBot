@@ -499,13 +499,14 @@ Youtube.prototype.getChannelName = function(channelName) {
 
             var channelTitle = snippet.channelTitle;
 
-            if (!/^UC/.test(channelName)) {
+            var isChannelId = /^UC/.test(channelName);
+            if (!isChannelId) {
                 channelName = channelName.toLowerCase();
             }
 
             return Promise.try(function() {
                 // check channelTitle from snippet is equal userId
-                if (!channelTitle || !/^UC/.test(channelName)) {
+                if (!channelTitle || !isChannelId) {
                     return;
                 }
 
