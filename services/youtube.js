@@ -361,18 +361,18 @@ Youtube.prototype.getChannelId = function(userId) {
     });
 };
 
-Youtube.prototype.getVideoList = function(userList, isFullCheck) {
+Youtube.prototype.getVideoList = function(channelNameList, isFullCheck) {
     "use strict";
     var _this = this;
     return Promise.resolve().then(function() {
-        if (!userList.length) {
+        if (!channelNameList.length) {
             return [];
         }
 
         var streamList = [];
 
-        var requestList = userList.map(function(userId) {
-            var stateItem = _this.config.stateList[userId];
+        var requestList = channelNameList.map(function(channelName) {
+            var stateItem = _this.config.stateList[channelName];
             var lastRequestTime = stateItem && stateItem.lastRequestTime;
             if (isFullCheck || !lastRequestTime) {
                 lastRequestTime = Date.now() - 3 * 24 * 60 * 60 * 1000;
@@ -382,7 +382,7 @@ Youtube.prototype.getVideoList = function(userList, isFullCheck) {
             var pageLimit = 100;
             var items = [];
             var getPage = function(pageToken) {
-                return _this.getChannelId(userId).then(function(channelId) {
+                return _this.getChannelId(channelName).then(function(channelId) {
                     return requestPromise({
                         method: 'GET',
                         url: 'https://www.googleapis.com/youtube/v3/activities',
@@ -413,12 +413,12 @@ Youtube.prototype.getVideoList = function(userList, isFullCheck) {
                         }
                     });
                 }).catch(function(err) {
-                    debug('Stream list item "%s" page "%s" response error! %s', userId, pageToken || 0, err);
+                    debug('Stream list item "%s" page "%s" response error! %s', channelName, pageToken || 0, err);
                 });
             };
 
             return getPage().then(function() {
-                return _this.apiNormalization(userId, {items: items}, isFullCheck, lastRequestTime);
+                return _this.apiNormalization(channelName, {items: items}, isFullCheck, lastRequestTime);
             }).then(function(stream) {
                 streamList.push.apply(streamList, stream);
             });
