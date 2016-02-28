@@ -134,13 +134,13 @@ Chat.prototype.removeChat = function(chatId) {
     var chatItem = chatList[chatId];
 
     if (!chatItem) {
-        return;
+        return Promise.resolve();
     }
 
     delete chatList[chatId];
     debug('Chat %s removed! %j', chatId, chatItem);
 
-    base.storage.set({chatList: chatList});
+    return base.storage.set({chatList: chatList});
 };
 
 Chat.prototype.chatMigrate = function(oldChatId, newChatId) {
