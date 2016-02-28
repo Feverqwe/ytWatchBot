@@ -301,7 +301,9 @@ Checker.prototype.onNewVideo = function(videoItem) {
         return;
     }
 
-    debugLog('[s] %j', videoItem);
+    var debugItem = JSON.parse(JSON.stringify(videoItem));
+    delete debugItem.preview;
+    debugLog('[s] %j', debugItem);
 
     return this.sendNotify(chatIdList, text, noPhotoText, videoItem);
 };
