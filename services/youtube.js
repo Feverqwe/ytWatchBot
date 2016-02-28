@@ -175,8 +175,6 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
             return;
         }
 
-        _this.setChannelLocalTitle(userId, snippet.channelTitle);
-
         var item = {
             _service: 'youtube',
             _channelName: userId,
@@ -253,22 +251,6 @@ Youtube.prototype.getChannelTitle = function(channelId) {
     return channelIdToTitle[channelId] || channelId;
 };
 
-Youtube.prototype.setChannelLocalTitle = function(channelId, channelTitle) {
-    "use strict";
-    var titleList = this.config.titleList;
-    if (!channelTitle) {
-        debug('Local channelTitle is empty! %s', channelId);
-        return;
-    }
-
-    if (titleList[channelId] === channelTitle) {
-        return;
-    }
-
-    titleList[channelId] = channelTitle;
-    base.storage.set({titleList: titleList});
-};
-
 Youtube.prototype.getChannelLocalTitle = function(channelId) {
     "use strict";
     var titleList = this.config.titleList;
@@ -281,9 +263,7 @@ Youtube.prototype.requestChannelLocalTitle = function(userId, channelId) {
     var _this = this;
     var titleList = this.config.titleList;
 
-    if (titleList[userId]) {
-        return Promise.resolve();
-    }
+    var currentTitle = titleList[userId];
 
     return requestPromise({
         method: 'GET',
@@ -298,9 +278,18 @@ Youtube.prototype.requestChannelLocalTitle = function(userId, channelId) {
         },
         json: true
     }).then(function(response) {
+        var resolve = Promise.resolve();
+
         response = response.body;
         var title = response && response.items && response.items[0] && response.items[0].snippet && response.items[0].snippet.title;
-        _this.setChannelLocalTitle(userId, title);
+        if (title && title !== currentTitle) {
+            titleList[userId] = title;
+            resolve = resolve.then(function() {
+                return base.storage.set({titleList: titleList});
+            });
+        }
+
+        return resolve;
     }).catch(function(err) {
         debug('requestChannelLocalTitle userId "%s" channelId "%s" error! %s', userId, channelId, err);
     });
