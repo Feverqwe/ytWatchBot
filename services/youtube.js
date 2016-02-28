@@ -169,7 +169,7 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
 
         var isExists = !!videoIdObj[videoId];
 
-        videoIdObj[videoId] = Math.round(Date.now() / 1000);
+        videoIdObj[videoId] = parseInt(Date.now() / 1000);
 
         if (isExists) {
             return;
@@ -197,7 +197,7 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
     }
 
     if (isFullCheck) {
-        lastRequestTime = Math.round(lastRequestTime / 1000);
+        lastRequestTime = parseInt(lastRequestTime / 1000);
         for (var videoId in videoIdObj) {
             if (videoIdObj[videoId] < lastRequestTime) {
                 delete videoIdObj[videoId];
