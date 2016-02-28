@@ -228,42 +228,42 @@ Youtube.prototype.getUserId = function(channelId) {
     return null;
 };
 
-Youtube.prototype.setChannelTitle = function(channelId, channelTitle) {
+Youtube.prototype.setChannelTitle = function(channelName, channelTitle) {
     "use strict";
-    var channelIdToTitle = this.config.channelIdToTitle;
+    var channelNameToTitle = this.config.channelIdToTitle;
     if (!channelTitle) {
-        debug('channelTitle is empty! %s', channelId);
+        debug('channelTitle is empty! %s', channelName);
         return;
     }
 
-    if (channelIdToTitle[channelId] === channelTitle) {
+    if (channelNameToTitle[channelName] === channelTitle) {
         return;
     }
 
-    channelIdToTitle[channelId] = channelTitle;
-    base.storage.set({channelIdToTitle: channelIdToTitle});
+    channelNameToTitle[channelName] = channelTitle;
+    return base.storage.set({channelIdToTitle: channelNameToTitle});
 };
 
-Youtube.prototype.getChannelTitle = function(channelId) {
+Youtube.prototype.getChannelTitle = function(channelName) {
     "use strict";
     var channelIdToTitle = this.config.channelIdToTitle;
 
-    return channelIdToTitle[channelId] || channelId;
+    return channelIdToTitle[channelName] || channelName;
 };
 
-Youtube.prototype.getChannelLocalTitle = function(channelId) {
+Youtube.prototype.getChannelLocalTitle = function(channelName) {
     "use strict";
     var titleList = this.config.titleList;
 
-    return titleList[channelId] || this.getChannelTitle(channelId);
+    return titleList[channelName] || this.getChannelTitle(channelName);
 };
 
-Youtube.prototype.requestChannelLocalTitle = function(userId, channelId) {
+Youtube.prototype.requestChannelLocalTitle = function(channelName, channelId) {
     "use strict";
     var _this = this;
     var titleList = this.config.titleList;
 
-    var currentTitle = titleList[userId];
+    var currentTitle = titleList[channelName];
 
     return requestPromise({
         method: 'GET',
@@ -283,7 +283,7 @@ Youtube.prototype.requestChannelLocalTitle = function(userId, channelId) {
         response = response.body;
         var title = response && response.items && response.items[0] && response.items[0].snippet && response.items[0].snippet.title;
         if (title && title !== currentTitle) {
-            titleList[userId] = title;
+            titleList[channelName] = title;
             resolve = resolve.then(function() {
                 return base.storage.set({titleList: titleList});
             });
@@ -291,7 +291,7 @@ Youtube.prototype.requestChannelLocalTitle = function(userId, channelId) {
 
         return resolve;
     }).catch(function(err) {
-        debug('requestChannelLocalTitle userId "%s" channelId "%s" error! %s', userId, channelId, err);
+        debug('requestChannelLocalTitle channelName "%s" channelId "%s" error! %s', channelName, channelId, err);
     });
 };
 
@@ -430,18 +430,18 @@ Youtube.prototype.getVideoList = function(userList, isFullCheck) {
     });
 };
 
-Youtube.prototype.getChannelName = function(userId) {
+Youtube.prototype.getChannelName = function(channelName) {
     "use strict";
     var _this = this;
 
-    return _this.getChannelId(userId).catch(function(err) {
+    return _this.getChannelId(channelName).catch(function(err) {
         if (err !== 'Channel ID is not found by userId!') {
             throw err;
         }
 
-        return _this.searchChannelIdByTitle(userId).then(function(newUserId) {
-            userId = newUserId;
-            return _this.getChannelId(userId);
+        return _this.searchChannelIdByTitle(channelName).then(function(newUserId) {
+            channelName = newUserId;
+            return _this.getChannelId(channelName);
         });
     }).then(function(channelId) {
         return requestPromise({
@@ -466,25 +466,25 @@ Youtube.prototype.getChannelName = function(userId) {
             var channelTitle = snippet.channelTitle;
 
             return Promise.try(function() {
-                if (!channelTitle || !/^UC/.test(userId)) {
+                if (!channelTitle || !/^UC/.test(channelName)) {
                     return;
                 }
 
                 var channelTitleLow = channelTitle.toLowerCase();
 
                 return _this.getChannelId(channelTitleLow).then(function(channelId) {
-                    if (channelId === userId) {
-                        userId = channelTitleLow;
+                    if (channelId === channelName) {
+                        channelName = channelTitleLow;
                     }
                 }).catch(function() {
-                    debug('Channel title "%s" is not equal userId "%s"', channelTitleLow, userId);
+                    debug('Channel title "%s" is not equal userId "%s"', channelTitleLow, channelName);
                 });
             }).then(function() {
-                return _this.requestChannelLocalTitle(userId, channelId);
+                return _this.requestChannelLocalTitle(channelName, channelId);
             }).then(function() {
-                _this.setChannelTitle(userId, channelTitle);
-
-                return userId;
+                return _this.setChannelTitle(channelName, channelTitle);
+            }).then(function() {
+                return channelName;
             });
         });
     });
