@@ -131,21 +131,13 @@ Chat.prototype.msgParser = function(text) {
 Chat.prototype.removeChat = function(chatId) {
     "use strict";
     var chatList = this.gOptions.storage.chatList;
+    var chatItem = chatList[chatId];
 
-    var chatItem = null;
-    var chatKey = null;
-    for (var _chatId in chatList) {
-        var item = chatList[_chatId];
-        if (item.chatId === chatId) {
-            chatItem = item;
-            chatKey = _chatId;
-        }
-    }
     if (!chatItem) {
         return;
     }
 
-    delete chatList[chatKey];
+    delete chatList[chatId];
     debug('Chat %s removed! %j', chatId, chatItem);
 
     base.storage.set({chatList: chatList});
@@ -154,21 +146,13 @@ Chat.prototype.removeChat = function(chatId) {
 Chat.prototype.chatMigrate = function(oldChatId, newChatId) {
     "use strict";
     var chatList = this.gOptions.storage.chatList;
+    var chatItem = chatList[oldChatId];
 
-    var chatItem = null;
-    var oldChatKey = null;
-    for (var _chatId in chatList) {
-        var item = chatList[_chatId];
-        if (item.chatId === oldChatId) {
-            chatItem = item;
-            oldChatKey = _chatId;
-        }
-    }
     if (!chatItem) {
         return;
     }
 
-    delete chatList[oldChatKey];
+    delete chatList[oldChatId];
     chatList[newChatId] = chatItem;
     chatItem.chatId = newChatId;
     debug('Chat migrate from %s to %s', oldChatId, newChatId);
