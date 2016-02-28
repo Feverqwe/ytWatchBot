@@ -99,7 +99,7 @@ Youtube.prototype.saveState = function() {
     });
 };
 
-Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastRequestTime) {
+Youtube.prototype.apiNormalization = function(channelName, data, isFullCheck, lastRequestTime) {
     "use strict";
     var _this = this;
     if (!data || !Array.isArray(data.items)) {
@@ -108,9 +108,9 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
     }
 
     var stateList = this.config.stateList;
-    var channelObj = stateList[userId];
+    var channelObj = stateList[channelName];
     if (!channelObj) {
-        channelObj = stateList[userId] = {}
+        channelObj = stateList[channelName] = {}
     }
 
     var videoIdObj = channelObj.videoIdList;
@@ -118,15 +118,29 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
         videoIdObj = channelObj.videoIdList = {}
     }
 
+    var channelLocalTitle = this.getChannelLocalTitle(channelName);
+
     data.items = data.items.filter(function(origItem) {
         var snippet = origItem.snippet;
+        var idItem = origItem.id;
 
         if (!snippet) {
             debug('Snippet is not found! %j', origItem);
             return false;
         }
 
-        if (snippet.type !== 'upload') {
+        if (!idItem) {
+            debug('idItem is not found! %j', origItem);
+            return false;
+        }
+
+        if (!idItem.videoId) {
+            debug('videoId is not found! %j', origItem);
+            return false;
+        }
+
+        if (snippet.liveBroadcastContent !== 'none') {
+            debug('Item is not liveBroadcastContent none! %j', origItem);
             return false;
         }
 
@@ -143,6 +157,7 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
     var videoList = [];
     data.items.forEach(function(origItem) {
         var snippet = origItem.snippet;
+        var idItem = origItem.id;
 
         var pubTime = new Date(snippet.publishedAt).getTime();
         if (lastPubTime < pubTime) {
@@ -150,22 +165,16 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
         }
 
         var previewUrl = null;
-        var quality = Object.keys(snippet.thumbnails || {}).slice(-1)[0];
-        if (quality) {
-            previewUrl = snippet.thumbnails[quality].url;
+        var thumbnail = snippet.thumbnails && (snippet.thumbnails.high || snippet.thumbnails.medium || snippet.thumbnails.default);
+        if (thumbnail) {
+            previewUrl = thumbnail.url;
         }
 
         if (!previewUrl) {
             debug('Preview url is not found! %j', origItem);
-            return;
         }
 
-        var videoId = previewUrl.match(/vi\/([^\/]+)/);
-        videoId = videoId && videoId[1];
-        if (!videoId) {
-            debug('Video ID is not found! %j', origItem);
-            return;
-        }
+        var videoId = idItem.videoId;
 
         var isExists = !!videoIdObj[videoId];
 
@@ -177,14 +186,14 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
 
         var item = {
             _service: 'youtube',
-            _channelName: userId,
+            _channelName: channelName,
 
             url: 'https://youtu.be/' + videoId,
             publishedAt: snippet.publishedAt,
             title: snippet.title,
             preview: previewUrl,
             channel: {
-                title: snippet.channelTitle,
+                title: channelLocalTitle,
                 id: snippet.channelId
             }
         };
@@ -210,7 +219,7 @@ Youtube.prototype.apiNormalization = function(userId, data, isFullCheck, lastReq
     }
 
     if (Object.keys(channelObj).length === 0) {
-        delete stateList[userId];
+        delete stateList[channelName];
     }
 
     return videoList;
@@ -385,13 +394,16 @@ Youtube.prototype.getVideoList = function(channelNameList, isFullCheck) {
                 return _this.getChannelId(channelName).then(function(channelId) {
                     return requestPromise({
                         method: 'GET',
-                        url: 'https://www.googleapis.com/youtube/v3/activities',
+                        url: 'https://www.googleapis.com/youtube/v3/search',
                         qs: {
                             part: 'snippet',
                             channelId: channelId,
                             maxResults: 50,
+                            type: 'video',
+                            order: 'date',
+                            safeSearch: 'none',
                             pageToken: pageToken,
-                            fields: 'items/snippet,nextPageToken',
+                            fields: 'items(id,snippet),nextPageToken',
                             publishedAfter: publishedAfter,
                             key: _this.config.token
                         },
