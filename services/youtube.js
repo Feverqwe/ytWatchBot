@@ -246,10 +246,10 @@ Youtube.prototype.apiNormalization = function(channelName, data, isFullCheck, la
 Youtube.prototype.getUserId = function(channelId) {
     "use strict";
     var userIdToChannelId = this.config.userIdToChannelId;
-    for (var title in userIdToChannelId) {
-        var id = userIdToChannelId[title];
+    for (var userId in userIdToChannelId) {
+        var id = userIdToChannelId[userId];
         if (id === channelId) {
-            return title;
+            return userId;
         }
     }
     return null;
