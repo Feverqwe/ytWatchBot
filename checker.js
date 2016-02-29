@@ -47,6 +47,16 @@ var Checker = function(options) {
 
         _this.updateList({youtube: channelList}).catch(function(err) {
             debug('updateList error! "%s"', err);
+        }).then(function() {
+            var hasVideoId = channelList.some(function(channelName) {
+                return options.services.youtube.videoIdInList(channelName, videoId);
+            });
+
+            if (hasVideoId) {
+                return;
+            }
+
+            debug('Feed videoId is not found! %s %s %s', videoId, userId, channelId);
         });
     });
 };
