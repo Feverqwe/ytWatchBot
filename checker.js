@@ -78,6 +78,10 @@ Checker.prototype.onSendMsgError = function(err, chatId) {
     err = err && err.message || err;
     var needKick = /^403\s+/.test(err);
 
+    if (!needKick) {
+        needKick = /group chat is deactivated/.test(err);
+    }
+
     var jsonRe = /^\d+\s+(\{.+})$/;
     if (jsonRe.test(err)) {
         var msg = null;
