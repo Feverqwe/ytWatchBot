@@ -176,7 +176,10 @@ module.exports.getNowStreamText = function(gOptions, videoItem) {
         line.push(this.markDownSanitize(videoItem.url));
     }
     if (videoItem.preview) {
-        line.push('['+gOptions.language.preview+']' + '('+videoItem.preview+')');
+        var url = Array.isArray(videoItem.preview) ? videoItem.preview[0] : videoItem.preview;
+        if (url) {
+            line.push('[' + gOptions.language.preview + ']' + '(' + url + ')');
+        }
     }
     if (line.length) {
         textArr.push(line.join(' , '));
