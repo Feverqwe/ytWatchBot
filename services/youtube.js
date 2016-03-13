@@ -303,7 +303,8 @@ Youtube.prototype.requestChannelLocalTitle = function(channelName, channelId) {
             fields: 'items/snippet',
             key: _this.config.token
         },
-        json: true
+        json: true,
+        forever: true
     }).then(function(response) {
         var resolve = Promise.resolve();
 
@@ -336,7 +337,8 @@ Youtube.prototype.searchChannelIdByTitle = function(channelTitle) {
             fields: 'items(id)',
             key: _this.config.token
         },
-        json: true
+        json: true,
+        forever: true
     }).then(function(response) {
         response = response.body;
         var id = response && response.items && response.items[0] && response.items[0].id && response.items[0].id.channelId;
@@ -371,7 +373,8 @@ Youtube.prototype.getChannelId = function(userId) {
                 fields: 'items/id',
                 key: _this.config.token
             },
-            json: true
+            json: true,
+            forever: true
         }).then(function(response) {
             response = response.body;
             var id = response && response.items && response.items[0] && response.items[0].id;
@@ -422,7 +425,8 @@ Youtube.prototype.getVideoList = function(channelNameList, isFullCheck) {
                             publishedAfter: publishedAfter,
                             key: _this.config.token
                         },
-                        json: true
+                        json: true,
+                        forever: true
                     };
 
                     return requestPromise(requestDetails).then(function(response) {
@@ -488,7 +492,8 @@ Youtube.prototype.getChannelName = function(channelName) {
                 fields: 'items/snippet',
                 key: _this.config.token
             },
-            json: true
+            json: true,
+            forever: true
         }).then(function(response) {
             response = response.body;
             var snippet = response && response.items && response.items[0] && response.items[0].snippet;

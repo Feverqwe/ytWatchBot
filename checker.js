@@ -175,7 +175,8 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
 
         return requestPromise({
             url: previewUrl,
-            encoding: null
+            encoding: null,
+            forever: true
         }).catch(onRequestCatch).then(function(response) {
             if (response.statusCode === 404) {
                 return onRequestCatch(new Error('404'));
