@@ -41,7 +41,7 @@ var PushApi = function(options) {
         });
     });
 
-    _this.gOptions.events.on('unSubscribe', function(channelList) {
+    _this.gOptions.events.on('unsubscribe', function(channelList) {
         if (!Array.isArray(channelList)) {
             channelList = [channelList];
         }
@@ -55,7 +55,7 @@ var PushApi = function(options) {
                 }
                 dDblList.push(channelId);
 
-                return _this.unSubscribe(channelId);
+                return _this.unsubscribe(channelId);
             }).catch(function (err) {
                 debug('Unsubscribe event error! %s %j', channelName, err);
             });
@@ -131,7 +131,7 @@ PushApi.prototype.subscribe = function(channelList) {
     });
 };
 
-PushApi.prototype.unSubscribe = function(channelList) {
+PushApi.prototype.unsubscribe = function(channelList) {
     "use strict";
     var _this = this;
     var pubsub = this.pubsub;

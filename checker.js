@@ -423,7 +423,7 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
                     });
 
                     if (!channelList.length) {
-                        _this.gOptions.events.emit('unSubscribe', filterChannelList);
+                        _this.gOptions.events.emit('unsubscribe', filterChannelList);
                     }
                 }
 
