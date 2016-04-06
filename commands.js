@@ -87,6 +87,15 @@ var commands = {
 
         var data = [];
 
+        var oneServiceMode = _this.gOptions.serviceList.length === 1;
+        if (oneServiceMode && channelName) {
+            data.push.apply(data, arguments);
+            data.shift();
+            channelName = data.join(' ');
+            serviceName = null;
+            data.splice(0);
+        }
+
         var readUrl = function(url) {
             var channelName = null;
             for (var service in _this.gOptions.serviceMatchRe) {
