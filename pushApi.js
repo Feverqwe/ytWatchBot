@@ -215,7 +215,10 @@ PushApi.prototype.prepareData = function(xml) {
 
     var data = {};
 
-    data.published = getChildNode(entry, 'published');
+    var publishedNode = getChildNode(entry, 'published');
+    if (publishedNode) {
+        data.published = publishedNode.val;
+    }
 
     var success = ['yt:videoId', 'yt:channelId'].every(function(item) {
         var node = getChildNode(entry, item);
