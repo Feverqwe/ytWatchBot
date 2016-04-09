@@ -84,7 +84,28 @@ PushApi.prototype.initListener = function(resolve) {
         Promise.try(function() {
             return _this.prepareData(data.feed.toString());
         }).then(function(data) {
-            _this.gOptions.events.emit('feed', data);
+            var delta = null;
+            if (data.published) {
+                var now = new Date().getTime() / 1000;
+                var pubTime = new Date(data.published).getTime();
+                delta = parseInt((now - pubTime) / 1000);
+            } else {
+                debug('published item is not found!');
+            }
+
+            var cb = function () {
+                _this.gOptions.events.emit('feed', data);
+            };
+
+            if (delta !== null && delta < 60) {
+                cb = (function (cb) {
+                    return setTimeout(function () {
+                        return cb();
+                    }, (60 - delta) * 1000);
+                }).bind(null, cb);
+            }
+
+            cb();
         }).catch(function(err) {
             if (err === 'Entry is not found!') {
                 return;
@@ -193,6 +214,9 @@ PushApi.prototype.prepareData = function(xml) {
     }
 
     var data = {};
+
+    data.published = getChildNode(entry, 'published');
+
     var success = ['yt:videoId', 'yt:channelId'].every(function(item) {
         var node = getChildNode(entry, item);
         if (!node) {
