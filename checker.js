@@ -118,7 +118,7 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
     var _this = this;
     var retryLimit = 0;
     var retryTimeoutSec = 5;
-    var requestLimit = 0;
+    var requestLimit = 10;
     var requestTimeoutSec = 30;
 
     var _retryLimit = _this.gOptions.config.sendPhotoMaxRetry;
