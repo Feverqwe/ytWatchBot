@@ -116,25 +116,24 @@ Checker.prototype.onSendMsgError = function(err, chatId) {
 Checker.prototype.getPicId = function(chatId, text, stream) {
     "use strict";
     var _this = this;
-    var retryLimit = 0;
-    var retryTimeoutSec = 5;
+    var sendPicLimit = 0;
+    var sendPicTimeoutSec = 5;
     var requestLimit = 10;
     var requestTimeoutSec = 30;
-
     var tryNumber = 1;
 
     var refreshRetryLimit = function () {
         var _retryLimit = _this.gOptions.config.sendPhotoMaxRetry;
         if (_retryLimit) {
-            retryLimit = _retryLimit;
+            sendPicLimit = _retryLimit;
         }
 
         var _retryTimeoutSec = _this.gOptions.config.sendPhotoRetryTimeoutSec;
         if (_retryTimeoutSec) {
-            retryTimeoutSec = _retryTimeoutSec;
+            sendPicTimeoutSec = _retryTimeoutSec;
         }
 
-        retryTimeoutSec *= 1000;
+        sendPicTimeoutSec *= 1000;
     };
     refreshRetryLimit();
 
@@ -158,9 +157,7 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
         previewList = [previewList];
     }
 
-    var sendingPic = function(index) {
-        var previewUrl = previewList[index];
-
+    var sendingPic = function() {
         var sendPic = function(request) {
             return Promise.try(function() {
                 return _this.gOptions.bot.sendPhoto(chatId, request, {
@@ -182,13 +179,14 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
                     return re.test(err);
                 });
 
-                if (imgProcessError && retryLimit > 0) {
-                    retryLimit--;
+                if (imgProcessError && sendPicLimit > 0) {
+                    sendPicLimit--;
                     return new Promise(function(resolve) {
-                        setTimeout(resolve, retryTimeoutSec);
+                        setTimeout(resolve, sendPicTimeoutSec);
                     }).then(function() {
-                        debug("Retry %s send photo file %s %s! %s", retryLimit, chatId, stream._channelName, err);
-                        return sendingPic(index);
+                        debug("Retry %s send photo file %s %s! %s", sendPicLimit, chatId, stream._channelName, err);
+                        refreshRequestLimit();
+                        return sendingPic();
                     });
                 }
 
@@ -196,7 +194,9 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
             });
         };
 
-        var requestPic = function () {
+        var picIndex = null;
+        var requestPic = function (index) {
+            var previewUrl = previewList[index];
             return requestPromise({
                 url: previewUrl,
                 encoding: null,
@@ -206,18 +206,14 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
                     throw new Error('404');
                 }
 
-                if (tryNumber > 1 || index > 0) {
-                    debug('Try: %s, photo index: %s send! %s %s', tryNumber, index, stream._channelName, previewUrl);
-                }
-
-                var image = new Buffer(response.body, 'binary');
-                return sendPic(image);
+                picIndex = index;
+                return response;
             }).catch(function(err) {
                 // debug('Request photo error! %s %s %s %s', index, stream._channelName, previewUrl, err);
 
                 index++;
                 if (index < previewList.length) {
-                    return sendingPic(index);
+                    return requestPic(index);
                 }
 
                 if (requestLimit > 0) {
@@ -227,8 +223,7 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
                     }).then(function() {
                         // debug("Retry %s request photo %s %s! %s", requestLimit, chatId, stream._channelName, err);
                         tryNumber++;
-                        refreshRetryLimit();
-                        return sendingPic(0);
+                        return requestPic(0);
                     });
                 }
 
@@ -236,10 +231,17 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
             });
         };
 
-        return requestPic();
+        return requestPic(0).then(function (response) {
+            if (tryNumber > 1 || picIndex > 0) {
+                debug('Try: %s, photo index: %s send! %s %s', tryNumber, picIndex, stream._channelName, stream._videoId);
+            }
+
+            var image = new Buffer(response.body, 'binary');
+            return sendPic(image);
+        });
     };
 
-    return sendingPic(0).catch(function(err) {
+    return sendingPic().catch(function(err) {
         debug('Send photo file error! %s %s %s', chatId, stream._channelName, err);
 
         var isKicked = _this.onSendMsgError(err, chatId);
