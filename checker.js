@@ -252,9 +252,51 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
     });
 };
 
+Checker.prototype.isSent = function (stream) {
+    var _this = this;
+    var services = _this.gOptions.services;
+    var service = stream._service;
+    var currentService = services[service];
+    if (!currentService) {
+        throw new Error('Service "' + service + '" is not found!');
+    }
+    var channelName = stream._channelName;
+    var videoId = stream._videoId;
+
+    if (currentService.videoIdInList(channelName, videoId)) {
+        return true;
+    }
+
+    return false;
+};
+
+Checker.prototype.setSend = function (stream) {
+    var _this = this;
+    var services = _this.gOptions.services;
+    var service = stream._service;
+    var currentService = services[service];
+    if (!currentService) {
+        throw new Error('Service "' + service + '" is not found!');
+    }
+    var channelName = stream._channelName;
+    var videoId = stream._videoId;
+
+    currentService.addVideoIsStateList(channelName, videoId);
+
+    var debugItem = JSON.parse(JSON.stringify(stream));
+    delete debugItem.preview;
+    debugLog('[s] %j', debugItem);
+};
+
 Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, useCache) {
     "use strict";
     var _this = this;
+
+    var onSent = function () {
+        onSent = null;
+        _this.setSend(stream);
+    };
+
     var bot = _this.gOptions.bot;
     var chatId = null;
     var sendMsg = function(chatId) {
@@ -262,6 +304,7 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
             disable_web_page_preview: true,
             parse_mode: 'Markdown'
         }).then(function() {
+            onSent && onSent();
             _this.track(chatId, stream, 'sendMsg');
         }).catch(function(err) {
             debug('Send text msg error! %s %s %s', chatId, stream._channelName, err);
@@ -274,6 +317,7 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
         return bot.sendPhoto(chatId, fileId, {
             caption: text
         }).then(function() {
+            onSent && onSent();
             _this.track(chatId, stream, 'sendPhoto');
         }).catch(function(err) {
             debug('Send photo msg error! %s %s %s', chatId, stream._channelName, err);
@@ -315,6 +359,7 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
 
         return _this.getPicId(chatId, text, stream).then(function(fileId) {
             stream._photoId = fileId;
+            onSent && onSent();
         }).catch(function(err) {
             if (err === 'Send photo file error! Bot was kicked!') {
                 return requestPicId();
@@ -355,14 +400,15 @@ Checker.prototype.onNewVideo = function(videoItem) {
     }
 
     if (!chatIdList.length) {
-        return;
+        return Promise.resolve();
     }
 
-    var debugItem = JSON.parse(JSON.stringify(videoItem));
-    delete debugItem.preview;
-    debugLog('[s] %j', debugItem);
-
     return this.sendNotify(chatIdList, text, noPhotoText, videoItem);
+};
+
+Checker.prototype.inProgress = [];
+Checker.prototype.getVideoItemId = function (videoItem) {
+    return [videoItem._service, videoItem._videoId].join(';');
 };
 
 Checker.prototype.notifyAll = function(videoList) {
@@ -370,7 +416,13 @@ Checker.prototype.notifyAll = function(videoList) {
     var _this = this;
 
     videoList.forEach(function (videoItem) {
-        _this.onNewVideo(videoItem)
+        var id = _this.getVideoItemId(videoItem);
+        if (_this.inProgress.indexOf(id) === -1 && !_this.isSent(videoItem)) {
+            _this.inProgress.push(id);
+            _this.onNewVideo(videoItem).finally(function () {
+                _this.inProgress.splice(_this.inProgress.indexOf(id), 1);
+            });
+        }
     });
 };
 
@@ -504,10 +556,6 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
                         });
                     })(arr);
                 }
-
-                queue = queue.finally(function () {
-                    return currentService.saveState && currentService.saveState();
-                });
             })(service);
         }
 

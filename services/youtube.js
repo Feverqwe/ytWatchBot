@@ -7,11 +7,36 @@ var Promise = require('bluebird');
 var request = require('request');
 var requestPromise = Promise.promisify(request);
 
+var throttle = function(fn, threshhold, scope) {
+    threshhold = threshhold || 250;
+    var last;
+    var deferTimer;
+    return function () {
+        var context = scope || this;
+
+        var now = Date.now();
+        var args = arguments;
+        if (last && now < last + threshhold) {
+            // hold on to it
+            clearTimeout(deferTimer);
+            deferTimer = setTimeout(function () {
+                last = now;
+                fn.apply(context, args);
+            }, threshhold);
+        } else {
+            last = now;
+            fn.apply(context, args);
+        }
+    };
+};
+
 Youtube = function(options) {
     "use strict";
     var _this = this;
     this.gOptions = options;
     this.config = {};
+    
+    this.saveStateThrottle = throttle(this.saveState, 250, this);
 
     this.onReady = base.storage.get(['userIdToChannelId', 'channelIdToTitle', 'stateList', 'titleList']).then(function(storage) {
         _this.config.token = options.config.ytToken;
@@ -78,6 +103,23 @@ Youtube.prototype.clean = function(channelList) {
     }
 
     return promise;
+};
+
+Youtube.prototype.addVideoIsStateList = function (channelName, videoId) {
+    var stateList = this.config.stateList;
+    var channelObj = stateList[channelName];
+    if (!channelObj) {
+        channelObj = stateList[channelName] = {}
+    }
+
+    var videoIdObj = channelObj.videoIdList;
+    if (!videoIdObj) {
+        videoIdObj = channelObj.videoIdList = {}
+    }
+
+    videoIdObj[videoId] = parseInt(Date.now() / 1000);
+
+    this.saveStateThrottle();
 };
 
 Youtube.prototype.videoIdInList = function(channelName, videoId) {
@@ -194,17 +236,14 @@ Youtube.prototype.apiNormalization = function(channelName, data, isFullCheck, la
             debug('Thumbnails is not found! %j', origItem);
         }
 
-        var isExists = !!videoIdObj[videoId];
-
-        videoIdObj[videoId] = parseInt(Date.now() / 1000);
-
-        if (isExists) {
+        if (videoIdObj[videoId]) {
             return;
         }
 
         var item = {
             _service: 'youtube',
             _channelName: channelName,
+            _videoId: videoId,
 
             url: 'https://youtu.be/' + videoId,
             publishedAt: snippet.publishedAt,
