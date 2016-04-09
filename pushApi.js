@@ -84,28 +84,7 @@ PushApi.prototype.initListener = function(resolve) {
         Promise.try(function() {
             return _this.prepareData(data.feed.toString());
         }).then(function(data) {
-            var delta = null;
-            if (data.published) {
-                var now = new Date().getTime();
-                var pubTime = new Date(data.published).getTime();
-                delta = parseInt((now - pubTime) / 1000);
-            } else {
-                debug('published item is not found!');
-            }
-
-            var cb = function () {
-                _this.gOptions.events.emit('feed', data);
-            };
-
-            if (delta !== null && delta > 0 && delta < 60) {
-                cb = (function (cb) {
-                    return setTimeout(function () {
-                        return cb();
-                    }, (60 - delta) * 1000);
-                }).bind(null, cb);
-            }
-
-            cb();
+            _this.gOptions.events.emit('feed', data);
         }).catch(function(err) {
             if (err === 'Entry is not found!') {
                 return;
@@ -214,11 +193,6 @@ PushApi.prototype.prepareData = function(xml) {
     }
 
     var data = {};
-
-    var publishedNode = getChildNode(entry, 'published');
-    if (publishedNode) {
-        data.published = publishedNode.val;
-    }
 
     var success = ['yt:videoId', 'yt:channelId'].every(function(item) {
         var node = getChildNode(entry, item);
