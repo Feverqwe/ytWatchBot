@@ -221,7 +221,7 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
                     }).then(function() {
                         debug("Retry %s request photo %s %s! %s", requestLimit, chatId, stream._channelName, err);
                         refreshRetryLimit();
-                        return requestPic();
+                        return sendingPic(0);
                     });
                 }
 
