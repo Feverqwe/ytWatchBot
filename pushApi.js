@@ -97,7 +97,7 @@ PushApi.prototype.initListener = function(resolve) {
                 _this.gOptions.events.emit('feed', data);
             };
 
-            if (delta !== null && delta < 60) {
+            if (delta !== null && delta > 0 && delta < 60) {
                 cb = (function (cb) {
                     return setTimeout(function () {
                         return cb();
