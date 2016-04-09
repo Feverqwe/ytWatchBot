@@ -49,6 +49,10 @@ var Checker = function(options) {
             debug('updateList error! "%s"', err);
         });
     });
+
+    options.events.on('notify', function (videoList) {
+        return _this.notifyAll(videoList);
+    });
 };
 
 Checker.prototype.getChannelList = function() {
@@ -113,18 +117,39 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
     "use strict";
     var _this = this;
     var retryLimit = 0;
+    var retryTimeoutSec = 5;
+    var requestLimit = 0;
+    var requestTimeoutSec = 30;
 
-    var maxRetry = _this.gOptions.config.sendPhotoMaxRetry;
-    if (maxRetry) {
-        retryLimit = maxRetry;
+    var _retryLimit = _this.gOptions.config.sendPhotoMaxRetry;
+    if (_retryLimit) {
+        retryLimit = _retryLimit;
     }
+
+    var _retryTimeoutSec = _this.gOptions.config.sendPhotoRetryTimeoutSec;
+    if (_retryTimeoutSec) {
+        retryTimeoutSec = _retryTimeoutSec;
+    }
+
+    var _requestLimit = _this.gOptions.config.sendPhotoRequestLimit;
+    if (_requestLimit) {
+        requestLimit = _requestLimit;
+    }
+
+    var _requestTimeoutSec = _this.gOptions.config.sendPhotoRequestTimeoutSec;
+    if (_requestTimeoutSec) {
+        requestTimeoutSec = _requestTimeoutSec;
+    }
+
+    retryTimeoutSec *= 1000;
+    requestTimeoutSec *= 1000;
 
     var previewList = stream.preview;
     if (!Array.isArray(previewList)) {
         previewList = [previewList];
     }
 
-    var sendingPic = function(index, retry) {
+    var sendingPic = function(index) {
         var previewUrl = previewList[index];
 
         var sendPic = function(request) {
@@ -148,13 +173,13 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
                     return re.test(err);
                 });
 
-                if (imgProcessError && retry < retryLimit) {
-                    retry++;
+                if (imgProcessError && retryLimit > 0) {
+                    retryLimit--;
                     return new Promise(function(resolve) {
-                        setTimeout(resolve, 5000);
+                        setTimeout(resolve, retryTimeoutSec);
                     }).then(function() {
-                        debug("Retry %s send photo file %s %s! %s", retry, chatId, stream._channelName, err);
-                        return sendingPic(index, retry);
+                        debug("Retry %s send photo file %s %s! %s", retryLimit, chatId, stream._channelName, err);
+                        return sendingPic(index);
                     });
                 }
 
@@ -167,10 +192,20 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
 
             index++;
             if (index >= previewList.length) {
-                throw 'Request photo error!';
+                if (requestLimit > 0) {
+                    requestLimit--;
+                    return new Promise(function(resolve) {
+                        setTimeout(resolve, requestTimeoutSec);
+                    }).then(function() {
+                        debug("Retry %s request photo %s %s! %s", requestLimit, chatId, stream._channelName, err);
+                        return sendingPic(0);
+                    });
+                } else {
+                    throw 'Request photo error!';
+                }
             }
 
-            return sendingPic(index, retry);
+            return sendingPic(index);
         };
 
         return requestPromise({
@@ -187,7 +222,7 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
         });
     };
 
-    return sendingPic(0, 0).catch(function(err) {
+    return sendingPic(0).catch(function(err) {
         debug('Send photo file error! %s %s %s', chatId, stream._channelName, err);
 
         var isKicked = _this.onSendMsgError(err, chatId);
@@ -317,12 +352,9 @@ Checker.prototype.notifyAll = function(videoList) {
     "use strict";
     var _this = this;
 
-    var promiseList = [];
     videoList.forEach(function (videoItem) {
-        promiseList.push(_this.onNewVideo(videoItem));
+        _this.onNewVideo(videoItem)
     });
-
-    return Promise.all(promiseList);
 };
 
 Checker.prototype.cleanServices = function() {
@@ -385,7 +417,8 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
                 return -1;
             }
         });
-        return _this.notifyAll(videoList);
+
+        _this.gOptions.events.emit('notify', videoList);
     };
 
     var queue = Promise.resolve();
