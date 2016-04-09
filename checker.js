@@ -121,28 +121,35 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
     var requestLimit = 10;
     var requestTimeoutSec = 30;
 
-    var _retryLimit = _this.gOptions.config.sendPhotoMaxRetry;
-    if (_retryLimit) {
-        retryLimit = _retryLimit;
-    }
+    var refreshRetryLimit = function () {
+        var _retryLimit = _this.gOptions.config.sendPhotoMaxRetry;
+        if (_retryLimit) {
+            retryLimit = _retryLimit;
+        }
 
-    var _retryTimeoutSec = _this.gOptions.config.sendPhotoRetryTimeoutSec;
-    if (_retryTimeoutSec) {
-        retryTimeoutSec = _retryTimeoutSec;
-    }
+        var _retryTimeoutSec = _this.gOptions.config.sendPhotoRetryTimeoutSec;
+        if (_retryTimeoutSec) {
+            retryTimeoutSec = _retryTimeoutSec;
+        }
 
-    var _requestLimit = _this.gOptions.config.sendPhotoRequestLimit;
-    if (_requestLimit) {
-        requestLimit = _requestLimit;
-    }
+        retryTimeoutSec *= 1000;
+    };
+    refreshRetryLimit();
 
-    var _requestTimeoutSec = _this.gOptions.config.sendPhotoRequestTimeoutSec;
-    if (_requestTimeoutSec) {
-        requestTimeoutSec = _requestTimeoutSec;
-    }
+    var refreshRequestLimit = function () {
+        var _requestLimit = _this.gOptions.config.sendPhotoRequestLimit;
+        if (_requestLimit) {
+            requestLimit = _requestLimit;
+        }
 
-    retryTimeoutSec *= 1000;
-    requestTimeoutSec *= 1000;
+        var _requestTimeoutSec = _this.gOptions.config.sendPhotoRequestTimeoutSec;
+        if (_requestTimeoutSec) {
+            requestTimeoutSec = _requestTimeoutSec;
+        }
+
+        requestTimeoutSec *= 1000;
+    };
+    refreshRequestLimit();
 
     var previewList = stream.preview;
     if (!Array.isArray(previewList)) {
@@ -198,6 +205,7 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
                         setTimeout(resolve, requestTimeoutSec);
                     }).then(function() {
                         debug("Retry %s request photo %s %s! %s", requestLimit, chatId, stream._channelName, err);
+                        refreshRetryLimit();
                         return sendingPic(0);
                     });
                 } else {
