@@ -194,11 +194,26 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
             });
         };
 
-        var onRequestCatch = function(err) {
-            debug('Request photo error! %s %s %s %s', index, stream._channelName, previewUrl, err);
+        var requestPic = function () {
+            return requestPromise({
+                url: previewUrl,
+                encoding: null,
+                forever: true
+            }).then(function (response) {
+                if (response.statusCode === 404) {
+                    throw new Error('404');
+                }
 
-            index++;
-            if (index >= previewList.length) {
+                var image = new Buffer(response.body, 'binary');
+                return sendPic(image);
+            }).catch(function(err) {
+                debug('Request photo error! %s %s %s %s', index, stream._channelName, previewUrl, err);
+
+                index++;
+                if (index < previewList.length) {
+                    return sendingPic(index);
+                }
+
                 if (requestLimit > 0) {
                     requestLimit--;
                     return new Promise(function(resolve) {
@@ -206,28 +221,15 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
                     }).then(function() {
                         debug("Retry %s request photo %s %s! %s", requestLimit, chatId, stream._channelName, err);
                         refreshRetryLimit();
-                        return sendingPic(0);
+                        return requestPic();
                     });
-                } else {
-                    throw 'Request photo error!';
                 }
-            }
 
-            return sendingPic(index);
+                throw 'Request photo error!';
+            });
         };
 
-        return requestPromise({
-            url: previewUrl,
-            encoding: null,
-            forever: true
-        }).catch(onRequestCatch).then(function(response) {
-            if (response.statusCode === 404) {
-                return onRequestCatch(new Error('404'));
-            }
-
-            var image = new Buffer(response.body, 'binary');
-            return sendPic(image);
-        });
+        return requestPic();
     };
 
     return sendingPic(0).catch(function(err) {
