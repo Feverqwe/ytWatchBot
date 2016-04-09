@@ -285,6 +285,8 @@ Checker.prototype.setSend = function (stream) {
 
     var debugItem = JSON.parse(JSON.stringify(stream));
     delete debugItem.preview;
+    delete debugItem._videoId;
+    delete debugItem._photoId;
     debugLog('[s] %j', debugItem);
 };
 
