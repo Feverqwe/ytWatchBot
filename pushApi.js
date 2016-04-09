@@ -86,7 +86,7 @@ PushApi.prototype.initListener = function(resolve) {
         }).then(function(data) {
             var delta = null;
             if (data.published) {
-                var now = new Date().getTime() / 1000;
+                var now = new Date().getTime();
                 var pubTime = new Date(data.published).getTime();
                 delta = parseInt((now - pubTime) / 1000);
             } else {
