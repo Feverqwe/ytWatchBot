@@ -121,6 +121,8 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
     var requestLimit = 10;
     var requestTimeoutSec = 30;
 
+    var tryNumber = 0;
+
     var refreshRetryLimit = function () {
         var _retryLimit = _this.gOptions.config.sendPhotoMaxRetry;
         if (_retryLimit) {
@@ -157,6 +159,7 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
     }
 
     var sendingPic = function(index) {
+        tryNumber++;
         var previewUrl = previewList[index];
 
         var sendPic = function(request) {
@@ -204,10 +207,14 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
                     throw new Error('404');
                 }
 
+                if (tryNumber > 1 || index > 0) {
+                    debug('Try: %s, photo index: %s send! %s %s', tryNumber, index, stream._channelName, previewUrl);
+                }
+
                 var image = new Buffer(response.body, 'binary');
                 return sendPic(image);
             }).catch(function(err) {
-                debug('Request photo error! %s %s %s %s', index, stream._channelName, previewUrl, err);
+                // debug('Request photo error! %s %s %s %s', index, stream._channelName, previewUrl, err);
 
                 index++;
                 if (index < previewList.length) {
@@ -219,7 +226,7 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
                     return new Promise(function(resolve) {
                         setTimeout(resolve, requestTimeoutSec);
                     }).then(function() {
-                        debug("Retry %s request photo %s %s! %s", requestLimit, chatId, stream._channelName, err);
+                        // debug("Retry %s request photo %s %s! %s", requestLimit, chatId, stream._channelName, err);
                         refreshRetryLimit();
                         return sendingPic(0);
                     });
