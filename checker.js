@@ -352,7 +352,7 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
     var requestPicId = function() {
         if (!chatIdList.length) {
             debug('chatList is empty! %j', stream);
-            return;
+            return Promise.resolve();
         }
 
         chatId = chatIdList.shift();
