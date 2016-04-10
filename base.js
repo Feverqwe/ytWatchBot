@@ -88,6 +88,47 @@ var Storage = function() {
 
 module.exports.storage = new Storage();
 
+/**
+ * @param {string} type
+ * @param {string} [text]
+ * @param {string} [url]
+ */
+module.exports.htmlSanitize = function (type, text, url) {
+    if (!text) {
+        text = type;
+        type = '';
+    }
+
+    var sanitize = function (text) {
+        return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    };
+
+    var sanitizeAttr = function (text) {
+        return sanitize(text).replace(/"/g, '&quot;');
+    };
+
+    switch (type) {
+        case '':
+            return sanitize(text);
+        case 'a':
+            return '<a href="'+sanitizeAttr(url)+'">'+sanitize(text)+'</a>';
+        case 'b':
+            return '<b>'+sanitize(text)+'</b>';
+        case 'strong':
+            return '<strong>'+sanitize(text)+'</strong>';
+        case 'i':
+            return '<i>'+sanitize(text)+'</i>';
+        case 'em':
+            return '<em>'+sanitize(text)+'</em>';
+        case 'pre':
+            return '<pre>'+sanitize(text)+'</pre>';
+        case 'code':
+            return '<code>'+sanitize(text)+'</code>';
+    }
+
+    throw "htmlSanitize error! Type: " + type + " is not found!"
+};
+
 module.exports.markDownSanitize = function(text, char) {
     "use strict";
     if (char === '*') {
@@ -162,10 +203,10 @@ module.exports.getNowStreamText = function(gOptions, videoItem) {
 
     var line = [];
     if (videoItem.title) {
-        line.push(this.markDownSanitize(title = videoItem.title));
+        line.push(this.htmlSanitize(title = videoItem.title));
     }
     if (videoItem.channel.title && title.indexOf(videoItem.channel.title) === -1) {
-        line.push('_' + this.markDownSanitize(videoItem.channel.title, '_') + '_');
+        line.push(this.htmlSanitize('i', videoItem.channel.title));
     }
     if (line.length) {
         textArr.push(line.join(', '));
@@ -173,12 +214,12 @@ module.exports.getNowStreamText = function(gOptions, videoItem) {
 
     line = [];
     if (videoItem.url) {
-        line.push(this.markDownSanitize(videoItem.url));
+        line.push(this.htmlSanitize(videoItem.url));
     }
     if (videoItem.preview) {
         var url = Array.isArray(videoItem.preview) ? videoItem.preview[0] : videoItem.preview;
         if (url) {
-            line.push('[' + gOptions.language.preview + ']' + '(' + url + ')');
+            line.push(this.htmlSanitize('a', gOptions.language.preview, url));
         }
     }
     if (line.length) {
