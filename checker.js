@@ -166,10 +166,6 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
             }).then(function (msg) {
                 var fileId = msg.photo[0].file_id;
 
-                setTimeout(function() {
-                    _this.track(chatId, stream, 'sendPhoto');
-                });
-
                 return fileId;
             }).catch(function(err) {
                 var imgProcessError = [
@@ -363,7 +359,9 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
 
         return _this.getPicId(chatId, text, stream).then(function(fileId) {
             stream._photoId = fileId;
+
             onSent && onSent();
+            _this.track(chatId, stream, 'sendPhoto');
         }).catch(function(err) {
             if (err === 'Send photo file error! Bot was kicked!') {
                 return requestPicId();
