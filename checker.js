@@ -118,8 +118,8 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
     var _this = this;
     var sendPicLimit = 0;
     var sendPicTimeoutSec = 5;
-    var requestLimit = 30;
-    var requestTimeoutSec = 10;
+    var requestLimit = 10;
+    var requestTimeoutSec = 30;
     var tryNumber = 1;
 
     var refreshRetryLimit = function () {
