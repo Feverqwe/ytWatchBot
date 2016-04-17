@@ -165,14 +165,20 @@ Chat.prototype.chatMigrate = function(oldChatId, newChatId) {
     base.storage.set({chatList: chatList});
 };
 
-Chat.prototype.onCallbackQuery = function (msg) {
+Chat.prototype.callbackQueryToMsg = function (callbackQuery) {
+    var msg = JSON.parse(JSON.stringify(callbackQuery.message));
+    msg.from = callbackQuery.from;
+    msg.text = callbackQuery.data;
+    return msg;
+};
+
+Chat.prototype.onCallbackQuery = function (callbackQuery) {
     "use strict";
     var _this = this;
-    var message = msg.message;
-    var data = msg.data;
+    var data = callbackQuery.data;
 
     if (!data) {
-        debug('Callback query data is empty! %j', msg);
+        debug('Callback query data is empty! %j', callbackQuery);
         return;
     }
 
@@ -191,6 +197,11 @@ Chat.prototype.onCallbackQuery = function (msg) {
     }
 
     var action = args.shift().toLowerCase();
+
+    if (['list', 'add', 'delete', 'top', 'livetime', 'clear'].indexOf(action) !== -1) {
+        return this.onMessage(this.callbackQueryToMsg(callbackQuery));
+    }
+
     var commandFunc = commands[action];
 
     if (!commandFunc) {
@@ -199,17 +210,15 @@ Chat.prototype.onCallbackQuery = function (msg) {
     }
 
     if (['d'].indexOf(action) !== -1) {
-        args = this.checkArgs(msg, args, true);
+        args = this.checkArgs(callbackQuery, args, true);
         if (!args) {
             return;
         }
     }
 
-    args.unshift(msg);
+    args.unshift(callbackQuery);
 
-    var origMsg = JSON.parse(JSON.stringify(message));
-    origMsg.from = msg.from;
-    origMsg.text = msg.data;
+    var origMsg = this.callbackQueryToMsg(callbackQuery);
 
     return commandFunc.apply(this, args).catch(function(err) {
         debug('Execute callback query command "%s" error! %s', action, err);

@@ -5,6 +5,43 @@ var Promise = require('bluebird');
 var debug = require('debug')('commands');
 var base = require('./base');
 
+var menuBtnList = function () {
+    return [
+        [
+            {
+                text: 'Show the channel list',
+                callback_data: '/list'
+            }
+        ],
+        [
+            {
+                text: 'Add channel',
+                callback_data: '/add'
+            },
+            {
+                text: 'Delete channel',
+                callback_data: '/delete'
+            }
+        ],
+        [
+            {
+                text: 'Top 10',
+                callback_data: '/top'
+            },
+            {
+                text: 'How long will it works',
+                callback_data: '/liveTime'
+            }
+        ],
+        [
+            {
+                text: 'Clear channel list',
+                callback_data: '/clear'
+            }
+        ]
+    ];
+};
+
 var commands = {
     ping: function (msg) {
         "use strict";
@@ -18,14 +55,22 @@ var commands = {
         var _this = this;
         var chatId = msg.chat.id;
 
-        return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.help);
+        return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.help, {
+            reply_markup: JSON.stringify({
+                inline_keyboard: menuBtnList()
+            })
+        });
     },
     help: function (msg) {
         "use strict";
         var _this = this;
         var chatId = msg.chat.id;
 
-        return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.help + _this.gOptions.language.rateMe);
+        return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.help + _this.gOptions.language.rateMe, {
+            reply_markup: JSON.stringify({
+                inline_keyboard: menuBtnList()
+            })
+        });
     },
     a: function (msg, channelName, service) {
         "use strict";

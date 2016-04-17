@@ -1,16 +1,5 @@
 {
-  "help": [
-    "Hi! I will notify you about new videos on Youtube channels!",
-    "",
-    "You can control me by sending these commands:",
-    "",
-    "/list - Show list of channel",
-    "/add - Add channel in list",
-    "/delete - Delete channel from list",
-    "/top - Top 10",
-    "/liveTime - How long will it works",
-    "/clear - Clear channel list"
-  ],
+  "help": "Hi! I will notify you about new videos on Youtube channels!",
   "emptyServiceList": "You don't have channels in watch list, yet.",
   "enterChannelName": "Enter the channel URL or name (example: blacksilverufa):",
   "enterService": "Enter a video platform",
