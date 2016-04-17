@@ -7,6 +7,9 @@ var Promise = require('bluebird');
 var request = require('request');
 var requestPromise = Promise.promisify(request);
 
+var apiQuote = new base.Quote(1000);
+requestPromise = apiQuote.wrapper(requestPromise.bind(requestPromise));
+
 var throttle = function(fn, threshhold, scope) {
     threshhold = threshhold || 250;
     var last;
@@ -433,72 +436,66 @@ Youtube.prototype.getChannelId = function(userId) {
 Youtube.prototype.getVideoList = function(channelNameList, isFullCheck) {
     "use strict";
     var _this = this;
-    return Promise.resolve().then(function() {
-        if (!channelNameList.length) {
-            return [];
+
+    var streamList = [];
+
+    var requestList = channelNameList.map(function(channelName) {
+        var stateItem = _this.config.stateList[channelName];
+
+        var lastRequestTime = stateItem && stateItem.lastRequestTime;
+        if (isFullCheck || !lastRequestTime) {
+            lastRequestTime = Date.now() - 3 * 24 * 60 * 60 * 1000;
         }
+        var publishedAfter = new Date(lastRequestTime).toISOString();
 
-        var streamList = [];
+        var pageLimit = 100;
+        var items = [];
+        var getPage = function(pageToken) {
+            return _this.getChannelId(channelName).then(function(channelId) {
+                return requestPromise({
+                    method: 'GET',
+                    url: 'https://www.googleapis.com/youtube/v3/activities',
+                    qs: {
+                        part: 'snippet',
+                        channelId: channelId,
+                        maxResults: 50,
+                        pageToken: pageToken,
+                        fields: 'items/snippet,nextPageToken',
+                        publishedAfter: publishedAfter,
+                        key: _this.config.token
+                    },
+                    json: true,
+                    forever: true
+                }).then(function(response) {
+                    response = response.body || {};
 
-        var requestList = channelNameList.map(function(channelName) {
-            var stateItem = _this.config.stateList[channelName];
-            var lastRequestTime = stateItem && stateItem.lastRequestTime;
-            if (isFullCheck || !lastRequestTime) {
-                lastRequestTime = Date.now() - 3 * 24 * 60 * 60 * 1000;
-            }
-            var publishedAfter = new Date(lastRequestTime).toISOString();
+                    if (Array.isArray(response.items)) {
+                        items.push.apply(items, response.items)
+                    }
 
-            var pageLimit = 100;
-            var items = [];
-            var getPage = function(pageToken) {
-                return _this.getChannelId(channelName).then(function(channelId) {
-                    var requestDetails = {
-                        method: 'GET',
-                        url: 'https://www.googleapis.com/youtube/v3/activities',
-                        qs: {
-                            part: 'snippet',
-                            channelId: channelId,
-                            maxResults: 50,
-                            pageToken: pageToken,
-                            fields: 'items/snippet,nextPageToken',
-                            publishedAfter: publishedAfter,
-                            key: _this.config.token
-                        },
-                        json: true,
-                        forever: true
-                    };
+                    if (pageLimit < 0) {
+                        throw 'Page limited!';
+                    }
 
-                    return requestPromise(requestDetails).then(function(response) {
-                        response = response.body;
-
-                        if (Array.isArray(response.items)) {
-                            items.push.apply(items, response.items)
-                        }
-
-                        if (pageLimit < 0) {
-                            throw 'Page limited!';
-                        }
-
-                        if (response.nextPageToken) {
-                            pageLimit--;
-                            return getPage(response.nextPageToken);
-                        }
-                    });
-                }).catch(function(err) {
-                    debug('Stream list item "%s" page "%s" response error! %s', channelName, pageToken || 0, err);
+                    if (response.nextPageToken) {
+                        pageLimit--;
+                        return getPage(response.nextPageToken);
+                    }
                 });
-            };
-
-            return getPage().then(function() {
-                return _this.apiNormalization(channelName, {items: items}, isFullCheck, lastRequestTime);
-            }).then(function(stream) {
-                streamList.push.apply(streamList, stream);
+            }).catch(function(err) {
+                debug('Stream list item "%s" page "%s" response error! %s', channelName, pageToken || 0, err);
             });
-        });
+        };
 
-        return Promise.all(requestList).then(function() {
-            return streamList;
+        return getPage().then(function() {
+            return _this.apiNormalization(channelName, {items: items}, isFullCheck, lastRequestTime);
+        }).then(function(stream) {
+            streamList.push.apply(streamList, stream);
         });
+    });
+
+    return Promise.all(requestList).then(function() {
+        return streamList;
     });
 };
 

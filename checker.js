@@ -506,60 +506,50 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
         var serviceChannelList = _this.getChannelList();
         var services = _this.gOptions.services;
 
-        for (var service in serviceChannelList) {
-            if (!serviceChannelList.hasOwnProperty(service)) {
-                continue;
+        Object.keys(serviceChannelList).forEach(function (service) {
+            var currentService = services[service];
+            if (!currentService) {
+                debug('Service "%s" is not found!', service);
+                return;
             }
 
-            (function(service){
-                var currentService = services[service];
-                if (!currentService) {
-                    debug('Service "%s" is not found!', service);
-                    return;
+            var channelList = serviceChannelList[service];
+
+            var filterChannelList = filterServiceChannelList && filterServiceChannelList[service];
+            if (filterChannelList && service === 'youtube') {
+                channelList = filterChannelList.filter(function(channelName) {
+                    return channelList.indexOf(channelName) !== -1;
+                });
+
+                if (!channelList.length) {
+                    _this.gOptions.events.emit('unsubscribe', filterChannelList);
                 }
+            }
 
-                var channelList = JSON.parse(JSON.stringify(serviceChannelList[service]));
-
-                var filterChannelList = filterServiceChannelList && filterServiceChannelList[service];
-                if (service === 'youtube' && filterChannelList) {
-                    channelList = filterChannelList.filter(function(channelName) {
-                        return channelList.indexOf(channelName) !== -1;
-                    });
-
-                    if (!channelList.length) {
-                        _this.gOptions.events.emit('unsubscribe', filterChannelList);
+            var retryLimit = 5;
+            var getVideoList = function () {
+                return currentService.getVideoList(channelList, isFullCheck).catch(function(err) {
+                    retryLimit--;
+                    if (retryLimit < 0) {
+                        debug("Request stream list %s error! %s", service, err);
+                        return [];
                     }
-                }
 
-                while (channelList.length) {
-                    var arr = channelList.splice(0, 100);
-                    (function(arr) {
-                        var videoListPromise = (function getVideoList(retry) {
-                            return currentService.getVideoList(arr, isFullCheck).catch(function(err) {
-                                retry++;
-                                if (retry >= 5) {
-                                    debug("Request stream list %s error! %s", service, err);
-                                    return [];
-                                }
+                    return new Promise(function(resolve) {
+                        return setTimeout(resolve, 5 * 1000);
+                    }).then(function() {
+                        debug("Retry %s request stream list %s! %s", retryLimit, service, err);
+                        return getVideoList();
+                    });
+                });
+            };
 
-                                return new Promise(function(resolve) {
-                                    setTimeout(resolve, 5 * 1000);
-                                }).then(function() {
-                                    debug("Retry %s request stream list %s! %s", retry, service, err);
-                                    return getVideoList(retry);
-                                });
-                            });
-                        })(0);
-
-                        queue = queue.finally(function() {
-                            return videoListPromise.then(function(videoList) {
-                                return onGetVideoList(videoList);
-                            })
-                        });
-                    })(arr);
-                }
-            })(service);
-        }
+            queue = queue.finally(function() {
+                return getVideoList().then(function(videoList) {
+                    return onGetVideoList(videoList);
+                })
+            });
+        });
 
         return queue;
     });

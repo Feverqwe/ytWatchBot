@@ -134,9 +134,11 @@ var options = {
             }
         });
 
-        options.bot.sendMessage = base.quoteWrapper(options.bot.sendMessage.bind(options.bot));
-        options.bot.sendPhoto = base.quoteWrapper(options.bot.sendPhoto.bind(options.bot));
-        options.bot.sendChatAction = base.quoteWrapper(options.bot.sendChatAction.bind(options.bot));
+        var quote = new base.Quote(30);
+        
+        options.bot.sendMessage = quote.wrapper(options.bot.sendMessage.bind(options.bot));
+        options.bot.sendPhoto = quote.wrapper(options.bot.sendPhoto.bind(options.bot));
+        options.bot.sendChatAction = quote.wrapper(options.bot.sendChatAction.bind(options.bot));
     }).then(function() {
         options.tracker = new Tracker(options);
     }).then(function() {
