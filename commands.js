@@ -205,9 +205,10 @@ var commands = {
             return _this.onMessagePromise(msg);
         }
     },
-    d: function (msg, channelName, service) {
+    d: function (callbackQuery, channelName, service) {
         "use strict";
         var _this = this;
+        var msg = callbackQuery.message;
         var chatId = msg.chat.id;
         var chatList = _this.gOptions.storage.chatList;
         var chatItem = chatList[chatId];
@@ -234,12 +235,15 @@ var commands = {
         }
 
         return base.storage.set({chatList: chatList}).then(function () {
-            return _this.gOptions.bot.sendMessage(
+            return _this.gOptions.bot.editMessageText(
                 chatId,
                 _this.gOptions.language.channelDeleted
                     .replace('{channelName}', channelName)
                     .replace('{serviceName}', _this.gOptions.serviceToTitle[service]),
-                _this.templates.hideKeyboard
+                {
+                    message_id: msg.message_id,
+                    reply_markup: _this.templates.hideKeyboard.reply_markup
+                }
             );
         });
     },
@@ -255,74 +259,52 @@ var commands = {
 
         var oneServiceMode = _this.gOptions.serviceList.length === 1;
 
-        var data = [];
-
-        var responseMap = {};
+        var msgText = _this.gOptions.language.selectDelChannel;
 
         var btnList = [];
-        for (var service in chatItem.serviceList) {
+
+        Object.keys(chatItem.serviceList).forEach(function (service) {
             var channelList = chatItem.serviceList[service];
             channelList.forEach(function(channelName) {
-                var title = base.getChannelLocalTitle(_this.gOptions, service, channelName);
+                var btnItem = {};
 
+                var title = base.getChannelLocalTitle(_this.gOptions, service, channelName);
                 if (!oneServiceMode) {
                     title += ' (' + _this.gOptions.serviceToTitle[service] + ')';
                 }
+                btnItem.text = title;
 
-                var index = btnList.length + 1;
-                title = index + '. ' + title;
+                btnItem.callback_data = '/d "' + channelName + '" "' + service + '"';
 
-                responseMap[index] = {name: channelName, service: service};
-
-                btnList.push([title]);
+                btnList.push([btnItem]);
             });
-        }
-        btnList.push(['Cancel']);
+        });
 
-        var waitChannelName = function() {
-            var onTimeout = function() {
-                msg.text = 'Cancel';
-                return _this.onMessagePromise(msg);
-            };
+        btnList.push([{
+            text: 'Cancel',
+            callback_data: '/c "delete"'
+        }]);
 
-            var onMessage = _this.stateList[chatId] = function (msg) {
-                var index = msg.text.match(/(\d+)/);
-                index = index && index[1];
+        return _this.gOptions.bot.sendMessage(chatId, msgText, {
+            reply_markup: JSON.stringify({
+                inline_keyboard: btnList
+            })
+        });
+    },
+    c: function (callbackQuery, command) {
+        var _this = this;
+        var msg = callbackQuery.message;
+        var chatId = msg.chat.id;
 
-                var info = responseMap[index];
-                if (!info) {
-                    debug("Can't match delete channel %j", msg);
-                    msg.text = '/cancel delete';
-                    return _this.onMessagePromise(msg);
-                }
-
-                data.push('"' + info.name + '"');
-                data.push('"' + info.service + '"');
-
-                msg.text = '/d ' + data.join(' ');
-                return _this.onMessagePromise(msg);
-            };
-            onMessage.command = 'delete';
-            onMessage.timeout = setTimeout(function () {
-                onTimeout();
-            }, 3 * 60 * 1000);
-
-            var msgText = _this.gOptions.language.selectDelChannel;
-            if (chatId < 0) {
-                msgText += _this.gOptions.language.selectDelChannelGroupNote;
+        return _this.gOptions.bot.editMessageText(
+            chatId,
+            _this.gOptions.language.commandCanceled
+                .replace('{command}', command || ''),
+            {
+                message_id: msg.message_id,
+                reply_markup: _this.templates.hideKeyboard.reply_markup
             }
-
-            return _this.gOptions.bot.sendMessage(chatId, msgText, {
-                reply_markup: JSON.stringify({
-                    keyboard: btnList,
-                    resize_keyboard: true,
-                    one_time_keyboard: true,
-                    selective: true
-                })
-            });
-        };
-
-        return waitChannelName();
+        );
     },
     cancel: function (msg, arg1) {
         "use strict";
