@@ -328,11 +328,24 @@ var commands = {
             return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
         }
 
-        return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.clearSure);
+        var btnList = [[{
+            text: 'Yes',
+            callback_data: '/clearyes'
+        }, {
+            text: 'No',
+            callback_data: '/c "clear"'
+        }]];
+
+        return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.clearSure, {
+            reply_markup: JSON.stringify({
+                inline_keyboard: btnList
+            })
+        });
     },
-    clearyes: function(msg) {
+    clearyes: function(callbackQuery) {
         "use strict";
         var _this = this;
+        var msg = callbackQuery.message;
         var chatId = msg.chat.id;
         var chatItem = _this.gOptions.storage.chatList[chatId];
 
@@ -343,9 +356,13 @@ var commands = {
         delete _this.gOptions.storage.chatList[chatId];
 
         return base.storage.set({chatList: _this.gOptions.storage.chatList}).then(function () {
-            return _this.gOptions.bot.sendMessage(
+            return _this.gOptions.bot.editMessageText(
                 chatId,
-                _this.gOptions.language.cleared
+                _this.gOptions.language.cleared,
+                {
+                    message_id: msg.message_id,
+                    reply_markup: _this.templates.hideKeyboard.reply_markup
+                }
             );
         });
     },

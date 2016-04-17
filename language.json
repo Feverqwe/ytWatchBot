@@ -24,10 +24,7 @@
   "channelNameIsEmpty": "Oops! Channel name is empty!",
   "selectDelChannel": "Select the channel that you want to delete",
   "channelIsNotFound": "Oops! Channel {channelName} ({serviceName}) is not found!",
-  "clearSure": [
-    "If your are sure, enter:",
-    "/clearYes"
-  ],
+  "clearSure": "Are you sure?",
   "users": "Users: {count}",
   "channels": "Channels: {count}",
   "preview": "preview",
