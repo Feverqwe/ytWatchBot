@@ -25,7 +25,9 @@ var commands = {
         var _this = this;
         var chatId = msg.chat.id;
 
-        return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.help + _this.gOptions.language.rateMe);
+        return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.help + _this.gOptions.language.rateMe, {
+            disable_web_page_preview: true
+        });
     },
     a: function (msg, channelName, service) {
         "use strict";
