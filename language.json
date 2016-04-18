@@ -5,9 +5,9 @@
     "",
     "You can control me by sending these commands:",
     "",
-    "/list - Show list of channel",
-    "/add - Add channel in list",
-    "/delete - Delete channel from list",
+    "/list - Show the channel list",
+    "/add - Add channel",
+    "/delete - Delete channel",
     "/top - Top 10",
     "/liveTime - How long will it works",
     "/clear - Clear channel list"

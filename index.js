@@ -119,8 +119,8 @@ var options = {
             gc();
         });
     }).then(function() {
-        var origProcessUpdate = TelegramBotApi.prototype._processUpdate;
         // todo: rm after update
+        var origProcessUpdate = TelegramBotApi.prototype._processUpdate;
         TelegramBotApi.prototype.editMessageReplyMarkup = function (chatId, options) {
             var form = options || {};
             form.chat_id = chatId;
@@ -160,6 +160,8 @@ var options = {
         options.bot.sendMessage = quote.wrapper(options.bot.sendMessage.bind(options.bot));
         options.bot.sendPhoto = quote.wrapper(options.bot.sendPhoto.bind(options.bot));
         options.bot.sendChatAction = quote.wrapper(options.bot.sendChatAction.bind(options.bot));
+        options.bot.editMessageText = quote.wrapper(options.bot.editMessageText.bind(options.bot));
+        options.bot.editMessageReplyMarkup = quote.wrapper(options.bot.editMessageReplyMarkup.bind(options.bot));
     }).then(function() {
         options.tracker = new Tracker(options);
     }).then(function() {
