@@ -2,7 +2,7 @@
   "name": "application-name",
   "version": "0.0.1",
   "dependencies": {
-    "node-telegram-bot-api": "0.21.1",
+    "node-telegram-bot-api": "^0.21.1",
     "node-localstorage": "^1.2.0",
     "debug": "^2.2.0",
     "bluebird": "^3.3.4",

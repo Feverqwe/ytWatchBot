@@ -119,22 +119,6 @@ var options = {
             gc();
         });
     }).then(function() {
-        var origProcessUpdate = TelegramBotApi.prototype._processUpdate;
-        // todo: rm path after update
-        TelegramBotApi.prototype.editMessageText = function (chatId, text, options) {
-            var form = options || {};
-            form.chat_id = chatId;
-            form.text = text;
-            return this._request('editMessageText', {form: form});
-        };
-        TelegramBotApi.prototype._processUpdate = function (update) {
-            var callbackQuery = update.callback_query;
-            if (callbackQuery) {
-                this.emit('callback_query', callbackQuery);
-            }
-            origProcessUpdate.call(this, update);
-        };
-
         /**
          * @type {{
          * sendMessage: function,
@@ -151,7 +135,7 @@ var options = {
         });
 
         var quote = new base.Quote(30);
-
+        
         options.bot.sendMessage = quote.wrapper(options.bot.sendMessage.bind(options.bot));
         options.bot.sendPhoto = quote.wrapper(options.bot.sendPhoto.bind(options.bot));
         options.bot.sendChatAction = quote.wrapper(options.bot.sendChatAction.bind(options.bot));

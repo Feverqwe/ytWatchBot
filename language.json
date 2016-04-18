@@ -1,5 +1,16 @@
 {
-  "help": "Hi! I will notify you about new videos on Youtube channels!",
+  "help": [
+    "Hi! I will notify you about new videos on Youtube channels!",
+    "",
+    "You can control me by sending these commands:",
+    "",
+    "/list - Show list of channel",
+    "/add - Add channel in list",
+    "/delete - Delete channel from list",
+    "/top - Top 10",
+    "/liveTime - How long will it works",
+    "/clear - Clear channel list"
+  ],
   "emptyServiceList": "You don't have channels in watch list, yet.",
   "enterChannelName": "Enter the channel URL or name (example: blacksilverufa):",
   "enterService": "Enter a video platform",
@@ -13,7 +24,10 @@
   "channelNameIsEmpty": "Oops! Channel name is empty!",
   "selectDelChannel": "Select the channel that you want to delete",
   "channelIsNotFound": "Oops! Channel {channelName} ({serviceName}) is not found!",
-  "clearSure": "Are you sure?",
+  "clearSure": [
+    "If your are sure, enter:",
+    "/clearYes"
+  ],
   "users": "Users: {count}",
   "channels": "Channels: {count}",
   "preview": "preview",
