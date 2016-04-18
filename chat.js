@@ -175,6 +175,9 @@ Chat.prototype.callbackQueryToMsg = function (callbackQuery) {
 Chat.prototype.onCallbackQuery = function (callbackQuery) {
     "use strict";
     var _this = this;
+    var cbId = callbackQuery.id;
+    this.gOptions.bot.answerCallbackQuery(cbId, '...');
+
     var data = callbackQuery.data;
 
     if (!data) {
