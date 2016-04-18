@@ -31,9 +31,7 @@ var menuBtnList = function () {
             {
                 text: 'How long will it works',
                 callback_data: '/liveTime'
-            }
-        ],
-        [
+            },
             {
                 text: 'Clear channel list',
                 callback_data: '/clear'
