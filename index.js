@@ -119,6 +119,27 @@ var options = {
             gc();
         });
     }).then(function() {
+        var origProcessUpdate = TelegramBotApi.prototype._processUpdate;
+        // todo: rm after update
+        TelegramBotApi.prototype.editMessageReplyMarkup = function (chatId, options) {
+            var form = options || {};
+            form.chat_id = chatId;
+            return this._request('editMessageReplyMarkup', {form: form});
+        };
+        TelegramBotApi.prototype.editMessageText = function (chatId, text, options) {
+            var form = options || {};
+            form.chat_id = chatId;
+            form.text = text;
+            return this._request('editMessageText', {form: form});
+        };
+        TelegramBotApi.prototype._processUpdate = function (update) {
+            var callbackQuery = update.callback_query;
+            if (callbackQuery) {
+                this.emit('callback_query', callbackQuery);
+            }
+            origProcessUpdate.call(this, update);
+        };
+
         /**
          * @type {{
          * sendMessage: function,

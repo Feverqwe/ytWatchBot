@@ -1,5 +1,6 @@
 {
-  "help": [
+  "help": "Hi! I will notify you about new videos on Youtube channels!",
+  "helpGroup": [
     "Hi! I will notify you about new videos on Youtube channels!",
     "",
     "You can control me by sending these commands:",
@@ -24,7 +25,8 @@
   "channelNameIsEmpty": "Oops! Channel name is empty!",
   "selectDelChannel": "Select the channel that you want to delete",
   "channelIsNotFound": "Oops! Channel {channelName} ({serviceName}) is not found!",
-  "clearSure": [
+  "clearSure": "Are you sure?",
+  "clearSureGroup": [
     "If your are sure, enter:",
     "/clearYes"
   ],
