@@ -307,8 +307,7 @@ var commands = {
                     .replace('{channelName}', channelName)
                     .replace('{serviceName}', _this.gOptions.serviceToTitle[service]),
                 {
-                    message_id: msg.message_id,
-                    reply_markup: _this.templates.hideKeyboard.reply_markup
+                    message_id: msg.message_id
                 }
             );
         });
@@ -486,8 +485,7 @@ var commands = {
             _this.gOptions.language.commandCanceled
                 .replace('{command}', command || ''),
             {
-                message_id: msg.message_id,
-                reply_markup: _this.templates.hideKeyboard.reply_markup
+                message_id: msg.message_id
             }
         );
     },
@@ -557,8 +555,7 @@ var commands = {
                 chatId,
                 _this.gOptions.language.cleared,
                 {
-                    message_id: msg.message_id,
-                    reply_markup: _this.templates.hideKeyboard.reply_markup
+                    message_id: msg.message_id
                 }
             );
         });
