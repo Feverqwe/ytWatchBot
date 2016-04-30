@@ -67,7 +67,12 @@ var commands = {
         var _this = this;
         var chatId = msg.chat.id;
 
-        return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.help + _this.gOptions.language.rateMe, {
+        var text = _this.gOptions.language.help;
+        if (base.getRandomInt(0, 100) < 30) {
+            text += _this.gOptions.language.rateMe;
+        }
+
+        return _this.gOptions.bot.sendMessage(chatId, text, {
             disable_web_page_preview: true,
             reply_markup: JSON.stringify({
                 inline_keyboard: menuBtnList()
@@ -79,7 +84,12 @@ var commands = {
         var _this = this;
         var chatId = msg.chat.id;
 
-        return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.helpGroup + _this.gOptions.language.rateMe, {
+        var text = _this.gOptions.language.helpGroup;
+        if (base.getRandomInt(0, 100) < 30) {
+            text += _this.gOptions.language.rateMe;
+        }
+
+        return _this.gOptions.bot.sendMessage(chatId, text, {
             disable_web_page_preview: true
         });
     },
