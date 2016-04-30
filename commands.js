@@ -773,5 +773,6 @@ var commands = {
 };
 
 commands.stop = commands.clear;
+commands.stopGroup = commands.clearGroup;
 
 module.exports = commands;
