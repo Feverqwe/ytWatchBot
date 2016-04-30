@@ -33,7 +33,7 @@ var throttle = function(fn, threshhold, scope) {
     };
 };
 
-Youtube = function(options) {
+var Youtube = function(options) {
     "use strict";
     var _this = this;
     this.gOptions = options;
