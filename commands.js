@@ -99,7 +99,7 @@ var commands = {
         var chatId = msg.chat.id;
         var chatList = _this.gOptions.storage.chatList;
 
-        return _this.gOptions.services[service].getChannelName(channelName).then(function(channelName) {
+        return _this.gOptions.services[service].getChannelId(channelName).then(function(channelName) {
             if (service === 'youtube') {
                 _this.gOptions.events.emit('subscribe', channelName);
             }
@@ -734,7 +734,7 @@ var commands = {
                 (function(service, arr) {
                     queue = queue.finally(function() {
                         var promiseList = arr.map(function(userId) {
-                            return services[service].getChannelName(userId);
+                            return services[service].getChannelId(userId);
                         });
                         return Promise.all(promiseList);
                     });

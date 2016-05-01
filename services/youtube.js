@@ -393,7 +393,7 @@ Youtube.prototype.searchChannelIdByTitle = function(channelTitle) {
     });
 };
 
-Youtube.prototype.getChannelId = function(userId) {
+Youtube.prototype.searchChannelIdByUsername = function(userId) {
     "use strict";
     var _this = this;
     return Promise.resolve().then(function() {
@@ -451,7 +451,7 @@ Youtube.prototype.getVideoList = function(channelNameList, isFullCheck) {
         var pageLimit = 100;
         var items = [];
         var getPage = function(pageToken) {
-            return _this.getChannelId(channelName).then(function(channelId) {
+            return _this.searchChannelIdByUsername(channelName).then(function(channelId) {
                 return requestPromise({
                     method: 'GET',
                     url: 'https://www.googleapis.com/youtube/v3/activities',
@@ -504,18 +504,18 @@ Youtube.prototype.getVideoList = function(channelNameList, isFullCheck) {
  * @param {String} channelName
  * @returns {*}
  */
-Youtube.prototype.getChannelName = function(channelName) {
+Youtube.prototype.getChannelId = function(channelName) {
     "use strict";
     var _this = this;
 
-    return _this.getChannelId(channelName).catch(function(err) {
+    return _this.searchChannelIdByUsername(channelName).catch(function(err) {
         if (err !== 'Channel ID is not found by userId!') {
             throw err;
         }
 
         return _this.searchChannelIdByTitle(channelName).then(function(channelId) {
             channelName = channelId;
-            return _this.getChannelId(channelId);
+            return _this.searchChannelIdByUsername(channelId);
         });
     }).then(function(channelId) {
         return requestPromise({
@@ -553,7 +553,7 @@ Youtube.prototype.getChannelName = function(channelName) {
 
                 var channelTitleLow = channelTitle.toLowerCase();
 
-                return _this.getChannelId(channelTitleLow).then(function(channelId) {
+                return _this.searchChannelIdByUsername(channelTitleLow).then(function(channelId) {
                     if (channelId === channelName) {
                         channelName = channelTitleLow;
                     }
