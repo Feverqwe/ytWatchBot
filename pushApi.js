@@ -28,7 +28,7 @@ var PushApi = function(options) {
         var dDblList = [];
 
         channelList.forEach(function(channelName) {
-            _this.gOptions.services.youtube.getChannelId(channelName).then(function (channelId) {
+            _this.gOptions.services.youtube.searchChannelIdByUsername(channelName).then(function (channelId) {
                 if (dDblList.indexOf(channelId) !== -1) {
                     return;
                 }
@@ -49,7 +49,7 @@ var PushApi = function(options) {
         var dDblList = [];
 
         channelList.forEach(function(channelName) {
-            _this.gOptions.services.youtube.getChannelId(channelName).then(function (channelId) {
+            _this.gOptions.services.youtube.searchChannelIdByUsername(channelName).then(function (channelId) {
                 if (dDblList.indexOf(channelId) !== -1) {
                     return;
                 }
