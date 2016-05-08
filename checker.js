@@ -28,9 +28,9 @@ var Checker = function(options) {
             channelList.push(channelId);
         }
 
-        var userId = options.services.youtube.getUserId(channelId);
-        if (userId) {
-            channelList.push(userId);
+        var channelUsername = options.services.youtube.getChannelUsername(channelId);
+        if (channelUsername) {
+            channelList.push(channelUsername);
         }
 
         var videoId = data['yt:videoId'];
