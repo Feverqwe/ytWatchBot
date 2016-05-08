@@ -199,6 +199,7 @@ Youtube.prototype.clean = function(channelNameList) {
         if (channelNameList.indexOf(channelName) === -1) {
             delete stateList[channelName];
             debug('Removed from stateList %s', channelName);
+            _this.saveStateThrottle();
         }
     });
 
