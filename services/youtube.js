@@ -108,7 +108,7 @@ Youtube.prototype.getChannelInfo = function (channelId) {
 Youtube.prototype.removeChannelInfo = function (channelId) {
     "use strict";
     delete this.config.channelInfo[channelId];
-    this.saveChannelInfo();
+    return this.saveChannelInfo();
 };
 
 Youtube.prototype.setChannelTitle = function(channelId, title) {
