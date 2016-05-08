@@ -36,9 +36,13 @@ Daemon.prototype.initTickTack = function() {
         _this.gOptions.events.emit('tickTack');
     };
 
-    _this.TickTackTimer = setInterval(function() {
+    setTimeout(function() {
+        _this.TickTackTimer = setInterval(function() {
+            onTimer();
+        }, interval * 60 * 1000);
+
         onTimer();
-    }, interval * 60 * 1000);
+    }, _this.getRunTime(interval));
 };
 
 Daemon.prototype.initChecker = function() {
