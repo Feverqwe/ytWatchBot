@@ -279,7 +279,7 @@ Checker.prototype.setSend = function (stream) {
     var channelName = stream._channelName;
     var videoId = stream._videoId;
 
-    currentService.addVideoIsStateList(channelName, videoId);
+    currentService.addVideoInStateList(channelName, videoId);
 
     var debugItem = JSON.parse(JSON.stringify(stream));
     delete debugItem.preview;

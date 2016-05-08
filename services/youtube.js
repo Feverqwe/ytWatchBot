@@ -108,7 +108,7 @@ Youtube.prototype.clean = function(channelList) {
     return promise;
 };
 
-Youtube.prototype.addVideoIsStateList = function (channelName, videoId) {
+Youtube.prototype.addVideoInStateList = function (channelName, videoId) {
     var stateList = this.config.stateList;
     var channelObj = stateList[channelName];
     if (!channelObj) {
