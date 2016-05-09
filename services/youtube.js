@@ -45,8 +45,23 @@ var Youtube = function(options) {
     this.onReady = base.storage.get(['ytChannelInfo', 'stateList']).then(function(storage) {
         _this.config.stateList = storage.stateList || {};
         _this.config.channelInfo = storage.ytChannelInfo || {};
+
+        // todo: rm me!
+        _this.fixUsername();
+
         _this.refreshCache();
         return !storage.ytChannelInfo && _this.migrateStorage();
+    });
+};
+
+// todo: rm me!
+Youtube.prototype.fixUsername = function () {
+    var channelInfo = this.config.channelInfo;
+    Object.keys(channelInfo).forEach(function (channelId) {
+        var info = channelInfo[channelId];
+        if (info.username) {
+            info.username = info.username.trim();
+        }
     });
 };
 
