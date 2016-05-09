@@ -100,6 +100,7 @@ Youtube.prototype.getChannelInfo = function (channelId) {
     "use strict";
     var obj = this.config.channelInfo[channelId];
     if (!obj) {
+        debug('getChannelInfo channel by id is not found! %s', channelId);
         obj = this.config.channelInfo[channelId] = {};
     }
     return obj;
