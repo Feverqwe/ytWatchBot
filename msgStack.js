@@ -99,7 +99,7 @@ MsgStack.prototype.callMsgList = function (chatId, chatMsgStack, msgStackObj) {
             var noPhotoText = base.getNowStreamText(_this.gOptions, videoItem);
 
             return _this.gOptions.checker.sendNotify([chatId], text, noPhotoText, videoItem, true).then(function () {
-                msgList.shift();
+                base.removeItemFromArray(msgList, msgId);
                 return _this.saveThrottle();
             }).catch(function (e) {
                 debug('sendNotify error! %s', e);
