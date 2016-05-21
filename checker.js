@@ -259,7 +259,6 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
     "use strict";
     var _this = this;
 
-    var requestPhotoCache = this.requestPhotoCache;
     var bot = _this.gOptions.bot;
     var sendMsg = function(chatId) {
         return bot.sendMessage(chatId, noPhotoText, {
@@ -322,7 +321,7 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
             return Promise.resolve();
         }
 
-        var promise = requestPhotoCache[stream._videoId];
+        var promise = _this.requestPhotoCache[stream._videoId];
         if (promise) {
             return promise.then(function(msg) {
                 stream._photoId = msg.photo[0].file_id;
