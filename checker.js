@@ -261,7 +261,6 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
 
     var requestPhotoCache = this.requestPhotoCache;
     var bot = _this.gOptions.bot;
-    var chatId = null;
     var sendMsg = function(chatId) {
         return bot.sendMessage(chatId, noPhotoText, {
             disable_web_page_preview: true,
@@ -294,6 +293,7 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
     };
 
     var send = function() {
+        var chatId = null;
         var photoId = stream._photoId;
         var promiseList = [];
 
@@ -333,7 +333,7 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
             });
         }
 
-        chatId = chatIdList.shift();
+        var chatId = chatIdList.shift();
 
         return _this.getPicIdCache(chatId, text, stream).then(function(msg) {
             stream._photoId = msg.photo[0].file_id;
