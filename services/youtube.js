@@ -46,34 +46,6 @@ var Youtube = function(options) {
         _this.config.stateList = storage.stateList || {};
         _this.config.channelInfo = storage.ytChannelInfo || {};
         _this.refreshCache();
-        return !storage.ytChannelInfo && _this.migrateStorage();
-    });
-};
-
-Youtube.prototype.migrateStorage = function () {
-    var _this = this;
-    return base.storage.get(['userIdToChannelId', 'channelIdToTitle', 'titleList']).then(function(storage) {
-        var userIdToChannelId = storage.userIdToChannelId || {};
-        var channelIdToTitle = storage.channelIdToTitle || {};
-        var localTitleList = storage.titleList || {};
-        Object.keys(userIdToChannelId).forEach(function (userId) {
-            var channelId = userIdToChannelId[userId];
-            channelId && _this.setChannelUsername(channelId, userId);
-        });
-        Object.keys(channelIdToTitle).forEach(function (channelId) {
-            var title = channelIdToTitle[channelId];
-            if (!channelRe.test(channelId)) {
-                channelId = _this.config.userIdToChannelId[channelId];
-            }
-            title && channelId && _this.setChannelTitle(channelId, title);
-        });
-        Object.keys(localTitleList).forEach(function (channelId) {
-            var title = localTitleList[channelId];
-            if (!channelRe.test(channelId)) {
-                channelId = _this.config.userIdToChannelId[channelId];
-            }
-            title && channelId && _this.setChannelLocalTitle(channelId, title);
-        });
     });
 };
 
