@@ -3,6 +3,8 @@
  */
 var base = require('./base');
 var debug = require('debug')('MsgStack');
+var debugLog = require('debug')('MsgStack:log');
+debugLog.log = console.log.bind(console);
 var Promise = require('bluebird');
 
 var MsgStack = function (options) {
@@ -144,11 +146,20 @@ MsgStack.prototype.callStack = function () {
     return _this.inProgress;
 };
 
+MsgStack.prototype.sendLog = function (stream) {
+    var debugItem = JSON.parse(JSON.stringify(stream));
+    delete debugItem.preview;
+    delete debugItem._videoId;
+    delete debugItem._photoId;
+    debugLog('[s] %j', debugItem);
+};
+
 MsgStack.prototype.notifyAll = function (videoList) {
     var _this = this;
 
     videoList.forEach(function (videoItem) {
         _this.addInStack(videoItem);
+        _this.sendLog(videoItem);
     });
 
     return _this.save().then(function () {
