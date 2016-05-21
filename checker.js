@@ -347,6 +347,7 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
             debug('Function getPicId throw error!', err);
         });
     };
+    
     return requestPicId().then(function() {
         return send();
     });
