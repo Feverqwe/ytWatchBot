@@ -87,7 +87,7 @@ MsgStack.prototype.callMsgList = function (chatId, chatMsgStack, msgStackObj) {
         }
 
         return Promise.try(function () {
-            var msgId = msgList.shift();
+            var msgId = msgList[0];
             var videoItem = msgStackObj[msgId];
             if (!videoItem) {
                 debug('VideoItem is not found! %s', msgId);
@@ -97,8 +97,9 @@ MsgStack.prototype.callMsgList = function (chatId, chatMsgStack, msgStackObj) {
             var text = base.getNowStreamPhotoText(_this.gOptions, videoItem);
             var noPhotoText = base.getNowStreamText(_this.gOptions, videoItem);
 
-            return _this.gOptions.checker.sendNotify([chatId], text, noPhotoText, videoItem, true).catch(function (e) {
-                msgList.unshift(msgId);
+            return _this.gOptions.checker.sendNotify([chatId], text, noPhotoText, videoItem, true).then(function () {
+                msgList.shift();
+            }).catch(function (e) {
                 debug('sendNotify error! %s', e);
 
                 throw e;
