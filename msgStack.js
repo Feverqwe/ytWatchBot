@@ -17,7 +17,7 @@ var MsgStack = function (options) {
     this.chatMsgStack = this.gOptions.storage.chatMsgStack;
     this.saveThrottle = base.throttle(this.save, 100, this);
 
-    this.inProgress = null;
+    this.inProgressChatId = [];
 
     options.events.on('notifyAll', function (videoList) {
         return _this.notifyAll(videoList);
@@ -130,20 +130,22 @@ MsgStack.prototype.save = function () {
 
 MsgStack.prototype.callStack = function () {
     var _this = this;
-    if (this.inProgress) {
-        return this.inProgress;
-    }
-
+    var inProgressChatId = this.inProgressChatId;
     var chatMsgStack = this.chatMsgStack;
     var msgStackObj = this.msgStackObj;
-    this.inProgress = Promise.try(function () {
-        return Promise.all(Object.keys(chatMsgStack).map(function (chatId) {
-            return _this.callMsgList(chatId, chatMsgStack, msgStackObj);
-        }));
-    }).then(function () {
-        _this.inProgress = null;
+    var promiseList = [];
+    Object.keys(chatMsgStack).map(function (chatId) {
+        if (inProgressChatId.indexOf(chatId) !== -1) {
+            return;
+        }
+        inProgressChatId.push(chatId);
+
+        var promise = _this.callMsgList(chatId, chatMsgStack, msgStackObj).then(function () {
+            base.removeItemFromArray(inProgressChatId, chatId);
+        });
+        promiseList.push(promise);
     });
-    return _this.inProgress;
+    return Promise.all(promiseList);
 };
 
 MsgStack.prototype.sendLog = function (stream) {
