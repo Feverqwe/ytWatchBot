@@ -337,6 +337,10 @@ Youtube.prototype.apiNormalization = function(channelName, data, isFullCheck, la
         }
     }
 
+    if (Object.keys(videoIdObj).length === 0) {
+        delete channelObj.videoIdList;
+    }
+
     return videoList;
 };
 
