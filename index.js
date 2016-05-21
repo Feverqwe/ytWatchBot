@@ -32,45 +32,15 @@ var TelegramBotApi = require('node-telegram-bot-api');
 var EventEmitter = require('events').EventEmitter;
 var Daemon = require('./daemon');
 var Tracker = require('./tracker');
+var MsgStack = require('./msgStack');
 
-/**
- * @type {
- * {
- * config: {},
- * language: {
- * help: string,
- * offline: string,
- * emptyServiceList: string,
- * enterChannelName: string,
- * enterService: string,
- * serviceIsNotSupported: string,
- * channelExists: string,
- * channelAdded: string,
- * commandCanceled: string,
- * channelDontExist: string,
- * channelDeleted: string,
- * cleared: string,
- * channelNameIsEmpty: string,
- * selectDelChannel: string,
- * channelIsNotFound: string,
- * clearSure: string,
- * users: string,
- * channels: string,
- * preview: string,
- * rateMe: string,
- * enterChannelNameNote: string,
- * selectDelChannelGroupNote: string
- * },
- * storage: {chatList: {}},
- * serviceList: string[],
- * serviceToTitle: {goodgame: string, twitch: string, youtube: string, hitbox: string}}
- * }
- */
 var options = {
     config: {},
     language: {},
     storage: {
-        chatList: {}
+        chatList: {},
+        msgStack: {},
+        chatMsgStack: {}
     },
     serviceList: ['youtube'],
     serviceToTitle: {
@@ -173,6 +143,8 @@ var options = {
         options.bot.answerCallbackQuery = quote.wrapper(options.bot.answerCallbackQuery.bind(options.bot));
     }).then(function() {
         options.tracker = new Tracker(options);
+    }).then(function() {
+        options.msgStack = new MsgStack(options);
     }).then(function() {
         options.chat = new Chat(options);
     }).then(function() {

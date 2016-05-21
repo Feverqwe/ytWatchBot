@@ -17,26 +17,11 @@ var Youtube = function(options) {
     this.config = {};
     this.config.token = options.config.ytToken;
 
-    this.saveStateThrottle = base.throttle(this.saveState, 250, this);
-
     this.onReady = base.storage.get(['ytChannelInfo', 'stateList']).then(function(storage) {
         _this.config.stateList = storage.stateList || {};
-        _this.prepareStateList();
 
         _this.config.channelInfo = storage.ytChannelInfo || {};
         _this.refreshCache();
-    });
-};
-
-Youtube.prototype.prepareStateList = function () {
-    var stateList = this.config.stateList;
-    Object.keys(stateList).forEach(function (channelName) {
-        var channelObj = stateList[channelName];
-        var time = channelObj.lastRequestTime;
-        if (time.toString().length === 13) {
-            time = parseInt(time / 1000);
-        }
-        channelObj.lastRequestTime = time;
     });
 };
 
@@ -160,33 +145,18 @@ Youtube.prototype.clean = function(channelNameList) {
         }
     });
 
+    var needSaveState = false;
     var stateList = _this.config.stateList;
     Object.keys(stateList).forEach(function (channelName) {
         if (channelNameList.indexOf(channelName) === -1) {
+            needSaveState = true;
             delete stateList[channelName];
             debug('Removed from stateList %s', channelName);
-            _this.saveStateThrottle();
         }
     });
+    needSaveState && _this.saveState();
 
     return Promise.resolve();
-};
-
-Youtube.prototype.addVideoInStateList = function (channelName, videoId) {
-    var stateList = this.config.stateList;
-    var channelObj = stateList[channelName];
-    if (!channelObj) {
-        channelObj = stateList[channelName] = {}
-    }
-
-    var videoIdObj = channelObj.videoIdList;
-    if (!videoIdObj) {
-        videoIdObj = channelObj.videoIdList = {}
-    }
-
-    videoIdObj[videoId] = base.getNow();
-
-    this.saveStateThrottle();
 };
 
 Youtube.prototype.videoIdInList = function(channelName, videoId) {
@@ -283,6 +253,14 @@ Youtube.prototype.apiNormalization = function(channelName, data, isFullCheck, la
             lastPubTime = pubTime;
         }
 
+        var isExists = !!videoIdObj[videoId];
+
+        videoIdObj[videoId] = parseInt(Date.now() / 1000);
+
+        if (isExists) {
+            return;
+        }
+
         var previewList = [];
 
         var thumbnails = snippet.thumbnails;
@@ -301,10 +279,6 @@ Youtube.prototype.apiNormalization = function(channelName, data, isFullCheck, la
 
         if (!snippet.thumbnails) {
             debug('Thumbnails is not found! %j', origItem);
-        }
-
-        if (videoIdObj[videoId]) {
-            return;
         }
 
         var item = {
@@ -339,6 +313,10 @@ Youtube.prototype.apiNormalization = function(channelName, data, isFullCheck, la
 
     if (Object.keys(videoIdObj).length === 0) {
         delete channelObj.videoIdList;
+    }
+
+    if (Object.keys(channelObj).length === 0) {
+        delete stateList[channelName];
     }
 
     return videoList;
@@ -501,7 +479,9 @@ Youtube.prototype.getVideoList = function(channelNameList, isFullCheck) {
         });
     });
 
-    return Promise.all(requestList).then(function() {
+    return Promise.all(requestList).then(function () {
+        return _this.saveState();
+    }).then(function() {
         return streamList;
     });
 };

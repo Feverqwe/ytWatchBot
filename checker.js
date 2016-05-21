@@ -49,10 +49,6 @@ var Checker = function(options) {
             debug('updateList error! "%s"', err);
         });
     });
-
-    options.events.on('notify', function (videoList) {
-        return _this.notifyAll(videoList);
-    });
 };
 
 Checker.prototype.getChannelList = function() {
@@ -163,10 +159,6 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
                 return _this.gOptions.bot.sendPhoto(chatId, request, {
                     caption: text
                 });
-            }).then(function (msg) {
-                var fileId = msg.photo[0].file_id;
-
-                return fileId;
             }).catch(function(err) {
                 var imgProcessError = [
                     /IMAGE_PROCESS_FAILED/,
@@ -250,52 +242,9 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
     });
 };
 
-Checker.prototype.isSent = function (stream) {
-    var _this = this;
-    var services = _this.gOptions.services;
-    var service = stream._service;
-    var currentService = services[service];
-    if (!currentService) {
-        throw new Error('Service "' + service + '" is not found!');
-    }
-    var channelName = stream._channelName;
-    var videoId = stream._videoId;
-
-    if (currentService.videoIdInList(channelName, videoId)) {
-        return true;
-    }
-
-    return false;
-};
-
-Checker.prototype.setSend = function (stream) {
-    var _this = this;
-    var services = _this.gOptions.services;
-    var service = stream._service;
-    var currentService = services[service];
-    if (!currentService) {
-        throw new Error('Service "' + service + '" is not found!');
-    }
-    var channelName = stream._channelName;
-    var videoId = stream._videoId;
-
-    currentService.addVideoInStateList(channelName, videoId);
-
-    var debugItem = JSON.parse(JSON.stringify(stream));
-    delete debugItem.preview;
-    delete debugItem._videoId;
-    delete debugItem._photoId;
-    debugLog('[s] %j', debugItem);
-};
-
 Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, useCache) {
     "use strict";
     var _this = this;
-
-    var onSent = function () {
-        onSent = null;
-        _this.setSend(stream);
-    };
 
     var bot = _this.gOptions.bot;
     var chatId = null;
@@ -304,12 +253,14 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
             disable_web_page_preview: true,
             parse_mode: 'HTML'
         }).then(function() {
-            onSent && onSent();
             _this.track(chatId, stream, 'sendMsg');
         }).catch(function(err) {
             debug('Send text msg error! %s %s %s', chatId, stream._channelName, err);
 
-            _this.onSendMsgError(err, chatId);
+            var needKick = _this.onSendMsgError(err, chatId);
+            if (!needKick) {
+                throw err;
+            }
         });
     };
 
@@ -317,12 +268,14 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
         return bot.sendPhoto(chatId, fileId, {
             caption: text
         }).then(function() {
-            onSent && onSent();
             _this.track(chatId, stream, 'sendPhoto');
         }).catch(function(err) {
             debug('Send photo msg error! %s %s %s', chatId, stream._channelName, err);
 
-            _this.onSendMsgError(err, chatId);
+            var needKick = _this.onSendMsgError(err, chatId);
+            if (!needKick) {
+                throw err;
+            }
         });
     };
 
@@ -357,10 +310,9 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
 
         chatId = chatIdList.shift();
 
-        return _this.getPicId(chatId, text, stream).then(function(fileId) {
-            stream._photoId = fileId;
+        return _this.getPicId(chatId, text, stream).then(function(msg) {
+            stream._photoId = msg.photo[0].file_id;
 
-            onSent && onSent();
             _this.track(chatId, stream, 'sendPhoto');
         }).catch(function(err) {
             if (err === 'Send photo file error! Bot was kicked!') {
@@ -373,58 +325,6 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
     };
     return requestPicId().then(function() {
         return send();
-    });
-};
-
-Checker.prototype.onNewVideo = function(videoItem) {
-    "use strict";
-    var _this = this;
-    var text = base.getNowStreamPhotoText(this.gOptions, videoItem);
-    var noPhotoText = base.getNowStreamText(this.gOptions, videoItem);
-
-    var chatList = this.gOptions.storage.chatList;
-
-    var chatIdList = [];
-
-    for (var chatId in chatList) {
-        var chatItem = chatList[chatId];
-
-        var userChannelList = chatItem.serviceList && chatItem.serviceList[videoItem._service];
-        if (!userChannelList) {
-            continue;
-        }
-
-        if (userChannelList.indexOf(videoItem._channelName) === -1) {
-            continue;
-        }
-
-        chatIdList.push(chatItem.chatId);
-    }
-
-    if (!chatIdList.length) {
-        return Promise.resolve();
-    }
-
-    return this.sendNotify(chatIdList, text, noPhotoText, videoItem);
-};
-
-Checker.prototype.inProgress = [];
-Checker.prototype.getVideoItemId = function (videoItem) {
-    return [videoItem._service, videoItem._videoId].join(';');
-};
-
-Checker.prototype.notifyAll = function(videoList) {
-    "use strict";
-    var _this = this;
-
-    videoList.forEach(function (videoItem) {
-        var id = _this.getVideoItemId(videoItem);
-        if (_this.inProgress.indexOf(id) === -1 && !_this.isSent(videoItem)) {
-            _this.inProgress.push(id);
-            _this.onNewVideo(videoItem).finally(function () {
-                _this.inProgress.splice(_this.inProgress.indexOf(id), 1);
-            });
-        }
     });
 };
 
@@ -482,7 +382,7 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
             return a.publishedAt > b.publishedAt;
         });
 
-        _this.gOptions.events.emit('notify', videoList);
+        _this.gOptions.events.emit('notifyAll', videoList);
     };
 
     var queue = Promise.resolve();
