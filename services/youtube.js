@@ -21,8 +21,22 @@ var Youtube = function(options) {
 
     this.onReady = base.storage.get(['ytChannelInfo', 'stateList']).then(function(storage) {
         _this.config.stateList = storage.stateList || {};
+        _this.prepareStateList();
+
         _this.config.channelInfo = storage.ytChannelInfo || {};
         _this.refreshCache();
+    });
+};
+
+Youtube.prototype.prepareStateList = function () {
+    var stateList = this.config.stateList;
+    Object.keys(stateList).forEach(function (channelName) {
+        var channelObj = stateList[channelName];
+        var time = channelObj.lastRequestTime;
+        if (time.toString().length === 13) {
+            time = parseInt(time / 1000);
+        }
+        channelObj.lastRequestTime = time;
     });
 };
 
@@ -264,7 +278,7 @@ Youtube.prototype.apiNormalization = function(channelName, data, isFullCheck, la
             return;
         }
 
-        var pubTime = new Date(snippet.publishedAt).getTime();
+        var pubTime = parseInt(new Date(snippet.publishedAt).getTime() / 1000);
         if (lastPubTime < pubTime) {
             lastPubTime = pubTime;
         }
@@ -312,11 +326,10 @@ Youtube.prototype.apiNormalization = function(channelName, data, isFullCheck, la
     });
 
     if (lastPubTime) {
-        channelObj.lastRequestTime = lastPubTime + 1000;
+        channelObj.lastRequestTime = lastPubTime + 1;
     }
 
     if (isFullCheck) {
-        lastRequestTime = parseInt(lastRequestTime / 1000);
         for (var videoId in videoIdObj) {
             if (videoIdObj[videoId] < lastRequestTime) {
                 delete videoIdObj[videoId];
@@ -442,9 +455,9 @@ Youtube.prototype.getVideoList = function(channelNameList, isFullCheck) {
 
         var lastRequestTime = stateItem && stateItem.lastRequestTime;
         if (isFullCheck || !lastRequestTime) {
-            lastRequestTime = Date.now() - 3 * 24 * 60 * 60 * 1000;
+            lastRequestTime = parseInt((Date.now() - 3 * 24 * 60 * 60 * 1000) / 1000);
         }
-        var publishedAfter = new Date(lastRequestTime).toISOString();
+        var publishedAfter = new Date(lastRequestTime * 1000).toISOString();
 
         var pageLimit = 100;
         var items = [];
