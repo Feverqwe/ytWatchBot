@@ -271,8 +271,8 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
         }).catch(function(err) {
             debug('Send text msg error! %s %s %s', chatId, stream._channelName, err);
 
-            var needKick = _this.onSendMsgError(err, chatId);
-            if (!needKick) {
+            var isKicked = _this.onSendMsgError(err, chatId);
+            if (!isKicked) {
                 throw err;
             }
         });
@@ -286,8 +286,8 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
         }).catch(function(err) {
             debug('Send photo msg error! %s %s %s', chatId, stream._channelName, err);
 
-            var needKick = _this.onSendMsgError(err, chatId);
-            if (!needKick) {
+            var isKicked = _this.onSendMsgError(err, chatId);
+            if (!isKicked) {
                 throw err;
             }
         });
