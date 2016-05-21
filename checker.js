@@ -324,7 +324,9 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
 
         var promise = requestPhotoCache[stream._videoId];
         if (promise) {
-            return promise.catch(function(err) {
+            return promise.then(function(msg) {
+                stream._photoId = msg.photo[0].file_id;
+            }).catch(function(err) {
                 if (err === 'Send photo file error! Bot was kicked!') {
                     return requestPicId();
                 }
