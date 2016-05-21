@@ -479,14 +479,7 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
         }
 
         videoList.sort(function(a, b) {
-            var aDate = new Date(a.publishedAt);
-            var bDate = new Date(b.publishedAt);
-
-            if (aDate.getTime() > bDate.getTime()) {
-                return 1;
-            } else {
-                return -1;
-            }
+            return a.publishedAt > b.publishedAt;
         });
 
         _this.gOptions.events.emit('notify', videoList);
