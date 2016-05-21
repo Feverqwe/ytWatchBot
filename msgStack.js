@@ -13,6 +13,7 @@ var MsgStack = function (options) {
 
     this.msgStackObj = this.gOptions.storage.msgStack;
     this.chatMsgStack = this.gOptions.storage.chatMsgStack;
+    this.saveThrottle = base.throttle(this.save, 100, this);
 
     this.inProgress = null;
 
@@ -99,6 +100,7 @@ MsgStack.prototype.callMsgList = function (chatId, chatMsgStack, msgStackObj) {
 
             return _this.gOptions.checker.sendNotify([chatId], text, noPhotoText, videoItem, true).then(function () {
                 msgList.shift();
+                return _this.saveThrottle();
             }).catch(function (e) {
                 debug('sendNotify error! %s', e);
 
