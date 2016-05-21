@@ -361,3 +361,30 @@ module.exports.Quote = function (callPerSecond) {
 module.exports.getRandomInt = function (min, max) {
     return Math.floor(Math.random() * (max - min)) + min;
 };
+
+module.exports.getNow = function () {
+    return parseInt(Date.now() / 1000);
+};
+
+module.exports.throttle = function(fn, threshhold, scope) {
+    threshhold = threshhold || 250;
+    var last;
+    var deferTimer;
+    return function () {
+        var context = scope || this;
+
+        var now = Date.now();
+        var args = arguments;
+        if (last && now < last + threshhold) {
+            // hold on to it
+            clearTimeout(deferTimer);
+            deferTimer = setTimeout(function () {
+                last = now;
+                fn.apply(context, args);
+            }, threshhold);
+        } else {
+            last = now;
+            fn.apply(context, args);
+        }
+    };
+};

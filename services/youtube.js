@@ -10,29 +10,6 @@ var requestPromise = Promise.promisify(request);
 var apiQuote = new base.Quote(1000);
 requestPromise = apiQuote.wrapper(requestPromise.bind(requestPromise));
 
-var throttle = function(fn, threshhold, scope) {
-    threshhold = threshhold || 250;
-    var last;
-    var deferTimer;
-    return function () {
-        var context = scope || this;
-
-        var now = Date.now();
-        var args = arguments;
-        if (last && now < last + threshhold) {
-            // hold on to it
-            clearTimeout(deferTimer);
-            deferTimer = setTimeout(function () {
-                last = now;
-                fn.apply(context, args);
-            }, threshhold);
-        } else {
-            last = now;
-            fn.apply(context, args);
-        }
-    };
-};
-
 var Youtube = function(options) {
     "use strict";
     var _this = this;
@@ -40,7 +17,7 @@ var Youtube = function(options) {
     this.config = {};
     this.config.token = options.config.ytToken;
 
-    this.saveStateThrottle = throttle(this.saveState, 250, this);
+    this.saveStateThrottle = base.throttle(this.saveState, 250, this);
 
     this.onReady = base.storage.get(['ytChannelInfo', 'stateList']).then(function(storage) {
         _this.config.stateList = storage.stateList || {};
@@ -193,7 +170,7 @@ Youtube.prototype.addVideoInStateList = function (channelName, videoId) {
         videoIdObj = channelObj.videoIdList = {}
     }
 
-    videoIdObj[videoId] = parseInt(Date.now() / 1000);
+    videoIdObj[videoId] = base.getNow();
 
     this.saveStateThrottle();
 };
