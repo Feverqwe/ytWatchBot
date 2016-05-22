@@ -243,11 +243,13 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
 
 Checker.prototype.getPicIdCache = function (chatId, text, stream) {
     var cache = this.requestPhotoCache;
-    return cache[stream._videoId] = this.getPicId(chatId, text, stream).then(function (msg) {
-        delete cache[stream._videoId];
+    var id = stream._videoId;
+    
+    return cache[id] = this.getPicId(chatId, text, stream).then(function (msg) {
+        delete cache[id];
         return msg;
     }).catch(function (e) {
-        delete cache[stream._videoId];
+        delete cache[id];
         throw e;
     });
 };
