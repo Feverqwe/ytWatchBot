@@ -151,9 +151,6 @@ Checker.prototype.getPicId = function(chatId, text, stream) {
     refreshRequestLimit();
 
     var previewList = stream.preview;
-    if (!Array.isArray(previewList)) {
-        previewList = [previewList];
-    }
 
     var sendingPic = function() {
         var sendPic = function(request) {
@@ -276,7 +273,7 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
         });
     };
 
-    var sendPic = function(chatId, fileId) {
+    var sendPhoto = function(chatId, fileId) {
         return bot.sendPhoto(chatId, fileId, {
             caption: text
         }).then(function() {
@@ -297,21 +294,25 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
         var promiseList = [];
 
         while (chatId = chatIdList.shift()) {
-            if (!photoId) {
+            if (!photoId || !text) {
                 promiseList.push(sendMsg(chatId));
             } else {
-                promiseList.push(sendPic(chatId, photoId));
+                promiseList.push(sendPhoto(chatId, photoId));
             }
         }
 
         return Promise.all(promiseList);
     };
 
-    if (!stream.preview || (Array.isArray(stream.preview) && stream.preview.length === 0)) {
+    if (!stream.preview.length) {
         return send();
     }
 
     if (useCache && stream._photoId) {
+        return send();
+    }
+
+    if (!text) {
         return send();
     }
 
@@ -347,7 +348,7 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
             debug('Function getPicId throw error!', err);
         });
     };
-    
+
     return requestPicId().then(function() {
         return send();
     });

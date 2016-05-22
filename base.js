@@ -216,12 +216,12 @@ module.exports.getNowStreamText = function(gOptions, videoItem) {
     if (videoItem.url) {
         line.push(this.htmlSanitize(videoItem.url));
     }
-    if (videoItem.preview) {
-        var url = Array.isArray(videoItem.preview) ? videoItem.preview[0] : videoItem.preview;
-        if (url) {
-            line.push(this.htmlSanitize('a', gOptions.language.preview, url));
-        }
+    
+    var url = videoItem.preview[0];
+    if (url) {
+        line.push(this.htmlSanitize('a', gOptions.language.preview, url));
     }
+
     if (line.length) {
         textArr.push(line.join(' , '));
     }
