@@ -62,9 +62,6 @@ var menuBtnList = function (page) {
 var optionsBtnList = function (chatItem) {
     var options = chatItem.options || {};
 
-    //todo: rm me!
-    delete options.showPreview;
-
     var btnList = [];
 
     if (options.hidePreview) {
