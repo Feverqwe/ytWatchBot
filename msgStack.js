@@ -47,8 +47,10 @@ MsgStack.prototype.getChatIdList = function (videoItem) {
 MsgStack.prototype.addInStack = function (videoItem) {
     var msgStackObj = this.msgStackObj;
     var chatMsgStack = this.chatMsgStack;
+
     var msgId = videoItem._videoId;
     msgStackObj[msgId] = videoItem;
+
     this.getChatIdList(videoItem).forEach(function (chatId) {
         var msgStack = base.getObjectItemOrArray(chatMsgStack, chatId);
         base.removeItemFromArray(msgStack, msgId);
@@ -79,8 +81,11 @@ MsgStack.prototype.clear = function () {
     });
 };
 
-MsgStack.prototype.callMsgList = function (chatId, chatMsgStack, msgStackObj) {
+MsgStack.prototype.callMsgList = function (chatId) {
     var _this = this;
+    var chatMsgStack = this.chatMsgStack;
+    var msgStackObj = this.msgStackObj;
+
     var msgList = chatMsgStack[chatId];
     if (!msgList) {
         return Promise.resovle();
@@ -145,16 +150,15 @@ MsgStack.prototype.save = function () {
 MsgStack.prototype.callStack = function () {
     var _this = this;
     var inProgressChatId = this.inProgressChatId;
-    var chatMsgStack = this.chatMsgStack;
-    var msgStackObj = this.msgStackObj;
     var promiseList = [];
+    var chatMsgStack = this.chatMsgStack;
     Object.keys(chatMsgStack).map(function (chatId) {
         if (inProgressChatId.indexOf(chatId) !== -1) {
             return;
         }
         inProgressChatId.push(chatId);
 
-        var promise = _this.callMsgList(chatId, chatMsgStack, msgStackObj).then(function () {
+        var promise = _this.callMsgList(chatId).then(function () {
             base.removeItemFromArray(inProgressChatId, chatId);
         });
         promiseList.push(promise);
