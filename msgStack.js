@@ -21,8 +21,8 @@ var MsgStack = function (options) {
         return _this.notifyAll(videoList);
     });
 
-    this.onReady = base.storage.get(['msgStack', 'chatMsgStack']).then(function(storage) {
-        _this.msgStackObj = storage.msgStack || {};
+    this.onReady = base.storage.get(['msgStackObj', 'chatMsgStack']).then(function(storage) {
+        _this.msgStackObj = storage.msgStackObj || {};
         _this.chatMsgStack = storage.chatMsgStack || {};
     });
 };
@@ -138,12 +138,12 @@ MsgStack.prototype.callMsgList = function (chatId) {
 };
 
 MsgStack.prototype.save = function () {
-    var chatMsgStack = this.chatMsgStack;
     var msgStackObj = this.msgStackObj;
+    var chatMsgStack = this.chatMsgStack;
 
     return base.storage.set({
-        chatMsgStack: chatMsgStack,
-        msgStack: msgStackObj
+        msgStackObj: msgStackObj,
+        chatMsgStack: chatMsgStack
     });
 };
 
