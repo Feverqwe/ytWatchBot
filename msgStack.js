@@ -22,8 +22,8 @@ var MsgStack = function (options) {
     });
 
     this.onReady = base.storage.get(['msgStackObj', 'chatMsgStack']).then(function(storage) {
-        _this.msgStackObj = storage.msgStackObj || {};
-        _this.chatMsgStack = storage.chatMsgStack || {};
+        _this.config.msgStackObj = storage.msgStackObj || {};
+        _this.config.chatMsgStack = storage.chatMsgStack || {};
     });
 };
 
@@ -45,8 +45,8 @@ MsgStack.prototype.getChatIdList = function (videoItem) {
 };
 
 MsgStack.prototype.addInStack = function (videoItem) {
-    var msgStackObj = this.msgStackObj;
-    var chatMsgStack = this.chatMsgStack;
+    var msgStackObj = this.config.msgStackObj;
+    var chatMsgStack = this.config.chatMsgStack;
 
     var msgId = videoItem._videoId;
     msgStackObj[msgId] = videoItem;
@@ -59,8 +59,8 @@ MsgStack.prototype.addInStack = function (videoItem) {
 };
 
 MsgStack.prototype.clear = function () {
-    var msgStackObj = this.msgStackObj;
-    var chatMsgStack = this.chatMsgStack;
+    var msgStackObj = this.config.msgStackObj;
+    var chatMsgStack = this.config.chatMsgStack;
     var chatList = this.gOptions.storage.chatList;
 
     var usedMsgId = [];
@@ -83,8 +83,8 @@ MsgStack.prototype.clear = function () {
 
 MsgStack.prototype.callMsgList = function (chatId) {
     var _this = this;
-    var chatMsgStack = this.chatMsgStack;
-    var msgStackObj = this.msgStackObj;
+    var chatMsgStack = this.config.chatMsgStack;
+    var msgStackObj = this.config.msgStackObj;
 
     var msgList = chatMsgStack[chatId];
     if (!msgList) {
@@ -138,8 +138,8 @@ MsgStack.prototype.callMsgList = function (chatId) {
 };
 
 MsgStack.prototype.save = function () {
-    var msgStackObj = this.msgStackObj;
-    var chatMsgStack = this.chatMsgStack;
+    var msgStackObj = this.config.msgStackObj;
+    var chatMsgStack = this.config.chatMsgStack;
 
     return base.storage.set({
         msgStackObj: msgStackObj,
@@ -151,7 +151,7 @@ MsgStack.prototype.callStack = function () {
     var _this = this;
     var inProgressChatId = this.inProgressChatId;
     var promiseList = [];
-    var chatMsgStack = this.chatMsgStack;
+    var chatMsgStack = this.config.chatMsgStack;
     Object.keys(chatMsgStack).map(function (chatId) {
         if (inProgressChatId.indexOf(chatId) !== -1) {
             return;
