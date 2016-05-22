@@ -48,6 +48,7 @@ Daemon.prototype.initChecker = function() {
 
     var onTimer = function() {
         _this.gOptions.events.emit('check');
+        _this.gOptions.events.emit('checkMsgStack');
     };
 
     setTimeout(function() {
