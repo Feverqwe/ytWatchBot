@@ -123,7 +123,7 @@ MsgStack.prototype.callMsgList = function (chatId) {
             if (!videoItem) {
                 debug('VideoItem is not found! %s', msgId);
                 base.removeItemFromArray(msgList, msgId);
-                return;
+                return _this.saveThrottle();
             }
 
             var chatItem = _this.gOptions.storage.chatList[chatId];
@@ -143,10 +143,6 @@ MsgStack.prototype.callMsgList = function (chatId) {
             return _this.gOptions.checker.sendNotify([chatId], text, noPhotoText, videoItem, true).then(function () {
                 base.removeItemFromArray(msgList, msgId);
                 return _this.saveThrottle();
-            }).catch(function (e) {
-                debug('sendNotify error! %s', e);
-
-                throw e;
             });
         }).then(function () {
             return sendNextMsg();
