@@ -76,6 +76,14 @@ var options = {
             for (var key in storage) {
                 options.storage[key] = storage[key];
             }
+        }).then(function () {
+            // todo: rm me!
+            Object.keys(options.storage.chatList).forEach(function (chatId) {
+                var item = options.storage.chatList[chatId];
+                if (item.options && typeof item.options.showPreview === 'boolean') {
+                    delete item.options;
+                }
+            });
         });
     }).then(function() {
         return Promise.all(options.serviceList.map(function(name) {

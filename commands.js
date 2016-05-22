@@ -60,7 +60,7 @@ var menuBtnList = function (page) {
 };
 
 var optionsBtnList = function (chatItem) {
-    var options = chatItem.options;
+    var options = chatItem.options || {};
 
     var btnList = [];
 
@@ -619,7 +619,7 @@ var commands = {
             return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList, _this.templates.hideKeyboard);
         }
 
-        var options = chatItem.options;
+        var options = chatItem.options || {};
 
         var lines = [];
         if (options.hidePreview) {
