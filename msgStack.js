@@ -24,7 +24,29 @@ var MsgStack = function (options) {
     this.onReady = base.storage.get(['msgStackObj', 'chatMsgStack']).then(function(storage) {
         _this.config.msgStackObj = storage.msgStackObj || {};
         _this.config.chatMsgStack = storage.chatMsgStack || {};
+        _this.stack = _this.initStack();
     });
+};
+
+MsgStack.prototype.initStack = function () {
+    var msgStackObj = this.config.msgStackObj;
+    return {
+        getItem: function (msgId) {
+            return msgStackObj[msgId];
+        },
+        addItem: function (msgId, videoItem) {
+            msgStackObj[msgId] = videoItem;
+        },
+        removeItem: function (msgId) {
+            delete msgStackObj[msgId];
+        },
+        getKeys: function () {
+            return Object.keys(msgStackObj);
+        },
+        saveStack: function () {
+            return base.storage.set({msgStackObj: msgStackObj});
+        }
+    }
 };
 
 MsgStack.prototype.getChatIdList = function (videoItem) {
@@ -45,11 +67,10 @@ MsgStack.prototype.getChatIdList = function (videoItem) {
 };
 
 MsgStack.prototype.addInStack = function (videoItem) {
-    var msgStackObj = this.config.msgStackObj;
     var chatMsgStack = this.config.chatMsgStack;
 
     var msgId = videoItem._videoId;
-    msgStackObj[msgId] = videoItem;
+    this.stack.addItem(msgId, videoItem);
 
     this.getChatIdList(videoItem).forEach(function (chatId) {
         var msgStack = base.getObjectItemOrArray(chatMsgStack, chatId);
@@ -59,7 +80,7 @@ MsgStack.prototype.addInStack = function (videoItem) {
 };
 
 MsgStack.prototype.clear = function () {
-    var msgStackObj = this.config.msgStackObj;
+    var _this = this;
     var chatMsgStack = this.config.chatMsgStack;
     var chatList = this.gOptions.storage.chatList;
 
@@ -74,9 +95,9 @@ MsgStack.prototype.clear = function () {
         usedMsgId.push.apply(usedMsgId, msgStack);
     });
 
-    Object.keys(msgStackObj).forEach(function (msgId) {
+    this.stack.getKeys().forEach(function (msgId) {
         if (usedMsgId.indexOf(msgId) === -1) {
-            delete msgStackObj[msgId];
+            _this.stack.removeItem(msgId);
         }
     });
 };
@@ -84,7 +105,6 @@ MsgStack.prototype.clear = function () {
 MsgStack.prototype.callMsgList = function (chatId) {
     var _this = this;
     var chatMsgStack = this.config.chatMsgStack;
-    var msgStackObj = this.config.msgStackObj;
 
     var msgList = chatMsgStack[chatId];
     if (!msgList) {
@@ -99,7 +119,7 @@ MsgStack.prototype.callMsgList = function (chatId) {
 
         return Promise.try(function () {
             var msgId = msgList[0];
-            var videoItem = msgStackObj[msgId];
+            var videoItem = _this.stack.getItem(msgId);
             if (!videoItem) {
                 debug('VideoItem is not found! %s', msgId);
                 return;
@@ -138,12 +158,13 @@ MsgStack.prototype.callMsgList = function (chatId) {
 };
 
 MsgStack.prototype.save = function () {
-    var msgStackObj = this.config.msgStackObj;
+    var _this = this;
     var chatMsgStack = this.config.chatMsgStack;
 
     return base.storage.set({
-        msgStackObj: msgStackObj,
         chatMsgStack: chatMsgStack
+    }).then(function () {
+        return _this.stack.saveStack();
     });
 };
 
