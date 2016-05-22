@@ -105,13 +105,8 @@ MsgStack.prototype.callMsgList = function (chatId, chatMsgStack, msgStackObj) {
             
             var options = chatItem.options || {};
 
-            var showPreview = true;
-            if (typeof options.showPreview === 'boolean') {
-                showPreview = options.showPreview;
-            }
-
             var text = null;
-            if (showPreview) {
+            if (!options.hidePreview) {
                 text = base.getNowStreamPhotoText(_this.gOptions, videoItem);
             }
             var noPhotoText = base.getNowStreamText(_this.gOptions, videoItem);

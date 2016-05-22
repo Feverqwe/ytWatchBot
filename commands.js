@@ -59,28 +59,20 @@ var menuBtnList = function (page) {
     return btnList;
 };
 
-var optionsNormalization = function (chatItem) {
-    var options = base.getObjectItemOrObj(chatItem, 'options');
-
-    if (typeof options.showPreview !== 'boolean') {
-        options.showPreview = true;
-    }
-};
-
 var optionsBtnList = function (chatItem) {
     var options = chatItem.options;
 
     var btnList = [];
 
-    if (!options.showPreview) {
+    if (options.hidePreview) {
         btnList.push([{
             text: 'Show preview',
-            callback_data: '/option showPreview 1'
+            callback_data: '/option hidePreview 0'
         }]);
     } else {
         btnList.push([{
             text: 'Hide preview',
-            callback_data: '/option showPreview 0'
+            callback_data: '/option hidePreview 1'
         }]);
     }
 
@@ -553,12 +545,15 @@ var commands = {
             return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList, _this.templates.hideKeyboard);
         }
 
-        if (['showPreview'].indexOf(optionName) === -1) {
+        if (['hidePreview'].indexOf(optionName) === -1) {
             return Promise.reject(new Error('Option is not found! ' + optionName));
         }
 
         var options = base.getObjectItemOrObj(chatItem, 'options');
         options[optionName] = state === '1';
+        if (!options[optionName]) {
+            delete options[optionName];
+        }
 
         var msgText = 'Option ' + optionName + ' (' + state + ') changed!';
 
@@ -578,12 +573,15 @@ var commands = {
             return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList, _this.templates.hideKeyboard);
         }
 
-        if (['showPreview'].indexOf(optionName) === -1) {
+        if (['hidePreview'].indexOf(optionName) === -1) {
             return Promise.reject(new Error('Option is not found! ' + optionName));
         }
 
         var options = base.getObjectItemOrObj(chatItem, 'options');
         options[optionName] = state === '1';
+        if (!options[optionName]) {
+            delete options[optionName];
+        }
 
         return base.storage.set({chatList: chatList}).then(function () {
             return _this.gOptions.bot.editMessageReplyMarkup(chatId,
@@ -605,8 +603,6 @@ var commands = {
             return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList, _this.templates.hideKeyboard);
         }
 
-        optionsNormalization(chatItem);
-
         return _this.gOptions.bot.sendMessage(chatId, 'Options:', {
             reply_markup: JSON.stringify({
                 inline_keyboard: optionsBtnList(chatItem)
@@ -623,15 +619,13 @@ var commands = {
             return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList, _this.templates.hideKeyboard);
         }
 
-        optionsNormalization(chatItem);
-
         var options = chatItem.options;
 
         var lines = [];
-        if (!options.showPreview) {
-            lines.push('Show preview /option_showPreview_1');
+        if (options.hidePreview) {
+            lines.push('Show preview /option_hidePreview_0');
         } else {
-            lines.push('Hide preview /option_showPreview_0');
+            lines.push('Hide preview /option_hidePreview_1');
         }
 
         var msgText = lines.join('\n');
