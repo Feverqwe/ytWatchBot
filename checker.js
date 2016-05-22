@@ -307,11 +307,11 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
         return send();
     }
 
-    if (useCache && stream._photoId) {
+    if (!text) {
         return send();
     }
 
-    if (!text) {
+    if (useCache && stream._photoId) {
         return send();
     }
 
