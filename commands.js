@@ -558,6 +558,10 @@ var commands = {
             delete options[optionName];
         }
 
+        if (!Object.keys(options).length) {
+            delete chatItem.options;
+        }
+
         var msgText = 'Option ' + optionName + ' (' + state + ') changed!';
 
         return base.storage.set({chatList: chatList}).then(function () {
@@ -584,6 +588,10 @@ var commands = {
         options[optionName] = state === '1';
         if (!options[optionName]) {
             delete options[optionName];
+        }
+
+        if (!Object.keys(options).length) {
+            delete chatItem.options;
         }
 
         return base.storage.set({chatList: chatList}).then(function () {
