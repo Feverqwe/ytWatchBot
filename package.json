@@ -5,13 +5,13 @@
     "node-telegram-bot-api": "0.21.1",
     "node-localstorage": "^1.3.0",
     "debug": "^2.2.0",
-    "bluebird": "^3.3.5",
+    "bluebird": "^3.4.0",
     "request": "^2.72.0",
     "botanio": "^0.0.6",
     "path": "^0.12.7",
     "events": "^1.1.0",
     "pubsubhubbub": "0.4.1",
-    "xmldoc": "0.4.0",
+    "xmldoc": "0.5.1",
     "node-uuid": "^1.4.7"
   }
 }
