@@ -72,15 +72,15 @@ var optionsBtnList = function (chatItem) {
 
     var btnList = [];
 
-    if (options.showPreview) {
+    if (!options.showPreview) {
         btnList.push([{
-            text: 'Hide picture',
-            callback_data: '/option showPreview 0'
+            text: 'Show preview',
+            callback_data: '/option showPreview 1'
         }]);
     } else {
         btnList.push([{
-            text: 'Show picture',
-            callback_data: '/option showPreview 1'
+            text: 'Hide preview',
+            callback_data: '/option showPreview 0'
         }]);
     }
 
@@ -629,9 +629,9 @@ var commands = {
 
         var lines = [];
         if (!options.showPreview) {
-            lines.push('Show picture /option_showPreview_1');
+            lines.push('Show preview /option_showPreview_1');
         } else {
-            lines.push('Hide picture /option_showPreview_0');
+            lines.push('Hide preview /option_showPreview_0');
         }
 
         var msgText = lines.join('\n');
