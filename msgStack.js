@@ -21,10 +21,6 @@ var MsgStack = function (options) {
         return _this.notifyAll(videoList);
     });
 
-    options.events.on('checkMsgStack', function (stream) {
-        return _this.callStack();
-    });
-
     this.onReady = base.storage.get(['msgStackObj', 'chatMsgStack']).then(function(storage) {
         _this.config.msgStackObj = storage.msgStackObj || {};
         _this.config.chatMsgStack = storage.chatMsgStack || {};
