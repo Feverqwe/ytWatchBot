@@ -1,39 +1,90 @@
 /**
  * Created by anton on 06.12.15.
  */
+"use strict";
 var Promise = require('bluebird');
 var debug = require('debug')('commands');
 var base = require('./base');
 
-var menuBtnList = function () {
-    return [
-        [
-            {
-                text: 'Show the channel list',
-                callback_data: '/list'
-            }
-        ],
-        [
-            {
-                text: 'Add channel',
-                callback_data: '/add'
-            },
-            {
-                text: 'Delete channel',
-                callback_data: '/delete'
-            }
-        ],
-        [
-            {
-                text: 'Top 10',
-                callback_data: '/top'
-            },
-            {
-                text: 'How long will it works',
-                callback_data: '/liveTime'
-            }
-        ]
-    ];
+var menuBtnList = function (page) {
+    var btnList = null;
+    if (page === 1) {
+        btnList = [
+            [
+                {
+                    text: 'Options',
+                    callback_data: '/options'
+                }
+            ],
+            [
+                {
+                    text: '<',
+                    callback_data: '/menu_page 0'
+                },
+                {
+                    text: 'Top 10',
+                    callback_data: '/top'
+                },
+                {
+                    text: 'How long will it works',
+                    callback_data: '/liveTime'
+                }
+            ]
+        ];
+    } else {
+        btnList = [
+            [
+                {
+                    text: 'Show the channel list',
+                    callback_data: '/list'
+                }
+            ],
+            [
+                {
+                    text: 'Add channel',
+                    callback_data: '/add'
+                },
+                {
+                    text: 'Delete channel',
+                    callback_data: '/delete'
+                },
+                {
+                    text: '>',
+                    callback_data: '/menu_page 1'
+                }
+            ]
+        ];
+    }
+
+    return btnList;
+};
+
+var optionsNormalization = function (chatItem) {
+    var options = base.getObjectItemOrObj(chatItem, 'options');
+
+    if (typeof options.showPreview !== 'boolean') {
+        options.showPreview = true;
+    }
+};
+
+var optionsBtnList = function (chatItem) {
+    var options = chatItem.options;
+
+    var btnList = [];
+
+    if (options.showPreview) {
+        btnList.push([{
+            text: 'Hide picture',
+            callback_data: '/option showPreview 0'
+        }]);
+    } else {
+        btnList.push([{
+            text: 'Show picture',
+            callback_data: '/option showPreview 1'
+        }]);
+    }
+
+    return btnList;
 };
 
 var commands = {
@@ -51,9 +102,26 @@ var commands = {
 
         return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.help, {
             reply_markup: JSON.stringify({
-                inline_keyboard: menuBtnList()
+                inline_keyboard: menuBtnList(0)
             })
         });
+    },
+    menu_page__Cb: function (callbackQuery, page) {
+        var _this = this;
+        var msg = callbackQuery.message;
+        var chatId = msg.chat.id;
+
+        page = parseInt(page);
+
+        return _this.gOptions.bot.editMessageReplyMarkup(
+            chatId,
+            {
+                message_id: msg.message_id,
+                reply_markup: JSON.stringify({
+                    inline_keyboard: menuBtnList(page)
+                })
+            }
+        );
     },
     start__Group: function (msg) {
         "use strict";
@@ -75,7 +143,7 @@ var commands = {
         return _this.gOptions.bot.sendMessage(chatId, text, {
             disable_web_page_preview: true,
             reply_markup: JSON.stringify({
-                inline_keyboard: menuBtnList()
+                inline_keyboard: menuBtnList(0)
             })
         });
     },
@@ -474,6 +542,101 @@ var commands = {
         };
 
         return waitChannelName();
+    },
+    option: function (msg, optionName, state) {
+        var _this = this;
+        var chatId = msg.chat.id;
+        var chatList = _this.gOptions.storage.chatList;
+        var chatItem = chatList[chatId];
+
+        if (!chatItem) {
+            return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList, _this.templates.hideKeyboard);
+        }
+
+        if (['showPreview'].indexOf(optionName) === -1) {
+            return Promise.reject(new Error('Option is not found! ' + optionName));
+        }
+
+        var options = base.getObjectItemOrObj(chatItem, 'options');
+        options[optionName] = state === '1';
+
+        var msgText = 'Option ' + optionName + ' (' + state + ') changed!';
+
+        return base.storage.set({chatList: chatList}).then(function () {
+            return _this.gOptions.bot.sendMessage(chatId, msgText);
+        });
+    },
+    option__Cb: function (callbackQuery, optionName, state) {
+        var _this = this;
+        var msg = callbackQuery.message;
+        var chatId = msg.chat.id;
+
+        var chatList = _this.gOptions.storage.chatList;
+        var chatItem = chatList[chatId];
+
+        if (!chatItem) {
+            return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList, _this.templates.hideKeyboard);
+        }
+
+        if (['showPreview'].indexOf(optionName) === -1) {
+            return Promise.reject(new Error('Option is not found! ' + optionName));
+        }
+
+        var options = base.getObjectItemOrObj(chatItem, 'options');
+        options[optionName] = state === '1';
+
+        return base.storage.set({chatList: chatList}).then(function () {
+            return _this.gOptions.bot.editMessageReplyMarkup(chatId,
+                {
+                    message_id: msg.message_id,
+                    reply_markup: JSON.stringify({
+                        inline_keyboard: optionsBtnList(chatItem)
+                    })
+                });
+        });
+    },
+    options: function (msg) {
+        "use strict";
+        var _this = this;
+        var chatId = msg.chat.id;
+        var chatItem = _this.gOptions.storage.chatList[chatId];
+
+        if (!chatItem) {
+            return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList, _this.templates.hideKeyboard);
+        }
+
+        optionsNormalization(chatItem);
+
+        return _this.gOptions.bot.sendMessage(chatId, 'Options:', {
+            reply_markup: JSON.stringify({
+                inline_keyboard: optionsBtnList(chatItem)
+            })
+        });
+    },
+    options__Group: function (msg) {
+        "use strict";
+        var _this = this;
+        var chatId = msg.chat.id;
+        var chatItem = _this.gOptions.storage.chatList[chatId];
+
+        if (!chatItem) {
+            return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList, _this.templates.hideKeyboard);
+        }
+
+        optionsNormalization(chatItem);
+
+        var options = chatItem.options;
+
+        var lines = [];
+        if (!options.showPreview) {
+            lines.push('Show picture /option_showPreview_1');
+        } else {
+            lines.push('Hide picture /option_showPreview_0');
+        }
+
+        var msgText = lines.join('\n');
+
+        return _this.gOptions.bot.sendMessage(chatId, msgText);
     },
     c__Cb: function (callbackQuery, command) {
         var _this = this;

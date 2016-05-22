@@ -212,18 +212,8 @@ module.exports.getNowStreamText = function(gOptions, videoItem) {
         textArr.push(line.join(', '));
     }
 
-    line = [];
     if (videoItem.url) {
-        line.push(this.htmlSanitize(videoItem.url));
-    }
-    
-    var url = videoItem.preview[0];
-    if (url) {
-        line.push(this.htmlSanitize('a', gOptions.language.preview, url));
-    }
-
-    if (line.length) {
-        textArr.push(line.join(' , '));
+        textArr.push(this.htmlSanitize(videoItem.url));
     }
 
     return textArr.join('\n');

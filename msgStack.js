@@ -97,7 +97,23 @@ MsgStack.prototype.callMsgList = function (chatId, chatMsgStack, msgStackObj) {
                 return;
             }
 
-            var text = base.getNowStreamPhotoText(_this.gOptions, videoItem);
+            var chatItem = _this.gOptions.storage.chatList[chatId];
+            if (!chatItem) {
+                debug('chatItem is not found! %s', msgId);
+                return;
+            }
+            
+            var options = chatItem.options || {};
+
+            var showPreview = true;
+            if (typeof options.showPreview === 'boolean') {
+                showPreview = options.showPreview;
+            }
+
+            var text = null;
+            if (showPreview) {
+                text = base.getNowStreamPhotoText(_this.gOptions, videoItem);
+            }
             var noPhotoText = base.getNowStreamText(_this.gOptions, videoItem);
 
             return _this.gOptions.checker.sendNotify([chatId], text, noPhotoText, videoItem, true).then(function () {

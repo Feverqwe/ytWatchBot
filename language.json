@@ -8,6 +8,7 @@
     "/list - Show the channel list",
     "/add - Add channel",
     "/delete - Delete channel",
+    "/options - Options",
     "/top - Top 10",
     "/liveTime - How long will it works",
     "/clear - Clear channel list"
