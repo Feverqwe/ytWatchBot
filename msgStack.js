@@ -13,14 +13,17 @@ var MsgStack = function (options) {
     this.gOptions = options;
     this.config = {};
 
-    this.msgStackObj = this.gOptions.storage.msgStack;
-    this.chatMsgStack = this.gOptions.storage.chatMsgStack;
     this.saveThrottle = base.throttle(this.save, 100, this);
 
     this.inProgressChatId = [];
 
     options.events.on('notifyAll', function (videoList) {
         return _this.notifyAll(videoList);
+    });
+
+    this.onReady = base.storage.get(['msgStack', 'chatMsgStack']).then(function(storage) {
+        _this.msgStackObj = storage.msgStack || {};
+        _this.chatMsgStack = storage.chatMsgStack || {};
     });
 };
 

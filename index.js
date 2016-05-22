@@ -38,9 +38,7 @@ var options = {
     config: {},
     language: {},
     storage: {
-        chatList: {},
-        msgStack: {},
-        chatMsgStack: {}
+        chatList: {}
     },
     serviceList: ['youtube'],
     serviceToTitle: {
@@ -145,6 +143,8 @@ var options = {
         options.tracker = new Tracker(options);
     }).then(function() {
         options.msgStack = new MsgStack(options);
+        
+        return options.msgStack.onReady;
     }).then(function() {
         options.chat = new Chat(options);
     }).then(function() {

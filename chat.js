@@ -143,21 +143,13 @@ Chat.prototype.msgParser = function(text) {
 Chat.prototype.removeChat = function(chatId) {
     "use strict";
     var chatList = this.gOptions.storage.chatList;
-    var chatMsgStack = this.gOptions.storage.chatMsgStack;
 
     var chatItem = chatList[chatId];
-
     if (!chatItem) {
         return Promise.resolve();
     }
 
     delete chatList[chatId];
-
-    var msgList = chatMsgStack[chatId];
-    if (msgList) {
-        msgList.splice(0);
-    }
-    delete chatMsgStack[chatId];
     
     debug('Chat %s removed! %j', chatId, chatItem);
 
