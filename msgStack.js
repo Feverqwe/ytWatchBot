@@ -43,7 +43,7 @@ MsgStack.prototype.initStack = function () {
         getKeys: function () {
             return Object.keys(msgStackObj);
         },
-        saveStack: function () {
+        save: function () {
             return base.storage.set({msgStackObj: msgStackObj});
         }
     }
@@ -164,7 +164,7 @@ MsgStack.prototype.save = function () {
     return base.storage.set({
         chatMsgStack: chatMsgStack
     }).then(function () {
-        return _this.stack.saveStack();
+        return _this.stack.save();
     });
 };
 
