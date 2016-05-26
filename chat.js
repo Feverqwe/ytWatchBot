@@ -31,15 +31,6 @@ Chat.prototype.bindBot = function() {
     this.gOptions.bot.on('callback_query', this.onCallbackQuery.bind(this));
 };
 
-Chat.prototype.templates = {
-    hideKeyboard: {
-        reply_markup: JSON.stringify({
-            hide_keyboard: true,
-            selective: true
-        })
-    }
-};
-
 Chat.prototype.getServiceListKeyboard = function() {
     "use strict";
     var last = [];
@@ -72,7 +63,7 @@ Chat.prototype.checkArgs = function(msg, args, isCallbackQuery) {
     var service = args[1];
 
     if (!channelName) {
-        bot.sendMessage(chatId, language.channelNameIsEmpty, this.templates.hideKeyboard);
+        bot.sendMessage(chatId, language.channelNameIsEmpty);
         return;
     }
 
@@ -86,9 +77,7 @@ Chat.prototype.checkArgs = function(msg, args, isCallbackQuery) {
     if (serviceList.indexOf(service) === -1) {
         bot.sendMessage(
             chatId,
-            language.serviceIsNotSupported
-                .replace('{serviceName}', service),
-            this.templates.hideKeyboard
+            language.serviceIsNotSupported.replace('{serviceName}', service)
         );
         return;
     }
