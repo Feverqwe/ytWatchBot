@@ -97,12 +97,6 @@ Chat.prototype.msgParser = function(text) {
         return '%'+index+'%'
     });
 
-    var watchRe = /^(option[^_]*)_(.+)_([^_]+)$/;
-    if (watchRe.test(text)) {
-        var m = text.match(watchRe);
-        text = [m[1], m[2], m[3]].join(' ');
-    }
-
     text.split(/\s+/).forEach(function(value) {
         if (!value) {
             return;
