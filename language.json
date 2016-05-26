@@ -21,6 +21,5 @@
     "", "",
     "⭐️ If you like this bot, please rate us 5 stars in store:",
     "https://telegram.me/storebot?start=ytwatchbot"
-  ],
-  "enterChannelNameGroupNote": ["", "Note for groups: Use Reply for sending channel name."]
+  ]
 }

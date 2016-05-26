@@ -169,8 +169,7 @@ var commands = {
                         .replace('{serviceName}', base.htmlSanitize(_this.gOptions.serviceToTitle[service])),
                     {
                         disable_web_page_preview: true,
-                        parse_mode: 'HTML',
-                        reply_markup: _this.templates.hideKeyboard.reply_markup
+                        parse_mode: 'HTML'
                     }
                 );
             });
@@ -180,8 +179,7 @@ var commands = {
                 chatId,
                 _this.gOptions.language.channelIsNotFound
                     .replace('{channelName}', channelName)
-                    .replace('{serviceName}', _this.gOptions.serviceToTitle[service]),
-                _this.templates.hideKeyboard
+                    .replace('{serviceName}', _this.gOptions.serviceToTitle[service])
             );
         });
     },
@@ -246,14 +244,12 @@ var commands = {
                 if (info) {
                     data.push('"' + info.channel + '"');
                     data.push('"' + info.service + '"');
-
-                    msg.text = '/a ' + data.join(' ');
-                    return _this.onMessagePromise(msg);
+                } else {
+                    data.push('"' + msg.text + '"');
                 }
 
-                data.push('"' + msg.text + '"');
-
-                return waitServiceName();
+                msg.text = '/a ' + data.join(' ');
+                return _this.onMessagePromise(msg);
             };
             onMessage.command = 'add';
             onMessage.timeout = setTimeout(function() {
@@ -261,50 +257,15 @@ var commands = {
             }, 3 * 60 * 1000);
 
             var msgText = _this.gOptions.language.enterChannelName;
-            if (chatId < 0) {
-                msgText += _this.gOptions.language.enterChannelNameGroupNote;
-            }
-
             return _this.gOptions.bot.sendMessage(chatId, msgText, {
                 reply_markup: JSON.stringify({
-                    force_reply: true,
-                    selective: true
-                })
-            });
-        };
-
-        var waitServiceName = function() {
-            if (_this.gOptions.serviceList.length === 1) {
-                msg.text = '/a ' + data.join(' ');
-                return _this.onMessagePromise(msg);
-            }
-
-            var onMessage = _this.stateList[chatId] = function(msg) {
-                data.push('"' + msg.text + '"');
-
-                msg.text = '/a ' + data.join(' ');
-                return _this.onMessagePromise(msg);
-            };
-            onMessage.command = 'add';
-            onMessage.timeout = setTimeout(function() {
-                onTimeout();
-            }, 3 * 60 * 1000);
-
-            return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.enterService, {
-                reply_markup: JSON.stringify({
-                    keyboard: _this.getServiceListKeyboard(),
-                    resize_keyboard: true,
-                    one_time_keyboard: true,
-                    selective: true
+                    force_reply: true
                 })
             });
         };
 
         if (data.length === 0) {
             return waitChannelName();
-        } else
-        if (data.length === 1) {
-            return waitServiceName();
         } else {
             msg.text = '/a ' + data.join(' ');
             return _this.onMessagePromise(msg);
