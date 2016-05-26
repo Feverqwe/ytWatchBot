@@ -1,18 +1,5 @@
 {
   "help": "Hi! I will notify you about new videos on Youtube channels!",
-  "helpGroup": [
-    "Hi! I will notify you about new videos on Youtube channels!",
-    "",
-    "You can control me by sending these commands:",
-    "",
-    "/list - Show the channel list",
-    "/add - Add channel",
-    "/delete - Delete channel",
-    "/options - Options",
-    "/top - Top 10",
-    "/liveTime - How long will it works",
-    "/clear - Clear channel list"
-  ],
   "emptyServiceList": "You don't have channels in watch list, yet.",
   "enterChannelName": "Enter the channel URL or name (example: blacksilverufa):",
   "enterService": "Enter a video platform",
@@ -27,10 +14,6 @@
   "selectDelChannel": "Select the channel that you want to delete",
   "channelIsNotFound": "Oops! Channel {channelName} ({serviceName}) is not found!",
   "clearSure": "Are you sure?",
-  "clearSureGroup": [
-    "If your are sure, enter:",
-    "/clearYes"
-  ],
   "users": "Users: {count}",
   "channels": "Channels: {count}",
   "preview": "preview",
@@ -39,6 +22,5 @@
     "⭐️ If you like this bot, please rate us 5 stars in store:",
     "https://telegram.me/storebot?start=ytwatchbot"
   ],
-  "selectDelChannelGroupNote": ["", "Note for groups: Use Reply for open bot keyboard."],
-  "enterChannelNameNote": ["", "Note for groups: Use Reply for sending channel name."]
+  "enterChannelNameGroupNote": ["", "Note for groups: Use Reply for sending channel name."]
 }
