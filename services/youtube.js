@@ -20,19 +20,6 @@ var Youtube = function(options) {
     this.onReady = base.storage.get(['ytChannelInfo', 'stateList']).then(function(storage) {
         _this.config.stateList = storage.stateList || {};
         _this.config.channelInfo = storage.ytChannelInfo || {};
-        _this.prepareChannelInfo();
-    });
-};
-
-// todo rm me!
-Youtube.prototype.prepareChannelInfo = function () {
-    var _this = this;
-    var channelInfo = this.config.channelInfo;
-    Object.keys(channelInfo).forEach(function (channelId) {
-        var info = channelInfo[channelId];
-        if (info.localTitle === info.title) {
-            delete info.localTitle;
-        }
     });
 };
 
