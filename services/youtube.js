@@ -22,27 +22,6 @@ var Youtube = function(options) {
 
         _this.config.channelInfo = storage.ytChannelInfo || {};
         _this.refreshCache();
-        _this.stateListToChannelId();
-    });
-};
-
-Youtube.prototype.stateListToChannelId = function () {
-    var userIdToChannelId = this.config.userIdToChannelId;
-    var stateList = this.config.stateList;
-    Object.keys(stateList).forEach(function (channelName) {
-        if (channelRe.test(channelName)) {
-            return;
-        }
-
-        var item = stateList[channelName];
-        var channelId = userIdToChannelId[channelName];
-        if (!channelId) {
-            return debug('ChannelId not found by channelName', channelName);
-        }
-
-        if (!stateList[channelId]) {
-            stateList[channelId] = item;
-        }
     });
 };
 
