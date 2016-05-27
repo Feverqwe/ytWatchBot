@@ -62,14 +62,15 @@ Youtube.prototype.removeChannelInfo = function (channelId) {
 
 Youtube.prototype.setChannelTitle = function(channelId, title) {
     "use strict";
-    if (channelId === title) {
-        return Promise.resolve();
+    if (channelId !== title) {
+        var info = this.getChannelInfo(channelId);
+        if (info.title !== title) {
+            info.title = title;
+            return this.saveChannelInfo();
+        }
     }
-    var info = this.getChannelInfo(channelId);
-    if (info.title !== title) {
-        info.title = title;
-        return this.saveChannelInfo();
-    }
+
+    return Promise.resolve();
 };
 
 Youtube.prototype.getChannelTitle = function (channelName) {
@@ -322,7 +323,7 @@ Youtube.prototype.apiNormalization = function(channelName, data, isFullCheck, la
     return videoList;
 };
 
-Youtube.prototype.requestChannelLocalTitle = function(channelId, channelName) {
+Youtube.prototype.requestChannelLocalTitle = function(channelId) {
     "use strict";
     var _this = this;
     return requestPromise({
@@ -345,7 +346,7 @@ Youtube.prototype.requestChannelLocalTitle = function(channelId, channelName) {
             return _this.setChannelLocalTitle(channelId, localTitle);
         }
     }).catch(function(err) {
-        debug('requestChannelLocalTitle channelName "%s" channelId "%s" error! %s', channelName, channelId, err);
+        debug('requestChannelLocalTitle channelId "%s" error! %s', channelId, err);
     });
 };
 
@@ -527,32 +528,10 @@ Youtube.prototype.getChannelId = function(channelName) {
 
             var channelTitle = snippet.channelTitle;
 
-            var isChannelId = channelRe.test(channelName);
-            if (!isChannelId) {
-                channelName = channelName.toLowerCase();
-            }
-
-            return Promise.try(function() {
-                // check channelTitle from snippet is equal userId
-                if (!channelTitle || !isChannelId) {
-                    return;
-                }
-
-                var channelTitleLow = channelTitle.toLowerCase();
-
-                return _this.requestChannelIdByUsername(channelTitleLow).then(function(channelId) {
-                    if (channelId === channelName) {
-                        channelName = channelTitleLow;
-                    }
-                }).catch(function() {
-                    debug('Channel title "%s" is not equal userId "%s"', channelTitleLow, channelName);
-                });
+            return _this.setChannelTitle(channelId, channelTitle).then(function () {
+                return _this.requestChannelLocalTitle(channelId);
             }).then(function() {
-                return _this.requestChannelLocalTitle(channelId, channelName);
-            }).then(function() {
-                return _this.setChannelTitle(channelId, channelTitle);
-            }).then(function() {
-                return channelName;
+                return channelId;
             });
         });
     });
