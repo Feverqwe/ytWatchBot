@@ -21,25 +21,11 @@ var Youtube = function(options) {
         _this.config.stateList = storage.stateList || {};
 
         _this.config.channelInfo = storage.ytChannelInfo || {};
-        _this.refreshCache();
     });
-};
-
-Youtube.prototype.refreshCache = function () {
-    var channelInfo = this.config.channelInfo;
-    var userIdToChannelId = {};
-    Object.keys(channelInfo).forEach(function (channelId) {
-        var info = channelInfo[channelId];
-        if (info.username) {
-            userIdToChannelId[info.username] = channelId;
-        }
-    });
-    this.config.userIdToChannelId = userIdToChannelId;
 };
 
 Youtube.prototype.saveChannelInfo = function () {
     "use strict";
-    this.refreshCache();
     return base.storage.set({
         ytChannelInfo: this.config.channelInfo
     });
@@ -76,10 +62,6 @@ Youtube.prototype.setChannelTitle = function(channelId, title) {
 Youtube.prototype.getChannelTitle = function (channelName) {
     "use strict";
     var channelId = channelName;
-    if (!channelRe.test(channelId)) {
-        channelId = this.config.userIdToChannelId[channelId];
-        !channelId && debug('getChannelTitle channelId is not found! %s', channelName);
-    }
 
     var info = this.getChannelInfo(channelId);
     return info.title || channelName;
@@ -100,10 +82,6 @@ Youtube.prototype.setChannelLocalTitle = function(channelId, title) {
 Youtube.prototype.getChannelLocalTitle = function (channelName) {
     "use strict";
     var channelId = channelName;
-    if (!channelRe.test(channelId)) {
-        channelId = this.config.userIdToChannelId[channelId];
-        !channelId && debug('getChannelLocalTitle channelId is not found! %s', channelName);
-    }
 
     var info = this.getChannelInfo(channelId);
     return info.localTitle || info.title || channelName;
@@ -128,16 +106,9 @@ Youtube.prototype.getChannelUsername = function (channelId) {
     return info.username;
 };
 
-Youtube.prototype.clean = function(channelNameList) {
+Youtube.prototype.clean = function(channelIdList) {
     "use strict";
     var _this = this;
-
-    var channelIdList = channelNameList.map(function (channelName) {
-        if (channelRe.test(channelName)) {
-            return channelName;
-        }
-        return _this.config.userIdToChannelId[channelName];
-    });
 
     Object.keys(this.config.channelInfo).forEach(function (channelId) {
         if (channelIdList.indexOf(channelId) === -1) {
@@ -149,7 +120,7 @@ Youtube.prototype.clean = function(channelNameList) {
     var needSaveState = false;
     var stateList = _this.config.stateList;
     Object.keys(stateList).forEach(function (channelName) {
-        if (channelNameList.indexOf(channelName) === -1) {
+        if (channelIdList.indexOf(channelName) === -1) {
             needSaveState = true;
             delete stateList[channelName];
             debug('Removed from stateList %s', channelName);
@@ -384,10 +355,6 @@ Youtube.prototype.requestChannelIdByUsername = function(userId) {
     "use strict";
     var _this = this;
     return Promise.try(function() {
-        if (_this.config.userIdToChannelId[userId]) {
-            return _this.config.userIdToChannelId[userId];
-        }
-
         if (channelRe.test(userId)) {
             return userId;
         }
