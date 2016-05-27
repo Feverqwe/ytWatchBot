@@ -19,7 +19,6 @@ var Youtube = function(options) {
 
     this.onReady = base.storage.get(['ytChannelInfo', 'stateList']).then(function(storage) {
         _this.config.stateList = storage.stateList || {};
-
         _this.config.channelInfo = storage.ytChannelInfo || {};
     });
 };
@@ -59,12 +58,10 @@ Youtube.prototype.setChannelTitle = function(channelId, title) {
     return Promise.resolve();
 };
 
-Youtube.prototype.getChannelTitle = function (channelName) {
+Youtube.prototype.getChannelTitle = function (channelId) {
     "use strict";
-    var channelId = channelName;
-
     var info = this.getChannelInfo(channelId);
-    return info.title || channelName;
+    return info.title || channelId;
 };
 
 Youtube.prototype.setChannelLocalTitle = function(channelId, title) {
@@ -79,12 +76,10 @@ Youtube.prototype.setChannelLocalTitle = function(channelId, title) {
     }
 };
 
-Youtube.prototype.getChannelLocalTitle = function (channelName) {
+Youtube.prototype.getChannelLocalTitle = function (channelId) {
     "use strict";
-    var channelId = channelName;
-
     var info = this.getChannelInfo(channelId);
-    return info.localTitle || info.title || channelName;
+    return info.localTitle || info.title || channelId;
 };
 
 Youtube.prototype.setChannelUsername = function(channelId, username) {
@@ -97,13 +92,6 @@ Youtube.prototype.setChannelUsername = function(channelId, username) {
         info.username = username;
         return this.saveChannelInfo();
     }
-};
-
-Youtube.prototype.getChannelUsername = function (channelId) {
-    "use strict";
-
-    var info = this.getChannelInfo(channelId);
-    return info.username;
 };
 
 Youtube.prototype.clean = function(channelIdList) {
@@ -119,11 +107,11 @@ Youtube.prototype.clean = function(channelIdList) {
 
     var needSaveState = false;
     var stateList = _this.config.stateList;
-    Object.keys(stateList).forEach(function (channelName) {
-        if (channelIdList.indexOf(channelName) === -1) {
+    Object.keys(stateList).forEach(function (channelId) {
+        if (channelIdList.indexOf(channelId) === -1) {
             needSaveState = true;
-            delete stateList[channelName];
-            debug('Removed from stateList %s', channelName);
+            delete stateList[channelId];
+            debug('Removed from stateList %s', channelId);
         }
     });
     needSaveState && _this.saveState();
@@ -131,10 +119,10 @@ Youtube.prototype.clean = function(channelIdList) {
     return Promise.resolve();
 };
 
-Youtube.prototype.videoIdInList = function(channelName, videoId) {
+Youtube.prototype.videoIdInList = function(channelId, videoId) {
     "use strict";
     var stateList = this.config.stateList;
-    var videoIdObj = stateList[channelName] && stateList[channelName].videoIdList;
+    var videoIdObj = stateList[channelId] && stateList[channelId].videoIdList;
     if (!videoIdObj) {
         return false;
     }
@@ -167,7 +155,7 @@ Youtube.prototype.getVideoIdFromThumbs = function(snippet) {
     return videoId;
 };
 
-Youtube.prototype.apiNormalization = function(channelName, data, isFullCheck, lastRequestTime) {
+Youtube.prototype.apiNormalization = function(channelId, data, isFullCheck, lastRequestTime) {
     "use strict";
     var _this = this;
     if (!data || !Array.isArray(data.items)) {
@@ -176,9 +164,9 @@ Youtube.prototype.apiNormalization = function(channelName, data, isFullCheck, la
     }
 
     var stateList = this.config.stateList;
-    var channelObj = stateList[channelName];
+    var channelObj = stateList[channelId];
     if (!channelObj) {
-        channelObj = stateList[channelName] = {}
+        channelObj = stateList[channelId] = {}
     }
 
     var videoIdObj = channelObj.videoIdList;
@@ -186,7 +174,7 @@ Youtube.prototype.apiNormalization = function(channelName, data, isFullCheck, la
         videoIdObj = channelObj.videoIdList = {}
     }
 
-    var channelLocalTitle = this.getChannelLocalTitle(channelName);
+    var channelLocalTitle = this.getChannelLocalTitle(channelId);
 
     data.items = data.items.filter(function(origItem) {
         var snippet = origItem.snippet;
@@ -255,7 +243,7 @@ Youtube.prototype.apiNormalization = function(channelName, data, isFullCheck, la
 
         var item = {
             _service: 'youtube',
-            _channelName: channelName,
+            _channelName: channelId,
             _videoId: videoId,
 
             url: 'https://youtu.be/' + videoId,
@@ -288,7 +276,7 @@ Youtube.prototype.apiNormalization = function(channelName, data, isFullCheck, la
     }
 
     if (Object.keys(channelObj).length === 0) {
-        delete stateList[channelName];
+        delete stateList[channelId];
     }
 
     return videoList;
@@ -386,14 +374,14 @@ Youtube.prototype.requestChannelIdByUsername = function(userId) {
     });
 };
 
-Youtube.prototype.getVideoList = function(channelNameList, isFullCheck) {
+Youtube.prototype.getVideoList = function(channelIdList, isFullCheck) {
     "use strict";
     var _this = this;
 
     var streamList = [];
 
-    var requestList = channelNameList.map(function(channelName) {
-        var stateItem = _this.config.stateList[channelName];
+    var requestList = channelIdList.map(function(channelId) {
+        var stateItem = _this.config.stateList[channelId];
 
         var lastRequestTime = stateItem && stateItem.lastRequestTime;
         if (isFullCheck || !lastRequestTime) {
@@ -404,44 +392,42 @@ Youtube.prototype.getVideoList = function(channelNameList, isFullCheck) {
         var pageLimit = 100;
         var items = [];
         var getPage = function(pageToken) {
-            return _this.requestChannelIdByUsername(channelName).then(function(channelId) {
-                return requestPromise({
-                    method: 'GET',
-                    url: 'https://www.googleapis.com/youtube/v3/activities',
-                    qs: {
-                        part: 'snippet',
-                        channelId: channelId,
-                        maxResults: 50,
-                        pageToken: pageToken,
-                        fields: 'items/snippet,nextPageToken',
-                        publishedAfter: publishedAfter,
-                        key: _this.config.token
-                    },
-                    json: true,
-                    forever: true
-                }).then(function(response) {
-                    response = response.body || {};
+            return requestPromise({
+                method: 'GET',
+                url: 'https://www.googleapis.com/youtube/v3/activities',
+                qs: {
+                    part: 'snippet',
+                    channelId: channelId,
+                    maxResults: 50,
+                    pageToken: pageToken,
+                    fields: 'items/snippet,nextPageToken',
+                    publishedAfter: publishedAfter,
+                    key: _this.config.token
+                },
+                json: true,
+                forever: true
+            }).then(function(response) {
+                response = response.body || {};
 
-                    if (Array.isArray(response.items)) {
-                        items.push.apply(items, response.items)
-                    }
+                if (Array.isArray(response.items)) {
+                    items.push.apply(items, response.items)
+                }
 
-                    if (pageLimit < 0) {
-                        throw 'Page limited!';
-                    }
+                if (pageLimit < 0) {
+                    throw 'Page limited!';
+                }
 
-                    if (response.nextPageToken) {
-                        pageLimit--;
-                        return getPage(response.nextPageToken);
-                    }
-                });
+                if (response.nextPageToken) {
+                    pageLimit--;
+                    return getPage(response.nextPageToken);
+                }
             }).catch(function(err) {
-                debug('Stream list item "%s" page "%s" response error! %s', channelName, pageToken || 0, err);
+                debug('Stream list item "%s" page "%s" response error! %s', channelId, pageToken || 0, err);
             });
         };
 
         return getPage().then(function() {
-            return _this.apiNormalization(channelName, {items: items}, isFullCheck, lastRequestTime);
+            return _this.apiNormalization(channelId, {items: items}, isFullCheck, lastRequestTime);
         }).then(function(stream) {
             streamList.push.apply(streamList, stream);
         });

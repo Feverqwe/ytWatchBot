@@ -23,31 +23,18 @@ var Checker = function(options) {
     });
 
     options.events.on('feed', function(data) {
-        var channelList = [];
-
         var channelId = data['yt:channelId'];
-        if (channelId) {
-            channelList.push(channelId);
-        }
-
-        var channelUsername = channelId && options.services.youtube.getChannelUsername(channelId);
-        if (channelUsername) {
-            channelList.push(channelUsername);
-        }
 
         var videoId = data['yt:videoId'];
 
-        var hasVideoId = channelList.some(function(channelName) {
-            return options.services.youtube.videoIdInList(channelName, videoId);
-        });
-
+        var hasVideoId = options.services.youtube.videoIdInList(channelId, videoId);
         if (hasVideoId) {
             return;
         }
 
         // debug('Feed event, %j', data);
 
-        _this.updateList({youtube: channelList}).catch(function(err) {
+        _this.updateList({youtube: [channelId]}).catch(function(err) {
             debug('updateList error! "%s"', err);
         });
     });
