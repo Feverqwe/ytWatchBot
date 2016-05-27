@@ -62,11 +62,11 @@ Youtube.prototype.getChannelTitle = function (channelId) {
     return info.title || channelId;
 };
 
-Youtube.prototype.setChannelLocalTitle = function(channelId, title) {
+Youtube.prototype.setChannelLocalTitle = function(channelId, localTitle) {
     "use strict";
     var info = this.getChannelInfo(channelId);
-    if (info.localTitle !== title) {
-        info.localTitle = title;
+    if (info.title !== localTitle && info.localTitle !== localTitle) {
+        info.localTitle = localTitle;
         return this.saveChannelInfo();
     }
 
@@ -76,6 +76,7 @@ Youtube.prototype.setChannelLocalTitle = function(channelId, title) {
 Youtube.prototype.getChannelLocalTitle = function (channelId) {
     "use strict";
     var info = this.getChannelInfo(channelId);
+    // todo rm me!
     if (info.localTitle === info.title) {
         delete info.localTitle;
     }
