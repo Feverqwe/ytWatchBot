@@ -47,12 +47,10 @@ Youtube.prototype.removeChannelInfo = function (channelId) {
 
 Youtube.prototype.setChannelTitle = function(channelId, title) {
     "use strict";
-    if (channelId !== title) {
-        var info = this.getChannelInfo(channelId);
-        if (info.title !== title) {
-            info.title = title;
-            return this.saveChannelInfo();
-        }
+    var info = this.getChannelInfo(channelId);
+    if (info.title !== title) {
+        info.title = title;
+        return this.saveChannelInfo();
     }
 
     return Promise.resolve();
@@ -66,32 +64,33 @@ Youtube.prototype.getChannelTitle = function (channelId) {
 
 Youtube.prototype.setChannelLocalTitle = function(channelId, title) {
     "use strict";
-    if (channelId === title) {
-        return Promise.resolve();
-    }
     var info = this.getChannelInfo(channelId);
     if (info.localTitle !== title) {
         info.localTitle = title;
         return this.saveChannelInfo();
     }
+
+    return Promise.resolve();
 };
 
 Youtube.prototype.getChannelLocalTitle = function (channelId) {
     "use strict";
     var info = this.getChannelInfo(channelId);
+    if (info.localTitle === info.title) {
+        delete info.localTitle;
+    }
     return info.localTitle || info.title || channelId;
 };
 
 Youtube.prototype.setChannelUsername = function(channelId, username) {
     "use strict";
-    if (channelId === username) {
-        return Promise.resolve();
-    }
     var info = this.getChannelInfo(channelId);
     if (info.username !== username) {
         info.username = username;
         return this.saveChannelInfo();
     }
+
+    return Promise.resolve();
 };
 
 Youtube.prototype.clean = function(channelIdList) {
