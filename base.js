@@ -250,6 +250,9 @@ module.exports.getChannelLocalTitle = function(gOptions, service, channelName) {
     var services = gOptions.services;
     if (services[service].getChannelLocalTitle) {
         title = services[service].getChannelLocalTitle(channelName);
+    } else
+    if (services[service].getChannelTitle) {
+        title = services[service].getChannelTitle(channelName);
     }
 
     return title;
