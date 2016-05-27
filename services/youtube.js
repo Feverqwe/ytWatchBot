@@ -322,7 +322,7 @@ Youtube.prototype.apiNormalization = function(channelName, data, isFullCheck, la
     return videoList;
 };
 
-Youtube.prototype.requestChannelLocalTitle = function(channelName, channelId) {
+Youtube.prototype.requestChannelLocalTitle = function(channelId, channelName) {
     "use strict";
     var _this = this;
     return requestPromise({
@@ -548,7 +548,7 @@ Youtube.prototype.getChannelId = function(channelName) {
                     debug('Channel title "%s" is not equal userId "%s"', channelTitleLow, channelName);
                 });
             }).then(function() {
-                return _this.requestChannelLocalTitle(channelName, channelId);
+                return _this.requestChannelLocalTitle(channelId, channelName);
             }).then(function() {
                 return _this.setChannelTitle(channelId, channelTitle);
             }).then(function() {
