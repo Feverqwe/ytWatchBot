@@ -235,7 +235,7 @@ var commands = {
 
         var onTimeout = function() {
             msg.text = 'Cancel';
-            return _this.onMessagePromise(msg);
+            return _this.onMessage(msg);
         };
 
         var waitChannelName = function() {
@@ -249,7 +249,7 @@ var commands = {
                 }
 
                 msg.text = '/a ' + data.join(' ');
-                return _this.onMessagePromise(msg);
+                return _this.onMessage(msg);
             };
             onMessage.command = 'add';
             onMessage.userId = msg.from.id;
@@ -269,7 +269,7 @@ var commands = {
             return waitChannelName();
         } else {
             msg.text = '/a ' + data.join(' ');
-            return _this.onMessagePromise(msg);
+            return _this.onMessage(msg);
         }
     },
     d__Cb: function (callbackQuery, channelName, service) {
