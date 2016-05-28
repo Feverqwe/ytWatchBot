@@ -41,22 +41,6 @@ Chat.prototype.bindBot = function() {
     this.gOptions.bot.on('callback_query', this.onCallbackQuery.bind(this));
 };
 
-Chat.prototype.getServiceListKeyboard = function() {
-    "use strict";
-    var last = [];
-    var btnList = [last];
-    for (var i = 0, service; service = this.gOptions.serviceList[i]; i++) {
-        if (last.length === 2) {
-            last = [];
-            btnList.push(last);
-        }
-        last.push(this.gOptions.serviceToTitle[service]);
-    }
-    btnList.push(['Cancel']);
-
-    return btnList;
-};
-
 Chat.prototype.checkArgs = function(msg, args, isCallbackQuery) {
     "use strict";
     var bot = this.gOptions.bot;
