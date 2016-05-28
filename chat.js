@@ -128,16 +128,35 @@ Chat.prototype.removeChat = function(chatId) {
     "use strict";
     var chatList = this.gOptions.storage.chatList;
 
-    var chatItem = chatList[chatId];
-    if (!chatItem) {
-        return Promise.resolve();
+    var needSave = false;
+
+    if (/^@\w+$/.test(chatId)) {
+        Object.keys(chatList).forEach(function (chatId) {
+            var item = chatList[chatId];
+            var options = item.options;
+
+            if (options && options.channel === chatId) {
+                delete options.channel;
+                needSave = true;
+                if (!Object.keys(options).length) {
+                    delete item.options;
+                }
+            }
+        });
+    } else {
+        var chatItem = chatList[chatId];
+        if (chatItem) {
+            delete chatList[chatId];
+            needSave = true;
+            debug('Chat %s removed! %j', chatId, chatItem);
+        }
     }
 
-    delete chatList[chatId];
-    
-    debug('Chat %s removed! %j', chatId, chatItem);
-
-    return base.storage.set({chatList: chatList});
+    if (!needSave) {
+        return Promise.resolve();
+    } else {
+        return base.storage.set({chatList: chatList});
+    }
 };
 
 Chat.prototype.chatMigrate = function(oldChatId, newChatId) {
@@ -191,7 +210,7 @@ Chat.prototype.onCallbackQuery = function (callbackQuery) {
 
     var action = args.shift().toLowerCase();
 
-    if (['list', 'add', 'delete', 'top', 'livetime', 'clear', 'options'].indexOf(action) !== -1) {
+    if (['list', 'add', 'delete', 'top', 'livetime', 'clear', 'options', 'setchannel'].indexOf(action) !== -1) {
         return this.onMessage(this.callbackQueryToMsg(callbackQuery)).then(function () {
             return _this.gOptions.bot.answerCallbackQuery(callbackQuery.id, '...');
         });

@@ -76,6 +76,18 @@ var optionsBtnList = function (chatItem) {
         }]);
     }
 
+    if (options.channel) {
+        btnList.push([{
+            text: 'Remove channel (' + options.channel + ')',
+            callback_data: '/setchannel remove'
+        }]);
+    } else {
+        btnList.push([{
+            text: 'Set channel',
+            callback_data: '/setchannel'
+        }]);
+    }
+
     return btnList;
 };
 
@@ -571,6 +583,90 @@ var commands = {
                 parse_mode: 'HTML'
             }
         );
+    },
+    setchannel: function (msg, text) {
+        "use strict";
+        var _this = this;
+        var chatId = msg.chat.id;
+        var chatList = _this.gOptions.storage.chatList;
+        var chatItem = chatList[chatId];
+
+        if (!chatItem) {
+            return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
+        }
+
+        var onTimeout = function() {
+            msg.text = '/cancel setchannel';
+            return _this.onMessage(msg);
+        };
+
+        var onGetChannelName = function (msg, text) {
+            text = text.trim();
+            return Promise.try(function () {
+                var options = base.getObjectItemOrObj(chatItem, 'options');
+
+                var isRemove = false;
+                if (text === 'remove') {
+                    delete options.channel;
+                    isRemove = true;
+                } else {
+                    if (!/^@\w+$/.test(text)) {
+                        throw new Error('BAD_FORMAT');
+                    }
+                    options.channel = text;
+                }
+
+                if (!Object.keys(options).length) {
+                    delete chatItem.options;
+                }
+
+                return base.storage.set({chatList: chatList}).then(function () {
+                    var msgText = null;
+
+                    if (!isRemove) {
+                        msgText = _this.gOptions.language.telegramChannelAdded;
+                        msgText = msgText.replace('{channelName}', text);
+                    } else {
+                        msgText = _this.gOptions.language.telegramChannelRemoved;
+                        msgText = msgText.replace('{channelName}', text);
+                    }
+
+                    return _this.gOptions.bot.sendMessage(chatId, msgText);
+                });
+            }).catch(function (err) {
+                var msgText = _this.gOptions.language.telegramChannelError;
+                msgText = msgText.replace('{channelName}', text);
+                return _this.gOptions.bot.sendMessage(chatId, msgText);
+            });
+        };
+
+        var waitTelegramChannelName = function() {
+            var onMessage = _this.stateList[chatId] = function(msg, text) {
+                return onGetChannelName(msg, text);
+            };
+            onMessage.command = 'setchannel';
+            onMessage.userId = msg.from.id;
+            onMessage.timeout = setTimeout(function() {
+                return onTimeout();
+            }, 3 * 60 * 1000);
+
+            var msgText = _this.gOptions.language.enterTelegramChannelName;
+            if (chatId < 0) {
+                msgText += _this.gOptions.language.groupNote;
+            }
+
+            return _this.gOptions.bot.sendMessage(chatId, msgText, {
+                reply_markup: JSON.stringify({
+                    force_reply: true
+                })
+            });
+        };
+
+        if (text) {
+            return onGetChannelName(msg, text);
+        } else {
+            return waitTelegramChannelName();
+        }
     },
     top: function (msg) {
         "use strict";
