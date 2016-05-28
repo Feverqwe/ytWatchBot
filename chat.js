@@ -253,10 +253,6 @@ Chat.prototype.onMessage = function(msg) {
         delete this.stateList[chatId];
     }
 
-    if (text === 'Cancel') {
-        text ='/cancel ' + (responseFunc && responseFunc.command || '');
-    }
-
     if (text[0] !== '/') {
         if (responseFunc) {
             text = this.removeBotName(msg.text);

@@ -234,7 +234,7 @@ var commands = {
         }
 
         var onTimeout = function() {
-            msg.text = 'Cancel';
+            msg.text = '/cancel add';
             return _this.onMessage(msg);
         };
 
