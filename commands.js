@@ -239,19 +239,20 @@ var commands = {
         };
 
         var waitChannelName = function() {
-            var onMessage = _this.stateList[chatId] = function(msg) {
-                var info = readUrl(msg.text);
+            var onMessage = _this.stateList[chatId] = function(msg, text) {
+                var info = readUrl(text);
                 if (info) {
                     data.push('"' + info.channel + '"');
                     data.push('"' + info.service + '"');
                 } else {
-                    data.push('"' + msg.text + '"');
+                    data.push('"' + text + '"');
                 }
 
                 msg.text = '/a ' + data.join(' ');
                 return _this.onMessagePromise(msg);
             };
             onMessage.command = 'add';
+            onMessage.userId = msg.from.id;
             onMessage.timeout = setTimeout(function() {
                 return onTimeout();
             }, 3 * 60 * 1000);
