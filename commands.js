@@ -661,7 +661,8 @@ var commands = {
 
         var waitTelegramChannelName = function() {
             var onMessage = _this.stateList[chatId] = function(msg, text) {
-                return onGetChannelName(msg, text);
+                msg.text = '/setchannel "' + text + '"';
+                return _this.onMessage(msg);
             };
             onMessage.command = 'setchannel';
             onMessage.userId = msg.from.id;
