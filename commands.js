@@ -663,7 +663,7 @@ var commands = {
             var onMessage = _this.stateList[chatId] = function(msg, text) {
                 return onGetChannelName(msg, text);
             };
-            onMessage.command = 'channel';
+            onMessage.command = 'setchannel';
             onMessage.userId = msg.from.id;
             onMessage.timeout = setTimeout(function() {
                 return onTimeout();
