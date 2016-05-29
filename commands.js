@@ -603,8 +603,6 @@ var commands = {
             return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
         }
 
-        var options = base.getObjectItemOrObj(chatItem, 'options');
-
         var onTimeout = function() {
             msg.text = '/cancel setchannel';
             return _this.onMessage(msg);
