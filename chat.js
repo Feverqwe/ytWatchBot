@@ -124,6 +124,33 @@ Chat.prototype.msgParser = function(text) {
     return list;
 };
 
+Chat.prototype.removeChannel = function(channelName) {
+    "use strict";
+    var chatList = this.gOptions.storage.chatList;
+
+    var needSave = false;
+
+    Object.keys(chatList).forEach(function (chatId) {
+        var item = chatList[chatId];
+        var options = item.options;
+
+        if (options && options.channel === channelName) {
+            delete options.channel;
+            delete options.mute;
+            if (!Object.keys(options).length) {
+                delete item.options;
+            }
+            needSave = true;
+        }
+    });
+
+    if (!needSave) {
+        return Promise.resolve();
+    } else {
+        return base.storage.set({chatList: chatList});
+    }
+};
+
 Chat.prototype.removeChat = function(chatId) {
     "use strict";
     var chatList = this.gOptions.storage.chatList;
@@ -134,7 +161,7 @@ Chat.prototype.removeChat = function(chatId) {
     }
 
     delete chatList[chatId];
-    
+
     debug('Chat %s removed! %j', chatId, chatItem);
 
     return base.storage.set({chatList: chatList});
@@ -191,7 +218,7 @@ Chat.prototype.onCallbackQuery = function (callbackQuery) {
 
     var action = args.shift().toLowerCase();
 
-    if (['list', 'add', 'delete', 'top', 'livetime', 'clear', 'options'].indexOf(action) !== -1) {
+    if (['list', 'add', 'delete', 'top', 'livetime', 'clear', 'options', 'setchannel'].indexOf(action) !== -1) {
         return this.onMessage(this.callbackQueryToMsg(callbackQuery)).then(function () {
             return _this.gOptions.bot.answerCallbackQuery(callbackQuery.id, '...');
         });

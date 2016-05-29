@@ -98,7 +98,11 @@ Checker.prototype.onSendMsgError = function(err, chatId) {
         return;
     }
 
-    this.gOptions.chat.removeChat(chatId);
+    if (/^@\w+$/.test(chatId)) {
+        this.gOptions.chat.removeChannel(chatId);
+    } else {
+        this.gOptions.chat.removeChat(chatId);
+    }
     return true;
 };
 
