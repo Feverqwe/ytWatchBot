@@ -107,6 +107,7 @@ Checker.prototype.onSendMsgError = function(err, chatId) {
 };
 
 Checker.prototype.downloadImg = function (stream) {
+    "use strict";
     var _this = this;
     var requestLimit = 10;
     var requestTimeoutSec = 30;
