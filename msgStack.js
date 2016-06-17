@@ -120,11 +120,11 @@ MsgStack.prototype.callMsgList = function (chatId) {
 
     var msgStack = chatMsgStack[chatId];
     if (!msgStack) {
-        return Promise.resovle();
+        return Promise.resolve();
     }
 
     if (msgStack.timeout > base.getNow()) {
-        return Promise.resovle();
+        return Promise.resolve();
     }
     delete msgStack.timeout;
     
