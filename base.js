@@ -173,26 +173,39 @@ module.exports.getDate = function() {
 
 module.exports.getNowStreamPhotoText = function(gOptions, videoItem) {
     "use strict";
-    var textArr = [];
+    var getText = function (stripLen) {
+        var textArr = [];
 
-    var title = '';
+        var title = '';
 
-    var line = [];
-    if (videoItem.title) {
-        line.push(title = videoItem.title);
-    }
-    if (videoItem.channel.title && title.indexOf(videoItem.channel.title) === -1) {
-        line.push(videoItem.channel.title);
-    }
-    if (line.length) {
-        textArr.push(line.join(', '));
+        var descPart = [];
+        if (videoItem.title) {
+            descPart.push(title = videoItem.title);
+        }
+        if (videoItem.channel.title && title.indexOf(videoItem.channel.title) === -1) {
+            descPart.push(videoItem.channel.title);
+        }
+        if (descPart.length) {
+            var desc = descPart.join(', ');
+            if (stripLen) {
+                desc = desc.substr(0, desc.length - stripLen - 3) + '...';
+            }
+            textArr.push(desc);
+        }
+
+        if (videoItem.url) {
+            textArr.push(videoItem.url);
+        }
+
+        return textArr.join('\n');
+    };
+
+    var text = getText();
+    if (text.length > 200) {
+        text = getText(text.length - 200);
     }
 
-    if (videoItem.url) {
-        textArr.push(videoItem.url);
-    }
-
-    return textArr.join('\n');
+    return text;
 };
 
 module.exports.getNowStreamText = function(gOptions, videoItem) {
