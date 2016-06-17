@@ -24,7 +24,17 @@ var MsgStack = function (options) {
     this.onReady = base.storage.get(['msgStackObj', 'chatMsgStack']).then(function(storage) {
         _this.config.msgStackObj = storage.msgStackObj || {};
         _this.config.chatMsgStack = storage.chatMsgStack || {};
+        _this.convertMsgStack(_this.config.chatMsgStack);
         _this.stack = _this.initStack();
+    });
+};
+
+MsgStack.prototype.convertMsgStack = function (chatMsgStack) {
+    Object.keys(chatMsgStack).forEach(function (key) {
+        var item = chatMsgStack[key];
+        if (Array.isArray(item)) {
+            chatMsgStack[key] = {stack: item};
+        }
     });
 };
 
@@ -73,9 +83,10 @@ MsgStack.prototype.addInStack = function (videoItem) {
     this.stack.addItem(msgId, videoItem);
 
     this.getChatIdList(videoItem).forEach(function (chatId) {
-        var msgStack = base.getObjectItemOrArray(chatMsgStack, chatId);
-        base.removeItemFromArray(msgStack, msgId);
-        msgStack.push(msgId);
+        var msgStack = base.getObjectItemOrObj(chatMsgStack, chatId);
+        var msgList = base.getObjectItemOrArray(msgStack, 'stack');
+        base.removeItemFromArray(msgList, msgId);
+        msgList.push(msgId);
     });
 };
 
@@ -91,8 +102,9 @@ MsgStack.prototype.clear = function () {
             return;
         }
 
-        var msgStack = chatMsgStack[chatId] || [];
-        usedMsgId.push.apply(usedMsgId, msgStack);
+        var msgStack = chatMsgStack[chatId] || {};
+        var msgList = msgStack.stack || [];
+        usedMsgId.push.apply(usedMsgId, msgList);
     });
 
     this.stack.getKeys().forEach(function (msgId) {
@@ -106,11 +118,17 @@ MsgStack.prototype.callMsgList = function (chatId) {
     var _this = this;
     var chatMsgStack = this.config.chatMsgStack;
 
-    var msgList = chatMsgStack[chatId];
-    if (!msgList) {
+    var msgStack = chatMsgStack[chatId];
+    if (!msgStack) {
         return Promise.resovle();
     }
 
+    if (msgStack.timeout > base.getNow()) {
+        return Promise.resovle();
+    }
+    delete msgStack.timeout;
+    
+    var msgList = msgStack.stack || [];
     var sendNextMsg = function () {
         if (!msgList.length) {
             delete chatMsgStack[chatId];
@@ -155,6 +173,7 @@ MsgStack.prototype.callMsgList = function (chatId) {
         }).then(function () {
             return sendNextMsg();
         }).catch(function (e) {
+            msgStack.timeout = base.getNow() + 60 * 60;
             debug('sendNextMsg error! %s', e);
         });
     };
