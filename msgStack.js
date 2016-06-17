@@ -173,7 +173,12 @@ MsgStack.prototype.callMsgList = function (chatId) {
         }).then(function () {
             return sendNextMsg();
         }).catch(function (e) {
-            msgStack.timeout = base.getNow() + 60 * 60;
+            var timeout = 5 * 60;
+            if (/PEER_ID_INVALID/.test(e)) {
+                timeout = 5 * 60 * 60;
+            }
+            msgStack.timeout = base.getNow() + timeout;
+
             debug('sendNextMsg error! %s', e);
         });
     };
