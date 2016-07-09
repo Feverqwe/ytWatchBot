@@ -16,6 +16,9 @@ var Checker = function(options) {
 
     this.requestPhotoCache = {};
 
+    this.feedTimeout = {};
+    this.gcTime = base.getNow();
+
     options.events.on('check', function() {
         _this.updateList().catch(function(err) {
             debug('updateList error! "%s"', err);
@@ -27,6 +30,11 @@ var Checker = function(options) {
 
         var videoId = data['yt:videoId'];
 
+        var isTimeout = _this.isFeedTimeout(videoId);
+        if (isTimeout) {
+            return;
+        }
+
         var hasVideoId = options.services.youtube.videoIdInList(channelId, videoId);
         if (hasVideoId) {
             return;
@@ -37,6 +45,37 @@ var Checker = function(options) {
         _this.updateList({youtube: [channelId]}).catch(function(err) {
             debug('updateList error! "%s"', err);
         });
+    });
+};
+
+Checker.prototype.isFeedTimeout = function (id) {
+    var result = false;
+
+    var now = base.getNow();
+    var feedTimeout = this.feedTimeout;
+    if (feedTimeout[id] > now) {
+        result = true;
+    } else {
+        feedTimeout[id] = now + 60 * 60;
+    }
+
+    this.gcFeedTimeout();
+
+    return result;
+};
+
+Checker.prototype.gcFeedTimeout = function () {
+    var now = base.getNow();
+    if (this.gcTime > now) {
+        return;
+    }
+    this.gcTime = now + 5 * 60;
+
+    var feedTimeout = this.feedTimeout;
+    Object.keys(feedTimeout).forEach(function (id) {
+        if (feedTimeout[id] < now) {
+            delete feedTimeout[id];
+        }
     });
 };
 
