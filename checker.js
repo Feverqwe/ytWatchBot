@@ -30,7 +30,7 @@ var Checker = function(options) {
 
         var videoId = data['yt:videoId'];
 
-        var isTimeout = _this.isFeedTimeout(videoId);
+        var isTimeout = _this.isFeedTimeout(channelId);
         if (isTimeout) {
             return;
         }
@@ -56,7 +56,7 @@ Checker.prototype.isFeedTimeout = function (id) {
     if (feedTimeout[id] > now) {
         result = true;
     } else {
-        feedTimeout[id] = now + 60 * 60;
+        feedTimeout[id] = now + 5 * 60;
     }
 
     this.gcFeedTimeout();
@@ -69,7 +69,7 @@ Checker.prototype.gcFeedTimeout = function () {
     if (this.gcTime > now) {
         return;
     }
-    this.gcTime = now + 5 * 60;
+    this.gcTime = now + 60 * 60;
 
     var feedTimeout = this.feedTimeout;
     Object.keys(feedTimeout).forEach(function (id) {
