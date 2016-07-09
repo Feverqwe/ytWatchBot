@@ -288,7 +288,7 @@ Chat.prototype.onMessage = function(msg) {
             });
         }
 
-        debug('Msg is not command! %s', msg);
+        debug('Msg is not command! %j', msg);
         return;
     }
 
