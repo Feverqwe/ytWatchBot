@@ -370,7 +370,6 @@ Youtube.prototype.requestChannelIdByUsername = function(userId) {
     });
 };
 
-var dDblChannelCheck = [];
 Youtube.prototype.getVideoList = function(channelIdList, isFullCheck) {
     "use strict";
     var _this = this;
@@ -378,12 +377,6 @@ Youtube.prototype.getVideoList = function(channelIdList, isFullCheck) {
     var streamList = [];
 
     var requestList = channelIdList.map(function(channelId) {
-        if (dDblChannelCheck.indexOf(channelId) !== -1) {
-            debug('Skip dbl channel %s', channelId);
-            return;
-        }
-        dDblChannelCheck.push(channelId);
-
         var stateItem = _this.config.stateList[channelId];
 
         var lastRequestTime = stateItem && stateItem.lastRequestTime;
@@ -433,11 +426,6 @@ Youtube.prototype.getVideoList = function(channelIdList, isFullCheck) {
             return _this.apiNormalization(channelId, {items: items}, isFullCheck, lastRequestTime);
         }).then(function(stream) {
             streamList.push.apply(streamList, stream);
-
-            var pos = dDblChannelCheck.indexOf(channelId);
-            if (pos !== -1) {
-                dDblChannelCheck.splice(pos, 1);
-            }
         });
     });
 
