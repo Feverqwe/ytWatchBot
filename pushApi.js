@@ -27,17 +27,14 @@ var PushApi = function(options) {
 
         var dDblList = [];
 
-        channelList.forEach(function(channelName) {
-            _this.gOptions.services.youtube.requestChannelIdByUsername(channelName).then(function (channelId) {
-                if (dDblList.indexOf(channelId) !== -1) {
-                    return;
-                }
+        channelList.forEach(function(channelId) {
+            if (dDblList.indexOf(channelId) === -1) {
                 dDblList.push(channelId);
-
-                return _this.subscribe(channelId);
-            }).catch(function (err) {
-                debug('Subscribe event error! %s %j', channelName, err);
-            });
+                
+                return _this.subscribe(channelId).catch(function (err) {
+                    debug('Subscribe event error! %s %j', channelId, err);
+                });
+            }
         });
     });
 
@@ -48,17 +45,14 @@ var PushApi = function(options) {
 
         var dDblList = [];
 
-        channelList.forEach(function(channelName) {
-            _this.gOptions.services.youtube.requestChannelIdByUsername(channelName).then(function (channelId) {
-                if (dDblList.indexOf(channelId) !== -1) {
-                    return;
-                }
+        channelList.forEach(function(channelId) {
+            if (dDblList.indexOf(channelId) === -1) {
                 dDblList.push(channelId);
 
-                return _this.unsubscribe(channelId);
-            }).catch(function (err) {
-                debug('Unsubscribe event error! %s %j', channelName, err);
-            });
+                return _this.unsubscribe(channelId).catch(function (err) {
+                    debug('Unsubscribe event error! %s %j', channelId, err);
+                });
+            }
         });
     });
 };

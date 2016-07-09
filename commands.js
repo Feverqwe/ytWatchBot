@@ -185,12 +185,7 @@ var commands = {
         var chatId = msg.chat.id;
         var chatList = _this.gOptions.storage.chatList;
 
-        return _this.gOptions.services[service].getChannelId(channelName).then(function(channelName) {
-            if (service === 'youtube') {
-                _this.gOptions.events.emit('subscribe', channelName);
-            }
-            return channelName;
-        }).then(function (channelName) {
+        return _this.gOptions.services[service].getChannelId(channelName).then(function (channelName) {
             var chatItem = chatList[chatId] = chatList[chatId] || {};
             chatItem.chatId = chatId;
 
@@ -207,6 +202,10 @@ var commands = {
             var url = base.getChannelUrl(service, channelName);
 
             var displayName = base.htmlSanitize('a', title, url);
+
+            if (service === 'youtube') {
+                _this.gOptions.events.emit('subscribe', channelName);
+            }
 
             return base.storage.set({chatList: chatList}).then(function () {
                 return _this.gOptions.bot.sendMessage(
