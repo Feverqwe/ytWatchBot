@@ -208,8 +208,6 @@ PushApi.prototype.prepareData = function(xml) {
     if (!success) {
         debug('XML read error! %j', document.toString({compressed: true}));
         throw 'XML read error!';
-    } else {
-        debug('GET XML', document.toString({compressed: true}));
     }
 
     return data;
