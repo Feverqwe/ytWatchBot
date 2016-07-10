@@ -105,6 +105,59 @@ var optionsBtnList = function (chatItem) {
     return btnList;
 };
 
+/**
+ * @param {Object} chatItem
+ * @param {number} page
+ * @returns {Array.<*>}
+ */
+var getDeleteChannelList = function (chatItem, page) {
+    var _this = this;
+    page = parseInt(page || 0);
+    var btnList = [];
+    var oneServiceMode = _this.gOptions.serviceList.length === 1;
+
+    Object.keys(chatItem.serviceList).forEach(function (service) {
+        var channelList = chatItem.serviceList[service];
+        channelList.forEach(function(channelName) {
+            var btnItem = {};
+
+            var title = base.getChannelLocalTitle(_this.gOptions, service, channelName);
+            if (!oneServiceMode) {
+                title += ' (' + _this.gOptions.serviceToTitle[service] + ')';
+            }
+            btnItem.text = title;
+
+            btnItem.callback_data = '/d "' + channelName + '" "' + service + '"';
+
+            btnList.push([btnItem]);
+        });
+    });
+
+    var maxItemCount = 2;
+    var offset = page * maxItemCount;
+    var offsetEnd = offset + maxItemCount;
+    var countItem = btnList.length;
+    var pageList = btnList.slice(offset, offsetEnd);
+    if (countItem > maxItemCount) {
+        var pageControls = [];
+        if (offset > 0) {
+            pageControls.push({
+                text: '<',
+                callback_data: '/del ' + (page - 1)
+            });
+        }
+        if (countItem - offsetEnd > 0) {
+            pageControls.push({
+                text: '>',
+                callback_data: '/del ' + (page + 1)
+            });
+        }
+        pageList.push(pageControls);
+    }
+
+    return pageList;
+};
+
 var setOption = function (chatItem, optionName, state) {
     if (['hidePreview', 'mute'].indexOf(optionName) === -1) {
         debug('Option is not found! %s', optionName);
@@ -375,6 +428,37 @@ var commands = {
             );
         });
     },
+    del__Cb: function (callbackQuery, page) {
+        "use strict";
+        var _this = this;
+        var msg = callbackQuery.message;
+        var chatId = msg.chat.id;
+        var chatItem = _this.gOptions.storage.chatList[chatId];
+
+        if (!chatItem) {
+            return _this.gOptions.bot.editMessageText(
+                chatId,
+                _this.gOptions.language.emptyServiceList,
+                {
+                    message_id: msg.message_id
+                }
+            );
+        }
+
+        var btnList = getDeleteChannelList.call(_this, chatItem, page);
+
+        btnList.push([{
+            text: 'Cancel',
+            callback_data: '/c "delete"'
+        }]);
+
+        return _this.gOptions.bot.editMessageReplyMarkup(chatId, {
+            message_id: msg.message_id,
+            reply_markup: JSON.stringify({
+                inline_keyboard: btnList
+            })
+        });
+    },
     delete: function (msg) {
         "use strict";
         var _this = this;
@@ -385,28 +469,9 @@ var commands = {
             return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
         }
 
-        var oneServiceMode = _this.gOptions.serviceList.length === 1;
-
         var msgText = _this.gOptions.language.selectDelChannel;
 
-        var btnList = [];
-
-        Object.keys(chatItem.serviceList).forEach(function (service) {
-            var channelList = chatItem.serviceList[service];
-            channelList.forEach(function(channelName) {
-                var btnItem = {};
-
-                var title = base.getChannelLocalTitle(_this.gOptions, service, channelName);
-                if (!oneServiceMode) {
-                    title += ' (' + _this.gOptions.serviceToTitle[service] + ')';
-                }
-                btnItem.text = title;
-
-                btnItem.callback_data = '/d "' + channelName + '" "' + service + '"';
-
-                btnList.push([btnItem]);
-            });
-        });
+        var btnList = getDeleteChannelList.call(_this, chatItem, 0);
 
         btnList.push([{
             text: 'Cancel',
