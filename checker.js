@@ -30,13 +30,13 @@ var Checker = function(options) {
 
         var videoId = data['yt:videoId'];
 
-        var isTimeout = _this.isFeedTimeout(channelId);
-        if (isTimeout) {
+        var hasVideoId = options.services.youtube.videoIdInList(channelId, videoId);
+        if (hasVideoId) {
             return;
         }
 
-        var hasVideoId = options.services.youtube.videoIdInList(channelId, videoId);
-        if (hasVideoId) {
+        var isTimeout = _this.isFeedTimeout(channelId);
+        if (isTimeout) {
             return;
         }
 
