@@ -133,7 +133,7 @@ var getDeleteChannelList = function (chatItem, page) {
         });
     });
 
-    var maxItemCount = 2;
+    var maxItemCount = 10;
     var offset = page * maxItemCount;
     var offsetEnd = offset + maxItemCount;
     var countItem = btnList.length;
