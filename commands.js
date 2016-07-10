@@ -140,7 +140,7 @@ var getDeleteChannelList = function (chatItem, page) {
     var pageList = btnList.slice(offset, offsetEnd);
     if (countItem > maxItemCount) {
         var pageControls = [];
-        if (offset > 0) {
+        if (page > 0) {
             pageControls.push({
                 text: '<',
                 callback_data: '/del ' + (page - 1)
