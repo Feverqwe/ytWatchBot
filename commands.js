@@ -26,8 +26,8 @@ var menuBtnList = function (page) {
                     callback_data: '/top'
                 },
                 {
-                    text: 'How long will it works',
-                    callback_data: '/liveTime'
+                    text: 'About',
+                    callback_data: '/about'
                 }
             ]
         ];
@@ -806,7 +806,7 @@ var commands = {
             disable_web_page_preview: true
         });
     },
-    livetime: function (msg) {
+    about: function (msg) {
         "use strict";
         var _this = this;
         var chatId = msg.chat.id;
