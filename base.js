@@ -486,4 +486,5 @@ module.exports.pageBtnList = function (btnList, updCommand, page) {
         }
         pageList.push(pageControls);
     }
+    return pageList;
 };
