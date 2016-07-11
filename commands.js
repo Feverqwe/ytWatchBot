@@ -18,7 +18,7 @@ var menuBtnList = function (page) {
             ],
             [
                 {
-                    text: '🔚️',
+                    text: '🔙',
                     callback_data: '/menu_page 0'
                 },
                 {
