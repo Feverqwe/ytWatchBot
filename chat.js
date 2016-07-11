@@ -218,7 +218,7 @@ Chat.prototype.onCallbackQuery = function (callbackQuery) {
 
     var action = args.shift().toLowerCase();
 
-    if (['list', 'add', 'delete', 'top', 'livetime', 'clear', 'options', 'setchannel'].indexOf(action) !== -1) {
+    if (['list', 'add', 'delete', 'top', 'about', 'clear', 'options', 'setchannel'].indexOf(action) !== -1) {
         return this.onMessage(this.callbackQueryToMsg(callbackQuery)).then(function () {
             return _this.gOptions.bot.answerCallbackQuery(callbackQuery.id, '...');
         });
