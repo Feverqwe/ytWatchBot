@@ -18,7 +18,7 @@ var menuBtnList = function (page) {
             ],
             [
                 {
-                    text: '⬅️',
+                    text: '🔚️',
                     callback_data: '/menu_page 0'
                 },
                 {
@@ -49,7 +49,7 @@ var menuBtnList = function (page) {
                     callback_data: '/delete'
                 },
                 {
-                    text: '➡️',
+                    text: '🔜️',
                     callback_data: '/menu_page 1'
                 }
             ]
