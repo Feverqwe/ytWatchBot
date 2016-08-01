@@ -293,6 +293,7 @@ Youtube.prototype.requestChannelLocalTitle = function(channelId) {
             key: _this.config.token
         },
         json: true,
+        gzip: true,
         forever: true
     }).then(function(response) {
         response = response.body;
@@ -320,6 +321,7 @@ Youtube.prototype.requestChannelIdByQuery = function(query) {
             key: _this.config.token
         },
         json: true,
+        gzip: true,
         forever: true
     }).then(function(response) {
         response = response.body;
@@ -354,6 +356,7 @@ Youtube.prototype.requestChannelIdByUsername = function(userId) {
                 key: _this.config.token
             },
             json: true,
+            gzip: true,
             forever: true
         }).then(function(response) {
             response = response.body;
@@ -401,6 +404,7 @@ Youtube.prototype.getVideoList = function(channelIdList, isFullCheck) {
                     key: _this.config.token
                 },
                 json: true,
+                gzip: true,
                 forever: true
             }).then(function(response) {
                 response = response.body || {};
@@ -466,6 +470,7 @@ Youtube.prototype.getChannelId = function(channelName) {
                 key: _this.config.token
             },
             json: true,
+            gzip: true,
             forever: true
         }).then(function(response) {
             response = response.body;
