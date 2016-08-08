@@ -327,7 +327,6 @@ Youtube.prototype.requestChannelIdByQuery = function(query) {
         response = response.body;
         var id = response && response.items && response.items[0] && response.items[0].id && response.items[0].id.channelId;
         if (!id) {
-            debug('Channel ID "%s" is not found by query! %j', query, response);
             throw 'Channel ID is not found by query!';
         }
 
@@ -362,7 +361,6 @@ Youtube.prototype.requestChannelIdByUsername = function(userId) {
             response = response.body;
             var id = response && response.items && response.items[0] && response.items[0].id;
             if (!id) {
-                debug('Channel ID "%s" is not found by userId! %j', userId, response);
                 throw 'Channel ID is not found by userId!';
             }
 
