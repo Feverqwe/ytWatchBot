@@ -457,7 +457,7 @@ Youtube.prototype.requestChannelIdByVideoUrl = function (url) {
     });
 
     if (!videoId) {
-        throw 'It not video url!';
+        return Promise.reject('It not video url!');
     }
 
     return requestPromise({
