@@ -476,7 +476,6 @@ Youtube.prototype.requestChannelIdByVideoUrl = function (url) {
 
         var id = response && response.items && response.items[0] && response.items[0].snippet && response.items[0].snippet.channelId;
         if (!id) {
-            debug('Channel ID "%s" is not found by videoId! %j', url, response);
             throw 'Channel ID is not found by videoId!';
         }
 
