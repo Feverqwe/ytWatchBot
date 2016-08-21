@@ -96,7 +96,7 @@ Youtube.prototype.clean = function(channelIdList) {
 
     Object.keys(this.config.channelInfo).forEach(function (channelId) {
         if (channelIdList.indexOf(channelId) === -1) {
-            debug('Removed from channelInfo %s %j', channelId, _this.config.channelInfo[channelId]);
+            // debug('Removed from channelInfo %s %j', channelId, _this.config.channelInfo[channelId]);
             _this.removeChannelInfo(channelId);
         }
     });
@@ -107,7 +107,7 @@ Youtube.prototype.clean = function(channelIdList) {
         if (channelIdList.indexOf(channelId) === -1) {
             needSaveState = true;
             delete stateList[channelId];
-            debug('Removed from stateList %s', channelId);
+            // debug('Removed from stateList %s', channelId);
         }
     });
     needSaveState && _this.saveState();

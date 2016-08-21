@@ -362,7 +362,7 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
 
     var requestPicId = function() {
         if (!chatIdList.length) {
-            debug('chatList is empty! %j', stream);
+            // debug('chatList is empty! %j', stream);
             return Promise.resolve();
         }
 
@@ -443,7 +443,7 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
                 }
             });
             if (subscribeList.length) {
-                debug('Subscribed %s channels! %j', subscribeList.length, subscribeList);
+                // debug('Subscribed %s channels! %j', subscribeList.length, subscribeList);
                 _this.gOptions.events.emit('subscribe', subscribeList);
             }
         }
