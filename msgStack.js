@@ -130,6 +130,7 @@ MsgStack.prototype.callMsgList = function (chatId) {
             if (!videoItem) {
                 debug('VideoItem is not found! %s', msgId);
                 base.removeItemFromArray(msgList, msgId);
+                return;
             }
 
             var chatItem = _this.gOptions.storage.chatList[chatId];
