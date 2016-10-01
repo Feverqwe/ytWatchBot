@@ -87,7 +87,7 @@ var Storage = function() {
 
         var writeFile = function (keyPath, value) {
             return new Promise(function (resilve, reject) {
-                fs.writeFile(keyPath, JSON.stringify(value), {
+                fs.writeFile(keyPath, value, {
                     encoding: 'utf8'
                 }, function (err) {
                     if (err) {
