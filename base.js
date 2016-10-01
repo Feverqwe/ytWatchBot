@@ -3,9 +3,8 @@
  */
 var path = require('path');
 var Promise = require('bluebird');
-var LocalStorage = require('node-localstorage').LocalStorage;
-var localStorage = null;
 var debug = require('debug')('base');
+var Storage = require('./Storage');
 
 /**
  *
@@ -40,51 +39,6 @@ module.exports.loadLanguage = function() {
 
         return language;
     });
-};
-
-var Storage = function() {
-    "use strict";
-    localStorage = new LocalStorage(path.join(__dirname, './storage'));
-
-    this.get = function(arr) {
-        return Promise.resolve().then(function() {
-            var key, obj = {};
-            if (!Array.isArray(arr)) {
-                arr = [arr];
-            }
-            for (var i = 0, len = arr.length; i < len; i++) {
-                key = arr[i];
-                var value = localStorage.getItem(key);
-                if (value) {
-                    obj[key] = JSON.parse(value);
-                }
-            }
-            return obj;
-        });
-    };
-    this.set = function(obj) {
-        return Promise.resolve().then(function() {
-            for (var key in obj) {
-                var value = obj[key];
-                if (value === undefined) {
-                    localStorage.removeItem(key);
-                    continue;
-                }
-                localStorage.setItem(key, JSON.stringify(value));
-            }
-        });
-    };
-    this.remove = function(arr) {
-        return Promise.resolve().then(function() {
-            if (!Array.isArray(arr)) {
-                arr = [arr];
-            }
-
-            for (var i = 0, len = arr.length; i < len; i++) {
-                localStorage.removeItem(arr[i]);
-            }
-        });
-    };
 };
 
 module.exports.storage = new Storage();
@@ -371,29 +325,6 @@ module.exports.getRandomInt = function (min, max) {
 
 module.exports.getNow = function () {
     return parseInt(Date.now() / 1000);
-};
-
-module.exports.throttle = function(fn, threshhold, scope) {
-    threshhold = threshhold || 250;
-    var last;
-    var deferTimer;
-    return function () {
-        var context = scope || this;
-
-        var now = Date.now();
-        var args = arguments;
-        if (last && now < last + threshhold) {
-            // hold on to it
-            clearTimeout(deferTimer);
-            deferTimer = setTimeout(function () {
-                last = now;
-                fn.apply(context, args);
-            }, threshhold);
-        } else {
-            last = now;
-            fn.apply(context, args);
-        }
-    };
 };
 
 /**

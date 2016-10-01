@@ -13,8 +13,6 @@ var MsgStack = function (options) {
     this.gOptions = options;
     this.config = {};
 
-    this.saveThrottle = base.throttle(this.save, 100, this);
-
     this.inProgressChatId = [];
 
     options.events.on('notifyAll', function (videoList) {
@@ -132,7 +130,6 @@ MsgStack.prototype.callMsgList = function (chatId) {
             if (!videoItem) {
                 debug('VideoItem is not found! %s', msgId);
                 base.removeItemFromArray(msgList, msgId);
-                return _this.saveThrottle();
             }
 
             var chatItem = _this.gOptions.storage.chatList[chatId];
@@ -158,7 +155,6 @@ MsgStack.prototype.callMsgList = function (chatId) {
 
             return _this.gOptions.checker.sendNotify(chatList, text, noPhotoText, videoItem, true).then(function () {
                 base.removeItemFromArray(msgList, msgId);
-                return _this.saveThrottle();
             });
         }).then(function () {
             return sendNextMsg();
