@@ -433,7 +433,7 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
 
     var isFullCheck = !filterServiceChannelList;
 
-    var onGetVideoList = function(videoList) {
+    var onGetVideoList = function(videoList, currentService) {
         if (isFullCheck) {
             var subscribeList = [];
             videoList.forEach(function(item) {
@@ -452,7 +452,18 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
             return a.publishedAt > b.publishedAt;
         });
 
-        _this.gOptions.events.emit('notifyAll', videoList);
+        var msgStack = _this.gOptions.msgStack;
+        videoList.forEach(function (videoItem) {
+            msgStack.addInStack(videoItem);
+            msgStack.sendLog(videoItem);
+        });
+
+        return Promise.all([
+            msgStack.save(),
+            currentService.saveState()
+        ]).then(function () {
+            _this.gOptions.events.emit('notifyAll');
+        });
     };
 
     var queue = Promise.resolve();
@@ -491,7 +502,7 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
 
             queue = queue.finally(function() {
                 return currentService.getVideoList(channelList, isFullCheck).then(function(videoList) {
-                    return onGetVideoList(videoList);
+                    return onGetVideoList(videoList, currentService);
                 });
             });
         });

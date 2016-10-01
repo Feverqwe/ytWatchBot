@@ -431,9 +431,7 @@ Youtube.prototype.getVideoList = function(channelIdList, isFullCheck) {
         });
     });
 
-    return Promise.all(requestList).then(function () {
-        return _this.saveState();
-    }).then(function() {
+    return Promise.all(requestList).then(function() {
         return streamList;
     });
 };

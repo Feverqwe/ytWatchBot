@@ -177,11 +177,14 @@ MsgStack.prototype.save = function () {
     var _this = this;
     var chatMsgStack = this.config.chatMsgStack;
 
-    return base.storage.set({
+    var savePromise = base.storage.set({
         chatMsgStack: chatMsgStack
-    }).then(function () {
-        return _this.stack.save();
     });
+
+    return Promise.all([
+        savePromise,
+        _this.stack.save()
+    ]);
 };
 
 MsgStack.prototype.callStack = function () {
@@ -211,17 +214,10 @@ MsgStack.prototype.sendLog = function (stream) {
     debugLog('[s] %j', debugItem);
 };
 
-MsgStack.prototype.notifyAll = function (videoList) {
+MsgStack.prototype.notifyAll = function () {
     var _this = this;
 
-    videoList.forEach(function (videoItem) {
-        _this.addInStack(videoItem);
-        _this.sendLog(videoItem);
-    });
-
-    return _this.save().then(function () {
-        return _this.callStack();
-    }).then(function () {
+    return _this.callStack().then(function () {
         _this.clear();
         return _this.save();
     });
