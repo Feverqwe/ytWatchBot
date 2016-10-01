@@ -72,7 +72,9 @@ var Storage = function() {
         });
     };
 
-    var writeKey = function (key, value) {
+    var writeKey = function (key, _value) {
+        var value = JSON.stringify(_value);
+
         var writeFile = function (keyPath, value) {
             return new Promise(function (resilve, reject) {
                 fs.writeFile(keyPath, JSON.stringify(value), {
