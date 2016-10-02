@@ -65,23 +65,19 @@ MsgSender.prototype.onSendMsgError = function(err, chatId) {
 MsgSender.prototype.downloadImg = function (stream) {
     "use strict";
     var _this = this;
+
     var requestLimit = 10;
+    var _requestLimit = _this.gOptions.config.sendPhotoRequestLimit;
+    if (_requestLimit) {
+        requestLimit = _requestLimit;
+    }
+
     var requestTimeoutSec = 30;
-
-    var refreshRequestLimit = function () {
-        var _requestLimit = _this.gOptions.config.sendPhotoRequestLimit;
-        if (_requestLimit) {
-            requestLimit = _requestLimit;
-        }
-
-        var _requestTimeoutSec = _this.gOptions.config.sendPhotoRequestTimeoutSec;
-        if (_requestTimeoutSec) {
-            requestTimeoutSec = _requestTimeoutSec;
-        }
-
-        requestTimeoutSec *= 1000;
-    };
-    refreshRequestLimit();
+    var _requestTimeoutSec = _this.gOptions.config.sendPhotoRequestTimeoutSec;
+    if (_requestTimeoutSec) {
+        requestTimeoutSec = _requestTimeoutSec;
+    }
+    requestTimeoutSec *= 1000;
 
     var previewList = stream.preview;
 
