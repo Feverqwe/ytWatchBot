@@ -288,12 +288,8 @@ Checker.prototype.getPicIdCache = function (chatId, text, stream) {
     var cache = this.requestPhotoCache;
     var id = stream._videoId;
     
-    return cache[id] = this.getPicId(chatId, text, stream).then(function (msg) {
+    return cache[id] = this.getPicId(chatId, text, stream).finally(function () {
         delete cache[id];
-        return msg;
-    }).catch(function (e) {
-        delete cache[id];
-        throw e;
     });
 };
 
