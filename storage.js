@@ -13,18 +13,12 @@ var inStack = function (key, fn) {
     return new Promise(function (resolve, reject) {
         var promise = promiseList[key] || Promise.resolve();
 
-        promise = promise.then(function () {
-            return Promise.try(fn).then(function (value) {
+        promise = promise.finally(function () {
+            return Promise.try(fn).finally(function () {
                 if (promiseList[key] === promise) {
                     delete promiseList[key];
                 }
-                resolve(value);
-            }, function (error) {
-                if (promiseList[key] === promise) {
-                    delete promiseList[key];
-                }
-                reject(error);
-            });
+            }).then(resolve, reject);
         });
 
         promiseList[key] = promise;
