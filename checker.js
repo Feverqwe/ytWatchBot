@@ -366,7 +366,7 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
         if (promise) {
             return promise.then(function(msg) {
                 stream._photoId = msg.photo[0].file_id;
-            }).catch(function(err) {
+            }, function(err) {
                 if (err === 'Send photo file error! Bot was kicked!') {
                     return requestPicId();
                 }
@@ -379,7 +379,7 @@ Checker.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, u
             stream._photoId = msg.photo[0].file_id;
 
             _this.track(chatId, stream, 'sendPhoto');
-        }).catch(function(err) {
+        }, function(err) {
             if (err === 'Send photo file error! Bot was kicked!') {
                 return requestPicId();
             }
