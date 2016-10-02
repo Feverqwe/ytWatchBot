@@ -12,7 +12,7 @@ var MsgSender = function (options) {
     var _this = this;
     this.gOptions = options;
 
-    this.requestPhotoCache = {};
+    this.requestPromiseMap = {};
 };
 
 MsgSender.prototype.onSendMsgError = function(err, chatId) {
@@ -202,7 +202,7 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
 MsgSender.prototype.getPicIdCache = function (chatId, text, stream) {
     "use strict";
     var _this = this;
-    var cache = _this.requestPhotoCache;
+    var cache = _this.requestPromiseMap;
     var id = stream._videoId;
 
     return cache[id] = _this.getPicId(chatId, text, stream).finally(function () {
@@ -287,13 +287,13 @@ MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
         return Promise.resolve();
     }
 
-    var promise = _this.requestPhotoCache[stream._videoId];
+    var promise = _this.requestPromiseMap[stream._videoId];
     if (promise) {
         return promise.then(function(msg) {
             stream._photoId = msg.photo[0].file_id;
         }, function(err) {
             if (err === 'Send photo file error! Bot was kicked!') {
-                return requestPicId();
+                return _this.requestPicId(chatIdList, text, stream);
             }
         });
     }
@@ -306,7 +306,7 @@ MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
         _this.track(chatId, stream, 'sendPhoto');
     }, function(err) {
         if (err === 'Send photo file error! Bot was kicked!') {
-            return requestPicId();
+            return _this.requestPicId(chatIdList, text, stream);
         }
 
         chatIdList.unshift(chatId);
