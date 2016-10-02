@@ -16,6 +16,7 @@ var MsgSender = function (options) {
 };
 
 MsgSender.prototype.onSendMsgError = function(err, chatId) {
+    "use strict";
     var _this = this;
     err = err && err.message || err;
     var needKick = /^403\s+/.test(err);
@@ -199,11 +200,117 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
  * @private
  */
 MsgSender.prototype.getPicIdCache = function (chatId, text, stream) {
-    var cache = this.requestPhotoCache;
+    "use strict";
+    var _this = this;
+    var cache = _this.requestPhotoCache;
     var id = stream._videoId;
 
-    return cache[id] = this.getPicId(chatId, text, stream).finally(function () {
+    return cache[id] = _this.getPicId(chatId, text, stream).finally(function () {
         delete cache[id];
+    });
+};
+
+/**
+ * @private
+ */
+MsgSender.prototype.sendMsg = function(chatId, noPhotoText, stream) {
+    "use strict";
+    var _this = this;
+    var bot = _this.gOptions.bot;
+
+    return bot.sendMessage(chatId, noPhotoText, {
+        parse_mode: 'HTML'
+    }).then(function() {
+        _this.track(chatId, stream, 'sendMsg');
+    }).catch(function(err) {
+        debug('Send text msg error! %s %s %s', chatId, stream._channelName, err);
+
+        var isKicked = _this.onSendMsgError(err, chatId);
+        if (!isKicked) {
+            throw err;
+        }
+    });
+};
+
+/**
+ * @private
+ */
+MsgSender.prototype.sendPhoto = function(chatId, fileId, text, stream) {
+    "use strict";
+    var _this = this;
+    var bot = _this.gOptions.bot;
+
+    return bot.sendPhoto(chatId, fileId, {
+        caption: text
+    }).then(function() {
+        _this.track(chatId, stream, 'sendPhoto');
+    }).catch(function(err) {
+        debug('Send photo msg error! %s %s %s', chatId, stream._channelName, err);
+
+        var isKicked = _this.onSendMsgError(err, chatId);
+        if (!isKicked) {
+            throw err;
+        }
+    });
+};
+
+/**
+ * @private
+ */
+MsgSender.prototype.send = function(chatIdList, text, noPhotoText, stream) {
+    "use strict";
+    var _this = this;
+    var photoId = stream._photoId;
+    var promiseList = [];
+
+    var chatId = null;
+    while (chatId = chatIdList.shift()) {
+        if (!photoId || !text) {
+            promiseList.push(_this.sendMsg(chatId, noPhotoText, stream));
+        } else {
+            promiseList.push(_this.sendPhoto(chatId, photoId, text, stream));
+        }
+    }
+
+    return Promise.all(promiseList);
+};
+
+/**
+ * @private
+ */
+MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
+    "use strict";
+    var _this = this;
+
+    if (!chatIdList.length) {
+        // debug('chatList is empty! %j', stream);
+        return Promise.resolve();
+    }
+
+    var promise = _this.requestPhotoCache[stream._videoId];
+    if (promise) {
+        return promise.then(function(msg) {
+            stream._photoId = msg.photo[0].file_id;
+        }, function(err) {
+            if (err === 'Send photo file error! Bot was kicked!') {
+                return requestPicId();
+            }
+        });
+    }
+
+    var chatId = chatIdList.shift();
+
+    return _this.getPicIdCache(chatId, text, stream).then(function(msg) {
+        stream._photoId = msg.photo[0].file_id;
+
+        _this.track(chatId, stream, 'sendPhoto');
+    }, function(err) {
+        if (err === 'Send photo file error! Bot was kicked!') {
+            return requestPicId();
+        }
+
+        chatIdList.unshift(chatId);
+        debug('Function getPicId throw error!', err);
     });
 };
 
@@ -211,100 +318,20 @@ MsgSender.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream,
     "use strict";
     var _this = this;
 
-    var bot = _this.gOptions.bot;
-    var sendMsg = function(chatId) {
-        return bot.sendMessage(chatId, noPhotoText, {
-            parse_mode: 'HTML'
-        }).then(function() {
-            _this.track(chatId, stream, 'sendMsg');
-        }).catch(function(err) {
-            debug('Send text msg error! %s %s %s', chatId, stream._channelName, err);
-
-            var isKicked = _this.onSendMsgError(err, chatId);
-            if (!isKicked) {
-                throw err;
-            }
-        });
-    };
-
-    var sendPhoto = function(chatId, fileId) {
-        return bot.sendPhoto(chatId, fileId, {
-            caption: text
-        }).then(function() {
-            _this.track(chatId, stream, 'sendPhoto');
-        }).catch(function(err) {
-            debug('Send photo msg error! %s %s %s', chatId, stream._channelName, err);
-
-            var isKicked = _this.onSendMsgError(err, chatId);
-            if (!isKicked) {
-                throw err;
-            }
-        });
-    };
-
-    var send = function() {
-        var chatId = null;
-        var photoId = stream._photoId;
-        var promiseList = [];
-
-        while (chatId = chatIdList.shift()) {
-            if (!photoId || !text) {
-                promiseList.push(sendMsg(chatId));
-            } else {
-                promiseList.push(sendPhoto(chatId, photoId));
-            }
-        }
-
-        return Promise.all(promiseList);
-    };
-
     if (!stream.preview.length) {
-        return send();
+        return _this.send(chatIdList, text, noPhotoText, stream);
     }
 
     if (!text) {
-        return send();
+        return _this.send(chatIdList, text, noPhotoText, stream);
     }
 
     if (useCache && stream._photoId) {
-        return send();
+        return _this.send(chatIdList, text, noPhotoText, stream);
     }
 
-    var requestPicId = function() {
-        if (!chatIdList.length) {
-            // debug('chatList is empty! %j', stream);
-            return Promise.resolve();
-        }
-
-        var promise = _this.requestPhotoCache[stream._videoId];
-        if (promise) {
-            return promise.then(function(msg) {
-                stream._photoId = msg.photo[0].file_id;
-            }, function(err) {
-                if (err === 'Send photo file error! Bot was kicked!') {
-                    return requestPicId();
-                }
-            });
-        }
-
-        var chatId = chatIdList.shift();
-
-        return _this.getPicIdCache(chatId, text, stream).then(function(msg) {
-            stream._photoId = msg.photo[0].file_id;
-
-            _this.track(chatId, stream, 'sendPhoto');
-        }, function(err) {
-            if (err === 'Send photo file error! Bot was kicked!') {
-                return requestPicId();
-            }
-
-            chatIdList.unshift(chatId);
-            debug('Function getPicId throw error!', err);
-        });
-    };
-
-    return requestPicId().then(function() {
-        return send();
+    return _this.requestPicId(chatIdList, text, stream).then(function() {
+        return _this.send(chatIdList, text, noPhotoText, stream);
     });
 };
 
