@@ -192,7 +192,7 @@ MsgStack.prototype.callStack = function () {
     var inProgressChatId = this.inProgressChatId;
     var promiseList = [];
     var chatMsgStack = this.config.chatMsgStack;
-    Object.keys(chatMsgStack).map(function (chatId) {
+    Object.keys(chatMsgStack).forEach(function (chatId) {
         if (inProgressChatId.indexOf(chatId) !== -1) {
             return;
         }
