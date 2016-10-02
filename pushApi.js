@@ -129,7 +129,7 @@ PushApi.prototype.unsubscribe = function(channelList) {
         channelList = [channelList];
     }
 
-    var promiseList = channelList.forEach(function (channelId) {
+    var promiseList = channelList.map(function (channelId) {
         return new Promise(function (resolve, reject) {
             var topicUrl = _this.topic + channelId;
             pubsub.unsubscribe(topicUrl, _this.hub, function (err) {
