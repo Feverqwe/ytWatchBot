@@ -14,7 +14,7 @@ var MsgSender = function (options) {
 
     _this.requestPromiseMap = {};
 
-    var quote = new base.Quote(1);
+    var quote = new base.Quote(5);
 
     _this.getPicIdQuote = quote.wrapper(_this.getPicId.bind(_this));
 };
