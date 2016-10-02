@@ -193,15 +193,13 @@ MsgStack.prototype.callStack = function () {
     var promiseList = [];
     var chatMsgStack = this.config.chatMsgStack;
     Object.keys(chatMsgStack).forEach(function (chatId) {
-        if (inProgressChatId.indexOf(chatId) !== -1) {
-            return;
+        if (inProgressChatId.indexOf(chatId) === -1) {
+            inProgressChatId.push(chatId);
+            var promise = _this.callMsgList(chatId).finally(function () {
+                base.removeItemFromArray(inProgressChatId, chatId);
+            });
+            promiseList.push(promise);
         }
-        inProgressChatId.push(chatId);
-
-        var promise = _this.callMsgList(chatId).then(function () {
-            base.removeItemFromArray(inProgressChatId, chatId);
-        });
-        promiseList.push(promise);
     });
     return Promise.all(promiseList);
 };
