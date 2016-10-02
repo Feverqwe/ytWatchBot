@@ -156,6 +156,7 @@ MsgStack.prototype.callMsgList = function (chatId) {
 
             return _this.gOptions.msgSender.sendNotify(chatList, text, noPhotoText, videoItem, true).then(function () {
                 base.removeItemFromArray(msgList, msgId);
+                return _this.saveChatMsgStack();
             });
         }).then(function () {
             return sendNextMsg();
@@ -173,16 +174,19 @@ MsgStack.prototype.callMsgList = function (chatId) {
     });
 };
 
-MsgStack.prototype.save = function () {
-    var _this = this;
+MsgStack.prototype.saveChatMsgStack = function () {
     var chatMsgStack = this.config.chatMsgStack;
 
-    var savePromise = base.storage.set({
+    return base.storage.set({
         chatMsgStack: chatMsgStack
     });
+};
+
+MsgStack.prototype.save = function () {
+    var _this = this;
 
     return Promise.all([
-        savePromise,
+        _this.saveChatMsgStack(),
         _this.stack.save()
     ]);
 };
