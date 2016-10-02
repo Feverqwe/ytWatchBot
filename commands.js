@@ -877,7 +877,7 @@ var commands = {
                 queue = queue.finally(function () {
                     return _this.gOptions.bot.sendChatAction(chatId, 'typing').catch(function (err) {
                         debug('Send chat action error! %s %s', chatId, err);
-                        _this.gOptions.checker.onSendMsgError(err, chatId);
+                        _this.gOptions.msgSender.onSendMsgError(err, chatId);
                     });
                 });
             })(chatItem.chatId);

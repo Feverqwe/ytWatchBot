@@ -33,6 +33,7 @@ var EventEmitter = require('events').EventEmitter;
 var Daemon = require('./daemon');
 var Tracker = require('./tracker');
 var MsgStack = require('./msgStack');
+var MsgSender = require('./msgSender');
 
 var options = {
     config: {},
@@ -161,6 +162,8 @@ var options = {
         
         return options.msgStack.onReady;
     }).then(function() {
+        options.msgSender = new MsgSender(options);
+    }).then(function() {
         options.chat = new Chat(options);
     }).then(function() {
         options.checker = new Checker(options);
@@ -168,6 +171,6 @@ var options = {
 
         return options.pushApi.onReady;
     }).catch(function(err) {
-        debug('Loading error %s', err);
+        debug('Loading error', err);
     });
 })();
