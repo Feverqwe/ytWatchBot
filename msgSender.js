@@ -132,28 +132,24 @@ MsgSender.prototype.downloadImg = function (stream) {
 MsgSender.prototype.getPicId = function(chatId, text, stream) {
     "use strict";
     var _this = this;
+
     var sendPicLimit = 0;
+    var _retryLimit = _this.gOptions.config.sendPhotoMaxRetry;
+    if (_retryLimit) {
+        sendPicLimit = _retryLimit;
+    }
+
     var sendPicTimeoutSec = 5;
-
-    var refreshRetryLimit = function () {
-        var _retryLimit = _this.gOptions.config.sendPhotoMaxRetry;
-        if (_retryLimit) {
-            sendPicLimit = _retryLimit;
-        }
-
-        var _retryTimeoutSec = _this.gOptions.config.sendPhotoRetryTimeoutSec;
-        if (_retryTimeoutSec) {
-            sendPicTimeoutSec = _retryTimeoutSec;
-        }
-
-        sendPicTimeoutSec *= 1000;
-    };
-    refreshRetryLimit();
+    var _retryTimeoutSec = _this.gOptions.config.sendPhotoRetryTimeoutSec;
+    if (_retryTimeoutSec) {
+        sendPicTimeoutSec = _retryTimeoutSec;
+    }
+    sendPicTimeoutSec *= 1000;
 
     var sendingPic = function() {
-        var sendPic = function(photo) {
+        var sendPic = function(photoBuffer) {
             return Promise.try(function() {
-                return _this.gOptions.bot.sendPhoto(chatId, photo, {
+                return _this.gOptions.bot.sendPhoto(chatId, photoBuffer, {
                     caption: text
                 });
             }).catch(function(err) {
@@ -178,8 +174,8 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
             });
         };
 
-        return _this.downloadImg(stream).then(function (buffer) {
-            return sendPic(buffer);
+        return _this.downloadImg(stream).then(function (photoBuffer) {
+            return sendPic(photoBuffer);
         });
     };
 
