@@ -267,6 +267,8 @@ module.exports.Quote = function (callPerSecond) {
                 return Promise.try(function() {
                     return cb.apply(null, args);
                 }).then(resolve).catch(reject);
+            }).catch(function (err) {
+                debug('Quote error', err);
             });
         });
 
