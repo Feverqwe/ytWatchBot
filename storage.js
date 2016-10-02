@@ -41,6 +41,19 @@ var Storage = function() {
         });
     };
 
+    accessFile(storagePath, fs.F_OK).catch(function (err) {
+        if (err.code !== 'ENOENT') {
+            throw err;
+        }
+        
+        fs.mkdir(storagePath, function (err) {
+            if (err) {
+                debug('Create storage directory error!', err);
+                throw err;
+            }
+        });
+    });
+
     var readKey = function (key) {
         var readFile = function (keyPath) {
             return new Promise(function (resilve, reject) {
