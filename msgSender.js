@@ -199,20 +199,6 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
 /**
  * @private
  */
-MsgSender.prototype.getPicIdCache = function (chatId, text, stream) {
-    "use strict";
-    var _this = this;
-    var cache = _this.requestPromiseMap;
-    var id = stream._videoId;
-
-    return cache[id] = _this.getPicId(chatId, text, stream).finally(function () {
-        delete cache[id];
-    });
-};
-
-/**
- * @private
- */
 MsgSender.prototype.sendMsg = function(chatId, noPhotoText, stream) {
     "use strict";
     var _this = this;
@@ -281,15 +267,17 @@ MsgSender.prototype.send = function(chatIdList, text, noPhotoText, stream) {
 MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
     "use strict";
     var _this = this;
+    var requestPromiseMap = _this.requestPromiseMap;
+    var requestId = stream._videoId;
 
     if (!chatIdList.length) {
         // debug('chatList is empty! %j', stream);
         return Promise.resolve();
     }
 
-    var promise = _this.requestPromiseMap[stream._videoId];
+    var promise = requestPromiseMap[requestId];
     if (promise) {
-        return promise.then(function(msg) {
+        return promise.then(function (msg) {
             stream._photoId = msg.photo[0].file_id;
         }, function(err) {
             if (err === 'Send photo file error! Bot was kicked!') {
@@ -300,7 +288,11 @@ MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
 
     var chatId = chatIdList.shift();
 
-    return _this.getPicIdCache(chatId, text, stream).then(function(msg) {
+    promise = requestPromiseMap[requestId] = _this.getPicId(chatId, text, stream).finally(function () {
+        delete requestPromiseMap[requestId];
+    });
+
+    promise = promise.then(function(msg) {
         stream._photoId = msg.photo[0].file_id;
 
         _this.track(chatId, stream, 'sendPhoto');
@@ -312,6 +304,8 @@ MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
         chatIdList.unshift(chatId);
         debug('Function getPicId throw error!', err);
     });
+
+    return promise;
 };
 
 MsgSender.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, useCache) {
