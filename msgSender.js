@@ -222,7 +222,7 @@ MsgSender.prototype.sendMsg = function(chatId, noPhotoText, stream) {
         parse_mode: 'HTML'
     }).then(function() {
         _this.track(chatId, stream, 'sendMsg');
-    }).catch(function(err) {
+    }, function(err) {
         debug('Send text msg error! %s %s %s', chatId, stream._channelName, err);
 
         var isKicked = _this.onSendMsgError(err, chatId);
@@ -244,7 +244,7 @@ MsgSender.prototype.sendPhoto = function(chatId, fileId, text, stream) {
         caption: text
     }).then(function() {
         _this.track(chatId, stream, 'sendPhoto');
-    }).catch(function(err) {
+    }, function(err) {
         debug('Send photo msg error! %s %s %s', chatId, stream._channelName, err);
 
         var isKicked = _this.onSendMsgError(err, chatId);
