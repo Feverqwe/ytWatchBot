@@ -120,7 +120,7 @@ MsgStack.prototype.callMsgList = function (chatId) {
     var sendNextMsg = function () {
         if (!msgList.length) {
             delete chatMsgStack[chatId];
-            return;
+            return Promise.resolve();
         }
 
         return Promise.try(function () {
@@ -159,18 +159,18 @@ MsgStack.prototype.callMsgList = function (chatId) {
             });
         }).then(function () {
             return sendNextMsg();
-        }).catch(function (e) {
-            var timeout = 5 * 60;
-            if (/PEER_ID_INVALID/.test(e)) {
-                timeout = 6 * 60 * 60;
-            }
-            msgStack.timeout = base.getNow() + timeout;
-
-            debug('sendNextMsg error! %s', e);
         });
     };
 
-    return sendNextMsg();
+    return sendNextMsg().catch(function (e) {
+        var timeout = 5 * 60;
+        if (/PEER_ID_INVALID/.test(e)) {
+            timeout = 6 * 60 * 60;
+        }
+        msgStack.timeout = base.getNow() + timeout;
+
+        debug('sendNextMsg error! %s', e);
+    });
 };
 
 MsgStack.prototype.save = function () {
