@@ -58,6 +58,9 @@ MsgSender.prototype.onSendMsgError = function(err, chatId) {
     return needKick;
 };
 
+/**
+ * @private
+ */
 MsgSender.prototype.downloadImg = function (stream) {
     "use strict";
     var _this = this;
@@ -122,6 +125,9 @@ MsgSender.prototype.downloadImg = function (stream) {
     });
 };
 
+/**
+ * @private
+ */
 MsgSender.prototype.getPicId = function(chatId, text, stream) {
     "use strict";
     var _this = this;
@@ -189,6 +195,9 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
     });
 };
 
+/**
+ * @private
+ */
 MsgSender.prototype.getPicIdCache = function (chatId, text, stream) {
     var cache = this.requestPhotoCache;
     var id = stream._videoId;
@@ -197,6 +206,7 @@ MsgSender.prototype.getPicIdCache = function (chatId, text, stream) {
         delete cache[id];
     });
 };
+
 MsgSender.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, useCache) {
     "use strict";
     var _this = this;
@@ -298,6 +308,9 @@ MsgSender.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream,
     });
 };
 
+/**
+ * @private
+ */
 MsgSender.prototype.track = function(chatId, stream, title) {
     "use strict";
     return this.gOptions.tracker.track({
