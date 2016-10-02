@@ -76,8 +76,8 @@ PushApi.prototype.initListener = function(resolve) {
 
     pubsub.on('feed', function(data) {
         Promise.try(function() {
-            var data = _this.prepareData(data.feed.toString());
-            _this.gOptions.events.emit('feed', data);
+            var feed = _this.prepareData(data.feed.toString());
+            _this.gOptions.events.emit('feed', feed);
         }).catch(function(err) {
             if (err === 'Entry is not found!') {
                 return;
