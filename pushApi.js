@@ -76,8 +76,7 @@ PushApi.prototype.initListener = function(resolve) {
 
     pubsub.on('feed', function(data) {
         Promise.try(function() {
-            return _this.prepareData(data.feed.toString());
-        }).then(function(data) {
+            var data = _this.prepareData(data.feed.toString());
             _this.gOptions.events.emit('feed', data);
         }).catch(function(err) {
             if (err === 'Entry is not found!') {
@@ -100,29 +99,25 @@ PushApi.prototype.subscribe = function(channelList) {
         channelList = [channelList];
     }
 
-    return Promise.try(function() {
-        var promiseList = [];
-        channelList.forEach(function (channelId) {
-            var promise = new Promise(function (resolve, reject) {
-                var topicUrl = _this.topic + channelId;
-                pubsub.subscribe(topicUrl, _this.hub, function (err) {
-                    if (err) {
-                        return reject(err);
-                    }
-                    // debug('Subscribe %s', channelId);
+    var promiseList = channelList.map(function (channelId) {
+        return new Promise(function (resolve, reject) {
+            var topicUrl = _this.topic + channelId;
+            pubsub.subscribe(topicUrl, _this.hub, function (err) {
+                if (err) {
+                    reject(err);
+                } else {
                     resolve();
-                });
-            }).catch(function (err) {
-                debug('Subscribe error %s %j', channelId, err);
-
-                throw 'Subscribe error!';
+                    // debug('Subscribe %s', channelId);
+                }
             });
+        }).catch(function (err) {
+            debug('Subscribe error %s %j', channelId, err);
 
-            promiseList.push(promise);
+            throw 'Subscribe error!';
         });
-
-        return Promise.all(promiseList);
     });
+
+    return Promise.all(promiseList);
 };
 
 PushApi.prototype.unsubscribe = function(channelList) {
@@ -134,29 +129,25 @@ PushApi.prototype.unsubscribe = function(channelList) {
         channelList = [channelList];
     }
 
-    return Promise.try(function() {
-        var promiseList = [];
-        channelList.forEach(function (channelId) {
-            var promise = new Promise(function (resolve, reject) {
-                var topicUrl = _this.topic + channelId;
-                pubsub.unsubscribe(topicUrl, _this.hub, function (err) {
-                    if (err) {
-                        return reject(err);
-                    }
-                    // debug('Unsubscribed! %s', channelId);
+    var promiseList = channelList.forEach(function (channelId) {
+        return new Promise(function (resolve, reject) {
+            var topicUrl = _this.topic + channelId;
+            pubsub.unsubscribe(topicUrl, _this.hub, function (err) {
+                if (err) {
+                    reject(err);
+                } else {
                     resolve();
-                });
-            }).catch(function (err) {
-                debug('Unsubscribe error %s %j', channelId, err);
-
-                throw 'Unsubscribe error!';
+                    // debug('Unsubscribed! %s', channelId);
+                }
             });
+        }).catch(function (err) {
+            debug('Unsubscribe error %s %j', channelId, err);
 
-            promiseList.push(promise);
+            throw 'Unsubscribe error!';
         });
-
-        return Promise.all(promiseList);
     });
+
+    return Promise.all(promiseList);
 };
 
 PushApi.prototype.prepareData = function(xml) {
