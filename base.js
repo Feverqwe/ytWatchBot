@@ -451,7 +451,9 @@ module.exports.ThreadLimit = function (count) {
         }).finally(function () {
             activeThreadCount--;
             runThread();
-        }).then(resolve, reject);
+        }).then(resolve, reject).catch(function (err) {
+            debug('runThread error', err);
+        });
     };
 
     this.wrapper = function(fn) {
