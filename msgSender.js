@@ -14,7 +14,7 @@ var MsgSender = function (options) {
 
     _this.requestPromiseMap = {};
 
-    _this.threadLimit = new base.ThreadLimit(1);
+    _this.threadLimit = new base.ThreadLimit(30);
 };
 
 MsgSender.prototype.onSendMsgError = function(err, chatId) {
@@ -83,7 +83,7 @@ MsgSender.prototype.downloadImg = function (stream) {
 
     var previewList = stream.preview;
 
-    var requestPic = _this.threadLimit(function (index) {
+    var requestPic = function (index) {
         var previewUrl = previewList[index];
         return requestPromise({
             url: previewUrl,
@@ -116,7 +116,7 @@ MsgSender.prototype.downloadImg = function (stream) {
 
             throw 'Request photo error!';
         });
-    });
+    };
 
     return requestPic(0).then(function (response) {
         var image = new Buffer(response.body, 'binary');
@@ -144,7 +144,7 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
     }
     sendPicTimeoutSec *= 1000;
 
-    var sendingPic = function() {
+    var sendingPic = _this.threadLimit.wrapper(function() {
         var sendPic = function(photoBuffer) {
             return Promise.try(function() {
                 return _this.gOptions.bot.sendPhoto(chatId, photoBuffer, {
@@ -175,7 +175,7 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
         return _this.downloadImg(stream).then(function (photoBuffer) {
             return sendPic(photoBuffer);
         });
-    };
+    });
 
     return sendingPic().catch(function(err) {
         debug('Send photo file error! %s %s %s', chatId, stream._channelName, err);
