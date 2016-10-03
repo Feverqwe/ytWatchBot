@@ -121,6 +121,10 @@ MsgSender.prototype.downloadImg = function (stream) {
     return requestPic(0).then(function (response) {
         var image = new Buffer(response.body, 'binary');
         return image;
+    }, function (err) {
+        debug('requestPic error %s %s %s %s', stream._channelName, err);
+
+        throw err;
     });
 };
 
@@ -151,6 +155,11 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
                     caption: text
                 });
             }).catch(function(err) {
+                var isKicked = _this.onSendMsgError(err, chatId);
+                if (isKicked) {
+                    throw 'Send photo file error! Bot was kicked!';
+                }
+
                 var imgProcessError = [
                     /IMAGE_PROCESS_FAILED/,
                     /FILE_PART_0_MISSING/
@@ -168,6 +177,8 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
                     });
                 }
 
+                debug('sendPic error %s %s %s', chatId, stream._channelName, err);
+
                 throw err;
             });
         };
@@ -177,17 +188,7 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
         });
     });
 
-    return sendingPic().catch(function(err) {
-        // debug('Send photo file error! %s %s %s', chatId, stream._channelName, err);
-
-        var isKicked = _this.onSendMsgError(err, chatId);
-
-        if (isKicked) {
-            throw 'Send photo file error! Bot was kicked!';
-        }
-
-        throw err;
-    });
+    return sendingPic();
 };
 
 /**
