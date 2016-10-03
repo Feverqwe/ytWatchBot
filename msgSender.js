@@ -14,7 +14,7 @@ var MsgSender = function (options) {
 
     _this.requestPromiseMap = {};
 
-    _this.threadLimit = new base.ThreadLimit(30);
+    _this.threadLimit = new base.ThreadLimit(10);
 };
 
 MsgSender.prototype.onSendMsgError = function(err, chatId) {
