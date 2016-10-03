@@ -258,16 +258,15 @@ module.exports.Quote = function (callPerSecond) {
     var next = function () {
         var promiseList = cbQuote.slice(0, callPerSecond).map(function(item, index) {
             cbQuote[index] = null;
-            return Promise.try(function() {
-                var cb = item[0];
-                var args = item[1];
-                var resolve = item[2];
-                var reject = item[3];
 
-                return Promise.try(function() {
-                    return cb.apply(null, args);
-                }).then(resolve, reject);
-            }).catch(function (err) {
+            var cb = item[0];
+            var args = item[1];
+            var resolve = item[2];
+            var reject = item[3];
+
+            return Promise.try(function() {
+                return cb.apply(null, args);
+            }).then(resolve, reject).catch(function (err) {
                 debug('Quote error', err);
             });
         });
@@ -429,4 +428,43 @@ module.exports.pageBtnList = function (btnList, updCommand, page, mediumBtn) {
         pageList.push(mediumBtn);
     }
     return pageList;
+};
+
+module.exports.ThreadLimit = function (count) {
+    var activeThreadCount = 0;
+    var cbQuote = [];
+
+    var runThread = function () {
+        var item = cbQuote.shift();
+        if (!item) {
+            return;
+        }
+
+        var cb = item[0];
+        var args = item[1];
+        var resolve = item[2];
+        var reject = item[3];
+
+        activeThreadCount++;
+        return Promise.try(function () {
+            return cb.apply(null, args);
+        }).finally(function () {
+            activeThreadCount--;
+            runThread();
+        }).then(resolve, reject);
+    };
+
+    this.wrapper = function(fn) {
+        return function () {
+            var args = [].slice.call(arguments);
+
+            return new Promise(function(resolve, reject) {
+                cbQuote.push([fn, args, resolve, reject]);
+
+                if (activeThreadCount < count) {
+                    runThread();
+                }
+            });
+        };
+    };
 };
