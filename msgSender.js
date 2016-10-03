@@ -13,10 +13,6 @@ var MsgSender = function (options) {
     _this.gOptions = options;
 
     _this.requestPromiseMap = {};
-
-    var quote = new base.Quote(5);
-
-    _this.getPicIdQuote = quote.wrapper(_this.getPicId.bind(_this));
 };
 
 MsgSender.prototype.onSendMsgError = function(err, chatId) {
@@ -284,7 +280,7 @@ MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
 
     var chatId = chatIdList.shift();
 
-    promise = requestPromiseMap[requestId] = _this.getPicIdQuote(chatId, text, stream).finally(function () {
+    promise = requestPromiseMap[requestId] = _this.getPicId(chatId, text, stream).finally(function () {
         delete requestPromiseMap[requestId];
     });
 
