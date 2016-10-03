@@ -114,7 +114,7 @@ MsgSender.prototype.downloadImg = function (stream) {
                 });
             }
 
-            throw 'Request photo error!';
+            throw err;
         });
     };
 
@@ -178,7 +178,7 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
     });
 
     return sendingPic().catch(function(err) {
-        debug('Send photo file error! %s %s %s', chatId, stream._channelName, err);
+        // debug('Send photo file error! %s %s %s', chatId, stream._channelName, err);
 
         var isKicked = _this.onSendMsgError(err, chatId);
 
@@ -186,7 +186,7 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
             throw 'Send photo file error! Bot was kicked!';
         }
 
-        throw 'Send photo file error!';
+        throw err;
     });
 };
 
@@ -296,7 +296,7 @@ MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
         }
 
         chatIdList.unshift(chatId);
-        debug('Function getPicId throw error!', err);
+        // debug('Function getPicId throw error!', err);
     });
 
     return promise;
