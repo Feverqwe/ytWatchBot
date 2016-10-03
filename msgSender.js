@@ -122,7 +122,7 @@ MsgSender.prototype.downloadImg = function (stream) {
         var image = new Buffer(response.body, 'binary');
         return image;
     }, function (err) {
-        debug('requestPic error %s %s %s %s', stream._channelName, err);
+        debug('requestPic error %s %s', stream._channelName, err);
 
         throw err;
     });
