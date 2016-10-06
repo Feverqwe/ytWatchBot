@@ -324,6 +324,17 @@ module.exports.getRandomInt = function (min, max) {
     return Math.floor(Math.random() * (max - min)) + min;
 };
 
+module.exports.arrToParts = function (arr, quote) {
+    arr = arr.slice(0);
+
+    var arrList = [];
+    do {
+        arrList.push(arr.splice(0, quote));
+    } while (arr.length);
+
+    return arrList;
+};
+
 module.exports.getNow = function () {
     return parseInt(Date.now() / 1000);
 };
