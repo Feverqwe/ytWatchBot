@@ -386,7 +386,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
 
     var streamList = [];
 
-    var threadCount = 30;
+    var threadCount = 50;
     var partSize = Math.ceil(_channelIdList.length / threadCount);
 
     var requestList = base.arrToParts(_channelIdList, partSize).map(function (arr) {
