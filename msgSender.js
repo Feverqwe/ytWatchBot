@@ -145,7 +145,7 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
     }
     sendPicTimeoutSec *= 1000;
 
-    var sendingPic = _this.threadLimit.wrapper(function() {
+    var sendingPic = function() {
         var sendPic = function(photoUrl) {
             var photoStream = request({
                 url: photoUrl,
@@ -185,9 +185,10 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
 
         return _this.downloadImg(stream).then(function (photoUrl) {
             var sendPicQuote = _this.gOptions.botQuote.wrapper(sendPic);
-            return sendPicQuote(photoUrl);
+            var sendPicQuoteThreadLimit = _this.threadLimit.wrapper(sendPicQuote);
+            return sendPicQuoteThreadLimit(photoUrl);
         });
-    });
+    };
 
     return sendingPic();
 };
