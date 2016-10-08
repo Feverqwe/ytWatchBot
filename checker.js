@@ -174,39 +174,37 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
         });
     }
 
-    return Promise.try(function() {
-        var serviceChannelList = _this.getChannelList();
-        var services = _this.gOptions.services;
+    var serviceChannelList = _this.getChannelList();
+    var services = _this.gOptions.services;
 
-        Object.keys(serviceChannelList).forEach(function (service) {
-            var currentService = services[service];
-            if (!currentService) {
-                debug('Service "%s" is not found!', service);
-                return;
+    Object.keys(serviceChannelList).forEach(function (service) {
+        var currentService = services[service];
+        if (!currentService) {
+            debug('Service "%s" is not found!', service);
+            return;
+        }
+
+        var channelList = serviceChannelList[service];
+
+        var filterChannelList = filterServiceChannelList && filterServiceChannelList[service];
+        if (filterChannelList && service === 'youtube') {
+            channelList = filterChannelList.filter(function(channelName) {
+                return channelList.indexOf(channelName) !== -1;
+            });
+
+            if (!channelList.length) {
+                _this.gOptions.events.emit('unsubscribe', filterChannelList);
             }
+        }
 
-            var channelList = serviceChannelList[service];
-
-            var filterChannelList = filterServiceChannelList && filterServiceChannelList[service];
-            if (filterChannelList && service === 'youtube') {
-                channelList = filterChannelList.filter(function(channelName) {
-                    return channelList.indexOf(channelName) !== -1;
-                });
-
-                if (!channelList.length) {
-                    _this.gOptions.events.emit('unsubscribe', filterChannelList);
-                }
-            }
-
-            queue = queue.finally(function() {
-                return currentService.getVideoList(channelList, isFullCheck).then(function(videoList) {
-                    return onGetVideoList(videoList, currentService);
-                });
+        queue = queue.then(function() {
+            return currentService.getVideoList(channelList, isFullCheck).then(function(videoList) {
+                return onGetVideoList(videoList, currentService);
             });
         });
-
-        return queue;
     });
+
+    return queue;
 };
 
 module.exports = Checker;
