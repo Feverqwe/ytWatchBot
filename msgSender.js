@@ -86,16 +86,16 @@ MsgSender.prototype.downloadImg = function (stream) {
     var requestPic = function (index) {
         var previewUrl = previewList[index];
         return requestPromise({
+            method: 'HEAD',
             url: previewUrl,
-            encoding: null,
             gzip: true,
             forever: true
         }).then(function (response) {
-            if (response.statusCode === 404) {
-                throw new Error('404');
+            if (response.statusCode !== 200) {
+                throw new Error(response.statusCode);
             }
 
-            return response;
+            return response.request.href;
         }).catch(function(err) {
             // debug('Request photo error! %s %s %s %s', index, stream._channelName, previewUrl, err);
 
@@ -118,10 +118,7 @@ MsgSender.prototype.downloadImg = function (stream) {
         });
     };
 
-    return requestPic(0).then(function (response) {
-        var image = new Buffer(response.body, 'binary');
-        return image;
-    }, function (err) {
+    return requestPic(0).catch(function (err) {
         debug('requestPic error %s %s', stream._channelName, err);
 
         throw err;
@@ -149,11 +146,14 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
     sendPicTimeoutSec *= 1000;
 
     var sendingPic = _this.threadLimit.wrapper(function() {
-        var sendPic = function(photoBuffer) {
-            return Promise.try(function() {
-                return _this.gOptions.bot.sendPhoto(chatId, photoBuffer, {
-                    caption: text
-                });
+        var sendPic = function(photoUrl) {
+            var photoStream = request({
+                url: photoUrl,
+                forever: true
+            });
+
+            return _this.gOptions.bot.sendPhoto(chatId, photoStream, {
+                caption: text
             }).catch(function(err) {
                 var isKicked = _this.onSendMsgError(err, chatId);
                 if (isKicked) {
@@ -183,8 +183,9 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
             });
         };
 
-        return _this.downloadImg(stream).then(function (photoBuffer) {
-            return sendPic(photoBuffer);
+        return _this.downloadImg(stream).then(function (photoUrl) {
+            var sendPicQuote = _this.gOptions.botQuote.wrapper(sendPic);
+            return sendPicQuote(photoUrl);
         });
     });
 
@@ -221,7 +222,7 @@ MsgSender.prototype.sendPhoto = function(chatId, fileId, text, stream) {
     var _this = this;
     var bot = _this.gOptions.bot;
 
-    return bot.sendPhoto(chatId, fileId, {
+    return bot.sendPhotoQuote(chatId, fileId, {
         caption: text
     }).then(function() {
         _this.track(chatId, stream, 'sendPhoto');
