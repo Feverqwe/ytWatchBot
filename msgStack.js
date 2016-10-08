@@ -114,7 +114,6 @@ MsgStack.prototype.callMsgList = function (chatId) {
     if (msgStack.timeout > base.getNow()) {
         return Promise.resolve();
     }
-    delete msgStack.timeout;
     
     var msgList = msgStack.stack || [];
     var sendNextMsg = function () {
@@ -156,6 +155,7 @@ MsgStack.prototype.callMsgList = function (chatId) {
 
             return _this.gOptions.msgSender.sendNotify(chatList, text, noPhotoText, videoItem, true).then(function () {
                 base.removeItemFromArray(msgList, msgId);
+                delete msgStack.timeout;
                 return _this.saveChatMsgStack();
             });
         }).then(function () {

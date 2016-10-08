@@ -272,33 +272,33 @@ MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
 
     var promise = requestPromiseMap[requestId];
     if (promise) {
-        return promise.then(function (msg) {
+        promise = promise.then(function (msg) {
             stream._photoId = msg.photo[0].file_id;
         }, function(err) {
             if (err === 'Send photo file error! Bot was kicked!') {
                 return _this.requestPicId(chatIdList, text, stream);
             }
         });
+    } else {
+        var chatId = chatIdList.shift();
+
+        promise = requestPromiseMap[requestId] = _this.getPicId(chatId, text, stream).finally(function () {
+            delete requestPromiseMap[requestId];
+        });
+
+        promise = promise.then(function (msg) {
+            stream._photoId = msg.photo[0].file_id;
+
+            _this.track(chatId, stream, 'sendPhoto');
+        }, function (err) {
+            if (err === 'Send photo file error! Bot was kicked!') {
+                return _this.requestPicId(chatIdList, text, stream);
+            }
+
+            chatIdList.unshift(chatId);
+            // debug('Function getPicId throw error!', err);
+        });
     }
-
-    var chatId = chatIdList.shift();
-
-    promise = requestPromiseMap[requestId] = _this.getPicId(chatId, text, stream).finally(function () {
-        delete requestPromiseMap[requestId];
-    });
-
-    promise = promise.then(function(msg) {
-        stream._photoId = msg.photo[0].file_id;
-
-        _this.track(chatId, stream, 'sendPhoto');
-    }, function(err) {
-        if (err === 'Send photo file error! Bot was kicked!') {
-            return _this.requestPicId(chatIdList, text, stream);
-        }
-
-        chatIdList.unshift(chatId);
-        // debug('Function getPicId throw error!', err);
-    });
 
     return promise;
 };
