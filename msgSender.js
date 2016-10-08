@@ -68,7 +68,7 @@ MsgSender.prototype.downloadImg = function (stream) {
     "use strict";
     var _this = this;
 
-    var requestLimit = 4;
+    var requestLimit = 10;
     var _requestLimit = _this.gOptions.config.sendPhotoRequestLimit;
     if (_requestLimit) {
         requestLimit = _requestLimit;
