@@ -13,8 +13,6 @@ var MsgSender = function (options) {
     _this.gOptions = options;
 
     _this.requestPromiseMap = {};
-
-    _this.threadLimit = new base.ThreadLimit(10);
 };
 
 MsgSender.prototype.onSendMsgError = function(err, chatId) {
@@ -185,8 +183,7 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
 
         return _this.downloadImg(stream).then(function (photoUrl) {
             var sendPicQuote = _this.gOptions.botQuote.wrapper(sendPic);
-            var sendPicQuoteThreadLimit = _this.threadLimit.wrapper(sendPicQuote);
-            return sendPicQuoteThreadLimit(photoUrl);
+            return sendPicQuote(photoUrl);
         });
     };
 
