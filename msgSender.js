@@ -87,15 +87,18 @@ MsgSender.prototype.downloadImg = function (stream) {
         var previewUrl = previewList[index];
         return requestPromise({
             url: previewUrl,
-            encoding: null,
+            method: 'HEAD',
             gzip: true,
             forever: true
         }).then(function (response) {
-            if (response.statusCode === 404) {
-                throw new Error('404');
+            if (response.statusCode !== 200) {
+                throw new Error(response.statusCode);
             }
 
-            return response;
+            return request({
+                url: previewUrl,
+                forever: true
+            });
         }).catch(function(err) {
             // debug('Request photo error! %s %s %s %s', index, stream._channelName, previewUrl, err);
 
@@ -149,9 +152,9 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
     sendPicTimeoutSec *= 1000;
 
     var sendingPic = _this.threadLimit.wrapper(function() {
-        var sendPic = function(photoBuffer) {
+        var sendPic = function(photoStream) {
             return Promise.try(function() {
-                return _this.gOptions.bot.sendPhoto(chatId, photoBuffer, {
+                return _this.gOptions.bot.sendPhoto(chatId, photoStream, {
                     caption: text
                 });
             }).catch(function(err) {
@@ -183,9 +186,7 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
             });
         };
 
-        return _this.downloadImg(stream).then(function (photoBuffer) {
-            return sendPic(photoBuffer);
-        });
+        return _this.downloadImg(stream).then(sendPic);
     });
 
     return sendingPic();
