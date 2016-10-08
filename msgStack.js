@@ -71,8 +71,8 @@ MsgStack.prototype.addInStack = function (videoItem) {
     this.stack.addItem(msgId, videoItem);
 
     this.getChatIdList(videoItem).forEach(function (chatId) {
-        var msgStack = base.getObjectItemOrObj(chatMsgStack, chatId);
-        var msgList = base.getObjectItemOrArray(msgStack, 'stack');
+        var msgStack = base.getObjectItem(chatMsgStack, chatId, {});
+        var msgList = base.getObjectItem(msgStack, 'stack', []);
         base.removeItemFromArray(msgList, msgId);
         msgList.push(msgId);
     });

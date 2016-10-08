@@ -342,25 +342,13 @@ module.exports.getNow = function () {
 /**
  * @param {Object} obj
  * @param {*} key
- * @returns {Array} obj[key]
+ * @param {*} defaultValue
+ * @returns {*}
  */
-module.exports.getObjectItemOrArray = function (obj, key) {
+module.exports.getObjectItem = function (obj, key, defaultValue) {
     var item = obj[key];
     if (!item) {
-        item = obj[key] = [];
-    }
-    return item;
-};
-
-/**
- * @param {Object} obj
- * @param {*} key
- * @returns {Object} obj[key]
- */
-module.exports.getObjectItemOrObj = function (obj, key) {
-    var item = obj[key];
-    if (!item) {
-        item = obj[key] = {};
+        item = obj[key] = defaultValue;
     }
     return item;
 };
@@ -394,7 +382,7 @@ module.exports.dDblUpdates = function (updates) {
             value = callbackQuery.data;
         }
         if (key && value) {
-            var lines = _this.getObjectItemOrArray(map, key);
+            var lines = _this.getObjectItem(map, key, []);
             if (lines[0] === value) {
                 _this.removeItemFromArray(dDblUpdates, update);
                 debug('Skip dbl msg %j', update);
