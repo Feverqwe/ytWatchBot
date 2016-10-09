@@ -18,8 +18,8 @@ var MsgSender = function (options) {
 MsgSender.prototype.onSendMsgError = function(err, chatId) {
     "use strict";
     var _this = this;
-    err = err && err.message || err;
-    var needKick = /^403\s+/.test(err);
+    var errMsg = err.message;
+    var needKick = /^403\s+/.test(errMsg);
 
     if (!needKick) {
         needKick = [
@@ -28,11 +28,11 @@ MsgSender.prototype.onSendMsgError = function(err, chatId) {
             /channel not found"/,
             /USER_DEACTIVATED/
         ].some(function (re) {
-            return re.test(err);
+            return re.test(errMsg);
         });
     }
 
-    var errorJson = /^\d+\s+(\{.+})$/.exec(err);
+    var errorJson = /^\d+\s+(\{.+})$/.exec(errMsg);
     errorJson = errorJson && errorJson[1];
     if (errorJson) {
         var msg = null;
@@ -149,7 +149,7 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
             }).catch(function(err) {
                 var isKicked = _this.onSendMsgError(err, chatId);
                 if (isKicked) {
-                    throw 'Send photo file error! Bot was kicked!';
+                    throw new Error('Send photo file error! Bot was kicked!');
                 }
 
                 var imgProcessError = [
@@ -256,7 +256,7 @@ MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
         promise = promise.then(function (msg) {
             stream._photoId = msg.photo[0].file_id;
         }, function(err) {
-            if (err === 'Send photo file error! Bot was kicked!') {
+            if (err.message === 'Send photo file error! Bot was kicked!') {
                 return _this.requestPicId(chatIdList, text, stream);
             }
         });
@@ -272,7 +272,7 @@ MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
 
             _this.track(chatId, stream, 'sendPhoto');
         }, function (err) {
-            if (err === 'Send photo file error! Bot was kicked!') {
+            if (err.message === 'Send photo file error! Bot was kicked!') {
                 return _this.requestPicId(chatIdList, text, stream);
             }
 

@@ -79,7 +79,7 @@ PushApi.prototype.initListener = function(resolve) {
             var feed = _this.prepareData(data.feed.toString());
             _this.gOptions.events.emit('feed', feed);
         }).catch(function(err) {
-            if (err === 'Entry is not found!') {
+            if (err.message === 'Entry is not found!') {
                 return;
             }
 
@@ -113,7 +113,7 @@ PushApi.prototype.subscribe = function(channelList) {
         }).catch(function (err) {
             debug('Subscribe error %s %j', channelId, err);
 
-            throw 'Subscribe error!';
+            throw new Error('Subscribe error!');
         });
     });
 
@@ -143,7 +143,7 @@ PushApi.prototype.unsubscribe = function(channelList) {
         }).catch(function (err) {
             debug('Unsubscribe error %s %j', channelId, err);
 
-            throw 'Unsubscribe error!';
+            throw new Error('Unsubscribe error!');
         });
     });
 
@@ -174,7 +174,7 @@ PushApi.prototype.prepareData = function(xml) {
         if (!isDeletedEntry) {
             debug('Unknown entry %j', document.toString({compressed: true}));
         }
-        throw 'Entry is not found!';
+        throw new Error('Entry is not found!');
     }
 
     var data = {};
@@ -192,7 +192,7 @@ PushApi.prototype.prepareData = function(xml) {
 
     if (!success) {
         debug('XML read error! %j', document.toString({compressed: true}));
-        throw 'XML read error!';
+        throw new Error('XML read error!');
     }
 
     return data;

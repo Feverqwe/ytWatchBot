@@ -6,6 +6,7 @@ var base = require('../base');
 var Promise = require('bluebird');
 var request = require('request');
 var requestPromise = Promise.promisify(request);
+var CustomError = require('../customError').CustomError;
 
 var apiQuote = new base.Quote(1000);
 requestPromise = apiQuote.wrapper(requestPromise.bind(requestPromise));
@@ -166,8 +167,8 @@ Youtube.prototype.apiNormalization = function(channelId, data, isFullCheck, last
     "use strict";
     var _this = this;
     if (!data || !Array.isArray(data.items)) {
-        debug('Response is empty! %j', data);
-        throw 'Response is empty!';
+        debug('Unexpected data %j', data);
+        throw new CustomError('Unexpected data');
     }
 
     var stateList = this.config.stateList;
@@ -338,7 +339,7 @@ Youtube.prototype.requestChannelIdByQuery = function(query) {
         response = response.body;
         var id = response && response.items && response.items[0] && response.items[0].id && response.items[0].id.channelId;
         if (!id) {
-            throw 'Channel ID is not found by query!';
+            throw new CustomError('Channel ID is not found by query!');
         }
 
         return id;
@@ -371,7 +372,7 @@ Youtube.prototype.requestChannelIdByUsername = function(userId) {
         response = response.body;
         var id = response && response.items && response.items[0] && response.items[0].id;
         if (!id) {
-            throw 'Channel ID is not found by userId!';
+            throw new CustomError('Channel ID is not found by userId!');
         }
 
         return _this.setChannelUsername(id, userId).then(function() {
@@ -426,7 +427,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                         streamList.push.apply(streamList, streams);
 
                         if (pageLimit < 0) {
-                            throw 'Page limited!';
+                            throw new CustomError('Page limit reached');
                         }
 
                         if (response.nextPageToken) {
@@ -466,7 +467,7 @@ Youtube.prototype.requestChannelIdByVideoUrl = function (url) {
     });
 
     if (!videoId) {
-        return Promise.reject('It not video url!');
+        return Promise.reject(new CustomError('It not video url!'));
     }
 
     return requestPromise({
@@ -487,7 +488,7 @@ Youtube.prototype.requestChannelIdByVideoUrl = function (url) {
 
         var id = response && response.items && response.items[0] && response.items[0].snippet && response.items[0].snippet.channelId;
         if (!id) {
-            throw 'Channel ID is not found by videoId!';
+            throw new CustomError('Channel ID is not found by videoId!');
         }
 
         return id;
@@ -504,12 +505,12 @@ Youtube.prototype.getChannelId = function(channelName) {
     var _this = this;
 
     return _this.requestChannelIdByVideoUrl(channelName).catch(function (err) {
-        if (err !== 'Channel ID is not found by videoId!' && err !== 'It not video url!') {
+        if (!err instanceof CustomError) {
             throw err;
         }
 
         return _this.requestChannelIdByUsername(channelName).catch(function(err) {
-            if (err !== 'Channel ID is not found by userId!') {
+            if (!err instanceof CustomError) {
                 throw err;
             }
 
@@ -537,7 +538,7 @@ Youtube.prototype.getChannelId = function(channelName) {
             var snippet = response && response.items && response.items[0] && response.items[0].snippet;
             if (!snippet) {
                 debug('Channel "%s" is not found! %j', channelId, response);
-                throw 'Channel is not found!';
+                throw new CustomError('Channel is not found');
             }
 
             var channelTitle = snippet.channelTitle;
