@@ -436,6 +436,10 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                 gzip: true,
                 forever: true
             }).then(function(response) {
+                if (response.statusCode === 503) {
+                    throw new CustomError(response.statusCode);
+                }
+
                 var responseBody = response.body;
                 var promise = null;
 
