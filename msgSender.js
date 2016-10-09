@@ -59,9 +59,6 @@ MsgSender.prototype.onSendMsgError = function(err, chatId) {
     return needKick;
 };
 
-/**
- * @private
- */
 MsgSender.prototype.downloadImg = function (stream) {
     "use strict";
     var _this = this;
@@ -123,9 +120,6 @@ MsgSender.prototype.downloadImg = function (stream) {
     });
 };
 
-/**
- * @private
- */
 MsgSender.prototype.getPicId = function(chatId, text, stream) {
     "use strict";
     var _this = this;
@@ -190,9 +184,6 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
     return sendingPic();
 };
 
-/**
- * @private
- */
 MsgSender.prototype.sendMsg = function(chatId, noPhotoText, stream) {
     "use strict";
     var _this = this;
@@ -212,9 +203,6 @@ MsgSender.prototype.sendMsg = function(chatId, noPhotoText, stream) {
     });
 };
 
-/**
- * @private
- */
 MsgSender.prototype.sendPhoto = function(chatId, fileId, text, stream) {
     "use strict";
     var _this = this;
@@ -234,9 +222,6 @@ MsgSender.prototype.sendPhoto = function(chatId, fileId, text, stream) {
     });
 };
 
-/**
- * @private
- */
 MsgSender.prototype.send = function(chatIdList, text, noPhotoText, stream) {
     "use strict";
     var _this = this;
@@ -255,9 +240,6 @@ MsgSender.prototype.send = function(chatIdList, text, noPhotoText, stream) {
     return Promise.all(promiseList);
 };
 
-/**
- * @private
- */
 MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
     "use strict";
     var _this = this;
@@ -323,9 +305,6 @@ MsgSender.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream,
     });
 };
 
-/**
- * @private
- */
 MsgSender.prototype.track = function(chatId, stream, title) {
     "use strict";
     return this.gOptions.tracker.track({
