@@ -446,8 +446,8 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                 }).catch(function (err) {
                     retryLimit--;
                     if (retryLimit > 0) {
-                        return new Promise(function (resolev) {
-                            setTimeout(resolev, 250);
+                        return new Promise(function (resolve) {
+                            setTimeout(resolve, 250);
                         }).then(function () {
                             debug('Retry %s getPage %s', retryLimit, channelId, err);
                             return requestPage();
