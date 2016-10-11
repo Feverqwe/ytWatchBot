@@ -404,7 +404,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
 
     var streamList = [];
 
-    var requestPage = function (channelId) {
+    var requestPages = function (channelId) {
         var stateItem = _this.config.stateList[channelId];
 
         var lastRequestTime = stateItem && stateItem.lastRequestTime;
@@ -495,7 +495,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
         var promise = Promise.resolve();
         arr.forEach(function (channelId) {
             promise = promise.then(function () {
-                return requestPage(channelId);
+                return requestPages(channelId);
             });
         });
         return promise;
