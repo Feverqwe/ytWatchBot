@@ -449,7 +449,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                         return new Promise(function (resolve) {
                             setTimeout(resolve, 250);
                         }).then(function () {
-                            debug('Retry %s getPage %s', retryLimit, channelId, err);
+                            debug('Retry %s requestPage %s', retryLimit, channelId, err);
                             return requestPage();
                         });
                     }
