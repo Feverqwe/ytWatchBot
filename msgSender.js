@@ -92,7 +92,7 @@ MsgSender.prototype.downloadImg = function (stream) {
 
             return response.request.href;
         }).catch(function(err) {
-            // debug('Request photo error! %s %s %s %s', index, stream._channelName, previewUrl, err);
+            // debug('Request photo error! %s %s %s', index, stream._channelName, previewUrl, err);
 
             index++;
             if (index < previewList.length) {
@@ -104,7 +104,7 @@ MsgSender.prototype.downloadImg = function (stream) {
                 return new Promise(function(resolve) {
                     setTimeout(resolve, requestTimeoutSec);
                 }).then(function() {
-                    // debug("Retry %s request photo %s %s! %s", requestLimit, chatId, stream._channelName, err);
+                    // debug("Retry %s request photo %s %s!", requestLimit, chatId, stream._channelName, err);
                     return requestPic(0);
                 });
             }
@@ -114,7 +114,7 @@ MsgSender.prototype.downloadImg = function (stream) {
     };
 
     return requestPic(0).catch(function (err) {
-        debug('requestPic error %s %s', stream._channelName, err);
+        debug('requestPic error %s', stream._channelName, err);
 
         throw err;
     });
@@ -164,12 +164,12 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
                     return new Promise(function(resolve) {
                         setTimeout(resolve, sendPicTimeoutSec);
                     }).then(function() {
-                        debug("Retry %s send photo file %s %s! %s", sendPicLimit, chatId, stream._channelName, err);
+                        debug("Retry %s send photo file %s %s!", sendPicLimit, chatId, stream._channelName, err);
                         return sendingPic();
                     });
                 }
 
-                debug('sendPic error %s %s %s', chatId, stream._channelName, err);
+                debug('sendPic error %s %s', chatId, stream._channelName, err);
 
                 throw err;
             });
@@ -194,7 +194,7 @@ MsgSender.prototype.sendMsg = function(chatId, noPhotoText, stream) {
     }).then(function() {
         _this.track(chatId, stream, 'sendMsg');
     }, function(err) {
-        debug('Send text msg error! %s %s %s', chatId, stream._channelName, err);
+        debug('Send text msg error! %s %s', chatId, stream._channelName, err);
 
         var isKicked = _this.onSendMsgError(err, chatId);
         if (!isKicked) {
@@ -213,7 +213,7 @@ MsgSender.prototype.sendPhoto = function(chatId, fileId, text, stream) {
     }).then(function() {
         _this.track(chatId, stream, 'sendPhoto');
     }, function(err) {
-        debug('Send photo msg error! %s %s %s', chatId, stream._channelName, err);
+        debug('Send photo msg error! %s %s', chatId, stream._channelName, err);
 
         var isKicked = _this.onSendMsgError(err, chatId);
         if (!isKicked) {

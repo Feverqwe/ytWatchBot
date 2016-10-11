@@ -32,7 +32,7 @@ var PushApi = function(options) {
                 dDblList.push(channelId);
                 
                 return _this.subscribe(channelId).catch(function (err) {
-                    debug('Subscribe event error! %s %j', channelId, err);
+                    debug('Subscribe event error! %s', channelId, err);
                 });
             }
         });
@@ -50,7 +50,7 @@ var PushApi = function(options) {
                 dDblList.push(channelId);
 
                 return _this.unsubscribe(channelId).catch(function (err) {
-                    debug('Unsubscribe event error! %s %j', channelId, err);
+                    debug('Unsubscribe event error! %s', channelId, err);
                 });
             }
         });
@@ -67,11 +67,11 @@ PushApi.prototype.initListener = function(resolve) {
     });
 
     pubsub.on('error', function(err) {
-        debug('Error %j', err);
+        debug('Error', err);
     });
 
     pubsub.on('denied', function(err) {
-        debug('Denied %j', err);
+        debug('Denied', err);
     });
 
     pubsub.on('feed', function(data) {
@@ -83,7 +83,7 @@ PushApi.prototype.initListener = function(resolve) {
                 return;
             }
 
-            debug('Parse xml error! %s', err);
+            debug('Parse xml error!', err);
         });
     });
 
@@ -111,7 +111,7 @@ PushApi.prototype.subscribe = function(channelList) {
                 }
             });
         }).catch(function (err) {
-            debug('Subscribe error %s %j', channelId, err);
+            debug('Subscribe error %s', channelId, err);
 
             throw new Error('Subscribe error!');
         });
@@ -141,7 +141,7 @@ PushApi.prototype.unsubscribe = function(channelList) {
                 }
             });
         }).catch(function (err) {
-            debug('Unsubscribe error %s %j', channelId, err);
+            debug('Unsubscribe error %s', channelId, err);
 
             throw new Error('Unsubscribe error!');
         });

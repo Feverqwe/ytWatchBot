@@ -311,7 +311,7 @@ Youtube.prototype.requestChannelLocalTitle = function(channelId) {
 
         return promise;
     }).catch(function(err) {
-        debug('requestChannelLocalTitle channelId "%s" error! %s', channelId, err);
+        debug('requestChannelLocalTitle channelId %s error! %s', channelId);
     });
 };
 

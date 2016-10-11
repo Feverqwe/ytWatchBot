@@ -15,7 +15,7 @@ var Checker = function(options) {
 
     options.events.on('check', function() {
         _this.updateList().catch(function(err) {
-            debug('updateList error! "%s"', err);
+            debug('updateList error!', err);
         });
     });
 
@@ -37,7 +37,7 @@ var Checker = function(options) {
         // debug('Feed event, %j', data);
 
         _this.updateList({youtube: [channelId]}).catch(function(err) {
-            debug('updateList error! "%s"', err);
+            debug('updateList error!', err);
         });
     });
 };
@@ -111,7 +111,7 @@ Checker.prototype.cleanServices = function() {
 
         var currentService = services[service];
         if (!currentService) {
-            debug('Service "%s" is not found!', service);
+            debug('Service %s is not found!', service);
             continue;
         }
 
@@ -169,7 +169,7 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
     if (isFullCheck) {
         queue = queue.then(function() {
             return _this.cleanServices().catch(function (err) {
-                debug('cleanServices error! %j', err);
+                debug('cleanServices error!', err);
             });
         });
     }
@@ -180,7 +180,7 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
     Object.keys(serviceChannelList).forEach(function (service) {
         var currentService = services[service];
         if (!currentService) {
-            debug('Service "%s" is not found!', service);
+            debug('Service %s is not found!', service);
             return;
         }
 

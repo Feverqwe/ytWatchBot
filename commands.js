@@ -251,7 +251,7 @@ var commands = {
                 );
             });
         }).catch(function(err) {
-            debug('Channel "%s" (%s) is not found! %s', channelName, service, err);
+            debug('Channel %s (%s) is not found!', channelName, service, err);
             return _this.gOptions.bot.sendMessage(
                 chatId,
                 _this.gOptions.language.channelIsNotFound
@@ -693,7 +693,7 @@ var commands = {
                     });
                 });
             }, function (err) {
-                debug('Set channel error! %s', err);
+                debug('Set channel error!', err);
 
                 var msgText = _this.gOptions.language.telegramChannelError;
                 msgText = msgText.replace('{channelName}', channelName);
@@ -841,7 +841,7 @@ var commands = {
             }
 
             if (!services[service]) {
-                debug('Service "%s" is not found!', service);
+                debug('Service %s is not found!', service);
                 continue;
             }
 
@@ -876,7 +876,7 @@ var commands = {
             (function(chatId) {
                 queue = queue.finally(function () {
                     return _this.gOptions.bot.sendChatAction(chatId, 'typing').catch(function (err) {
-                        debug('Send chat action error! %s %s', chatId, err);
+                        debug('Send chat action error! %s', chatId, err);
                         _this.gOptions.msgSender.onSendMsgError(err, chatId);
                     });
                 });
