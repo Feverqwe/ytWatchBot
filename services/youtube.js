@@ -414,32 +414,46 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
         var publishedAfter = new Date(lastRequestTime * 1000).toISOString();
 
         var pageLimit = 100;
-        var getPage = function(pageToken) {
-            pageLimit--;
-            if (pageLimit < 0) {
-                throw new CustomError('Page limit reached');
-            }
+        var getPage = function (pageToken) {
+            var retryLimit = 5;
+            var requestPage = function () {
+                return requestPromise({
+                    method: 'GET',
+                    url: 'https://www.googleapis.com/youtube/v3/activities',
+                    qs: {
+                        part: 'snippet',
+                        channelId: channelId,
+                        maxResults: 50,
+                        pageToken: pageToken,
+                        fields: 'items/snippet,nextPageToken',
+                        publishedAfter: publishedAfter,
+                        key: _this.config.token
+                    },
+                    json: true,
+                    gzip: true,
+                    forever: true
+                }).then(function(response) {
+                    if (response.statusCode === 503) {
+                        throw new CustomError(response.statusCode);
+                    }
 
-            return requestPromise({
-                method: 'GET',
-                url: 'https://www.googleapis.com/youtube/v3/activities',
-                qs: {
-                    part: 'snippet',
-                    channelId: channelId,
-                    maxResults: 50,
-                    pageToken: pageToken,
-                    fields: 'items/snippet,nextPageToken',
-                    publishedAfter: publishedAfter,
-                    key: _this.config.token
-                },
-                json: true,
-                gzip: true,
-                forever: true
-            }).then(function(response) {
-                if (response.statusCode === 503) {
-                    throw new CustomError(response.statusCode);
-                }
+                    return response;
+                }).catch(function (err) {
+                    retryLimit--;
+                    if (retryLimit > 0) {
+                        return new Promise(function (resolev) {
+                            setTimeout(resolev, 250);
+                        }).then(function () {
+                            debug('Retry %s getPage %s', retryLimit, channelId, err);
+                            return requestPage();
+                        });
+                    }
 
+                    throw err;
+                });
+            };
+
+            return requestPage().then(function (response) {
                 var responseBody = response.body;
                 var promise = null;
 
@@ -452,7 +466,12 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                 }
 
                 if (responseBody.nextPageToken) {
-                    promise = getPage(responseBody.nextPageToken);
+                    pageLimit--;
+                    if (pageLimit > 0) {
+                        promise = getPage(responseBody.nextPageToken);
+                    } else {
+                        throw new CustomError('Page limit reached');
+                    }
                 }
 
                 return promise;
