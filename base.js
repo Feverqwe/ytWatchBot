@@ -253,7 +253,6 @@ module.exports.Quote = function (callPerSecond) {
         return parseInt(Date.now() / 1000);
     };
 
-    var sendTime = {};
     var cbQuote = [];
 
     var next = function () {
@@ -275,15 +274,7 @@ module.exports.Quote = function (callPerSecond) {
         });
 
         var count = promiseList.length;
-
         var startTime = getTime();
-        if (!sendTime[startTime]) {
-            for (var key in sendTime) {
-                delete sendTime[key];
-            }
-            sendTime[startTime] = 0;
-        }
-        sendTime[startTime] += count;
 
         return Promise.all(promiseList).then(function() {
             var endTime = getTime();
