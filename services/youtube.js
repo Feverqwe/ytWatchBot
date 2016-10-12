@@ -438,7 +438,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                     }
 
                     if (response.statusCode !== 200) {
-                        debug('Unexpected response %j', response, e);
+                        debug('Unexpected response %j', response);
                         throw new CustomError('Unexpected response');
                     }
 
