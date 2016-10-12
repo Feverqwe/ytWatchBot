@@ -99,8 +99,8 @@ MsgSender.prototype.downloadImg = function (stream) {
                 return requestPic(index);
             }
 
+            requestLimit--;
             if (requestLimit > 0) {
-                requestLimit--;
                 return new Promise(function(resolve) {
                     setTimeout(resolve, requestTimeoutSec);
                 }).then(function() {
@@ -159,8 +159,8 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
                     return re.test(err);
                 });
 
+                sendPicLimit--;
                 if (imgProcessError && sendPicLimit > 0) {
-                    sendPicLimit--;
                     return new Promise(function(resolve) {
                         setTimeout(resolve, sendPicTimeoutSec);
                     }).then(function() {
