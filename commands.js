@@ -313,8 +313,11 @@ var commands = {
             }
         }
 
-        var onTimeout = function() {
+        var onTimeout = function(onMessage) {
             msg.text = '/cancel add';
+            if (onMessage.messageId) {
+                msg.text += ' ' + onMessage.messageId;
+            }
             return _this.onMessage(msg);
         };
 
@@ -334,7 +337,7 @@ var commands = {
             onMessage.command = 'add';
             onMessage.userId = msg.from.id;
             onMessage.timeout = setTimeout(function() {
-                return onTimeout();
+                return onTimeout(onMessage);
             }, 3 * 60 * 1000);
 
             var msgText = _this.gOptions.language.enterChannelName;
@@ -342,10 +345,8 @@ var commands = {
                 msgText += _this.gOptions.language.groupNote;
             }
             
-            return _this.gOptions.bot.sendMessage(chatId, msgText, {
-                reply_markup: JSON.stringify({
-                    force_reply: true
-                })
+            return _this.gOptions.bot.sendMessage(chatId, msgText).then(function (msg) {
+                onMessage.messageId = msg.message_id;
             });
         };
 
@@ -540,15 +541,30 @@ var commands = {
             }
         );
     },
-    cancel: function (msg, arg1) {
+    cancel: function (msg, arg1, messageId) {
         "use strict";
         var _this = this;
         var chatId = msg.chat.id;
+        var promise = null;
 
-        return _this.gOptions.bot.sendMessage(
-            chatId,
-            _this.gOptions.language.commandCanceled.replace('{command}', arg1 || '')
-        );
+        var text = _this.gOptions.language.commandCanceled.replace('{command}', arg1 || '');
+
+        if (messageId) {
+            messageId = parseInt(messageId);
+            promise = _this.gOptions.bot.editMessageText(
+                chatId,
+                text,
+                {
+                    message_id: messageId
+                }
+            );
+        } else {
+            promise = _this.gOptions.bot.sendMessage(
+                chatId,
+                text
+            );
+        }
+        return promise;
     },
     clear: function (msg) {
         "use strict";
@@ -648,8 +664,11 @@ var commands = {
             return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
         }
 
-        var onTimeout = function() {
+        var onTimeout = function(onMessage) {
             msg.text = '/cancel setchannel';
+            if (onMessage.messageId) {
+                msg.text += ' ' + onMessage.messageId;
+            }
             return _this.onMessage(msg);
         };
 
@@ -712,7 +731,7 @@ var commands = {
             onMessage.command = 'setchannel';
             onMessage.userId = msg.from.id;
             onMessage.timeout = setTimeout(function() {
-                return onTimeout();
+                return onTimeout(onMessage);
             }, 3 * 60 * 1000);
 
             var msgText = _this.gOptions.language.telegramChannelEnter;
@@ -720,10 +739,8 @@ var commands = {
                 msgText += _this.gOptions.language.groupNote;
             }
 
-            return _this.gOptions.bot.sendMessage(chatId, msgText, {
-                reply_markup: JSON.stringify({
-                    force_reply: true
-                })
+            return _this.gOptions.bot.sendMessage(chatId, msgText).then(function (msg) {
+                onMessage.messageId = msg.message_id;
             });
         };
 
