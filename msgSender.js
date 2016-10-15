@@ -257,11 +257,13 @@ MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
     } else {
         var chatId = chatIdList.shift();
 
-        promise = requestPromiseMap[requestId] = _this.getPicId(chatId, text, stream).finally(function () {
-            delete requestPromiseMap[requestId];
+        var requestPromise = requestPromiseMap[requestId] = _this.getPicId(chatId, text, stream).finally(function () {
+            if (requestPromiseMap[requestId] ===  requestPromise) {
+                delete requestPromiseMap[requestId];
+            }
         });
 
-        promise = promise.then(function (msg) {
+        promise = requestPromise.then(function (msg) {
             stream._photoId = msg.photo[0].file_id;
 
             _this.track(chatId, stream, 'sendPhoto');
