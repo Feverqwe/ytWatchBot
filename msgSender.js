@@ -187,7 +187,7 @@ MsgSender.prototype.sendMsg = function(chatId, noPhotoText, stream) {
         parse_mode: 'HTML'
     }).then(function() {
         _this.track(chatId, stream, 'sendMsg');
-    }, function(err) {
+    }).catch(function(err) {
         debug('Send text msg error! %s %s', chatId, stream._channelName, err);
 
         var isKicked = _this.onSendMsgError(err, chatId);
@@ -206,7 +206,7 @@ MsgSender.prototype.sendPhoto = function(chatId, fileId, text, stream) {
         caption: text
     }).then(function() {
         _this.track(chatId, stream, 'sendPhoto');
-    }, function(err) {
+    }).catch(function(err) {
         debug('Send photo msg error! %s %s', chatId, stream._channelName, err);
 
         var isKicked = _this.onSendMsgError(err, chatId);
@@ -249,7 +249,7 @@ MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
     if (promise) {
         promise = promise.then(function (msg) {
             stream._photoId = msg.photo[0].file_id;
-        }, function(err) {
+        }).catch(function(err) {
             if (err.message === 'Send photo file error! Bot was kicked!') {
                 return _this.requestPicId(chatIdList, text, stream);
             }
@@ -267,7 +267,7 @@ MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
             stream._photoId = msg.photo[0].file_id;
 
             _this.track(chatId, stream, 'sendPhoto');
-        }, function (err) {
+        }).catch(function (err) {
             if (err.message === 'Send photo file error! Bot was kicked!') {
                 return _this.requestPicId(chatIdList, text, stream);
             }

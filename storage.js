@@ -28,12 +28,12 @@ var Storage = function() {
     var storagePath = path.join(__dirname, './storage');
 
     var accessFile = function (keyPath, mode) {
-        return new Promise(function (resilve, reject) {
+        return new Promise(function (resolve, reject) {
             fs.access(keyPath, mode, function (err) {
                 if (err) {
                     reject(err);
                 } else {
-                    resilve();
+                    resolve();
                 }
             });
         });
@@ -43,7 +43,7 @@ var Storage = function() {
         if (err.code !== 'ENOENT') {
             throw err;
         }
-        
+
         fs.mkdir(storagePath, function (err) {
             if (err) {
                 debug('Create storage directory error!', err);
@@ -54,14 +54,23 @@ var Storage = function() {
 
     var readKey = function (key) {
         var readFile = function (keyPath) {
-            return new Promise(function (resilve, reject) {
+            return new Promise(function (resolve, reject) {
                 fs.readFile(keyPath, {
                     encoding: 'utf8'
                 }, function (err, data) {
+                    var jsonData = null;
+                    if (!err) {
+                        try {
+                            jsonData = JSON.parse(data);
+                        } catch (e) {
+                            err = e;
+                        }
+                    }
+
                     if (err) {
                         reject(err);
                     } else {
-                        resilve(JSON.parse(data));
+                        resolve(jsonData);
                     }
                 });
             });
@@ -91,14 +100,14 @@ var Storage = function() {
         var value = JSON.stringify(_value);
 
         var writeFile = function (keyPath, value) {
-            return new Promise(function (resilve, reject) {
+            return new Promise(function (resolve, reject) {
                 fs.writeFile(keyPath, value, {
                     encoding: 'utf8'
                 }, function (err) {
                     if (err) {
                         reject(err);
                     } else {
-                        resilve();
+                        resolve();
                     }
                 });
             });
@@ -125,12 +134,12 @@ var Storage = function() {
 
     var removeKey = function (key) {
         var removeFile = function (keyPath) {
-            return new Promise(function (resilve, reject) {
+            return new Promise(function (resolve, reject) {
                 fs.unlink(keyPath, function (err) {
                     if (err) {
                         reject(err);
                     } else {
-                        resilve();
+                        resolve();
                     }
                 });
             });
