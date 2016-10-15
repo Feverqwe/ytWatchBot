@@ -258,7 +258,7 @@ MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
         var chatId = chatIdList.shift();
 
         var requestPromise = requestPromiseMap[requestId] = _this.getPicId(chatId, text, stream).finally(function () {
-            if (requestPromiseMap[requestId] ===  requestPromise) {
+            if (requestPromiseMap[requestId] === requestPromise) {
                 delete requestPromiseMap[requestId];
             }
         });
