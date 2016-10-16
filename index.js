@@ -147,7 +147,6 @@ var options = {
             }
         });
 
-        var request = require('request');
         var quote = new base.Quote(30);
 
         options.botQuote = quote;
