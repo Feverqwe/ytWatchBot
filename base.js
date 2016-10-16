@@ -309,7 +309,7 @@ module.exports.arrToParts = function (arr, quote) {
     return arrList;
 };
 
-module.exports.getNow = function () {
+var getNow = module.exports.getNow = function () {
     return parseInt(Date.now() / 1000);
 };
 
@@ -401,4 +401,10 @@ module.exports.pageBtnList = function (btnList, updCommand, page, mediumBtn) {
         pageList.push(mediumBtn);
     }
     return pageList;
+};
+
+var sepRe = /\?/;
+module.exports.noCacheUrl = function (url) {
+    var sep = sepRe.test(url) ? '&' : '?';
+    return url + sep + '_=' + getNow();
 };
