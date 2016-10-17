@@ -163,7 +163,7 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
                     });
                 }
 
-                debug('sendPic error %s %s', chatId, stream._channelName, err);
+                debug('sendPic error %s %s %s', chatId, stream._channelName, photoUrl, err);
 
                 throw err;
             });
