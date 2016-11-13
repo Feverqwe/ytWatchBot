@@ -492,13 +492,9 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
     var partSize = Math.ceil(_channelIdList.length / threadCount);
 
     var requestList = base.arrToParts(_channelIdList, partSize).map(function (arr) {
-        var promise = Promise.resolve();
-        arr.forEach(function (channelId) {
-            promise = promise.then(function () {
-                return requestPages(channelId);
-            });
+        return base.arrayToChainPromise(arr, function (channelId) {
+            return requestPages(channelId);
         });
-        return promise;
     });
 
     return Promise.all(requestList).then(function() {
