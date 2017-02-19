@@ -1,6 +1,7 @@
 /**
  * Created by Anton on 06.12.2015.
  */
+"use strict";
 var debug = require('debug')('app:youtube');
 var base = require('../base');
 var Promise = require('bluebird');
@@ -22,55 +23,63 @@ var Youtube = function(options) {
 
 Youtube.prototype.init = function () {
     var db = this.gOptions.db;
-    var promiseList = [];
-    promiseList.push(new Promise(function (resolve, reject) {
-        db.connection.query('\
-            CREATE TABLE `ytChannels` ( \
+    var promise = Promise.resolve();
+    promise = promise.then(function () {
+        return new Promise(function (resolve, reject) {
+            db.connection.query('\
+            CREATE TABLE IF NOT EXISTS `ytChannels` ( \
+                `_id` INT NOT NULL AUTO_INCREMENT, \
                 `id` VARCHAR(255) NOT NULL, \
                 `title` TEXT NOT NULL, \
                 `localTitle` TEXT NULL, \
                 `username` TEXT NULL, \
-                `requestTime` INT NULL DEFAULT 0, \
-            PRIMARY KEY (`id`)); \
+                `publishedAfter` TEXT NULL, \
+            PRIMARY KEY (`_id`),\
+            UNIQUE INDEX `id_UNIQUE` (`id` ASC)); \
         ', function (err) {
-            if (err) {
-                if (err.code === 'ER_TABLE_EXISTS_ERROR') {
-                    resolve();
-                } else {
+                if (err) {
                     reject(err);
+                } else {
+                    resolve();
                 }
-            } else {
-                resolve();
-            }
+            });
         });
-    }));
-    promiseList.push(new Promise(function (resolve, reject) {
-        db.connection.query('\
-            CREATE TABLE `ytVideos` ( \
+    });
+    promise = promise.then(function () {
+        return new Promise(function (resolve, reject) {
+            db.connection.query('\
+            CREATE TABLE IF NOT EXISTS `ytVideos` ( \
+                `_id` INT NOT NULL AUTO_INCREMENT, \
                 `id` VARCHAR(255) NOT NULL, \
                 `channelId` VARCHAR(255) NOT NULL, \
-                `title` TEXT NOT NULL, \
                 `publishedAt` TEXT NOT NULL, \
                 `snippet` TEXT NOT NULL, \
-            PRIMARY KEY (`id`), \
+            PRIMARY KEY (`_id`), \
+            UNIQUE INDEX `id_UNIQUE` (`id` ASC), \
             FOREIGN KEY (`channelId`) \
                 REFERENCES `ytChannels` (`id`) \
                 ON DELETE CASCADE \
                 ON UPDATE CASCADE); \
         ', function (err) {
-            if (err) {
-                if (err.code === 'ER_TABLE_EXISTS_ERROR') {
-                    resolve();
-                } else {
+                if (err) {
                     reject(err);
+                } else {
+                    resolve();
                 }
-            } else {
-                resolve();
-            }
-        });
-    }));
-    return Promise.all(promiseList);
+            });
+        })
+    });
+    return promise;
 };
+
+/**
+ * @typedef {{}} ChannelInfo
+ * @property {String} id
+ * @property {String} title
+ * @property {String} [localTitle]
+ * @property {String} [username]
+ * @property {String} publishedAfter
+ */
 
 /**
  * @private
@@ -103,9 +112,26 @@ Youtube.prototype.setChannelInfo = function(info) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
-            INSERT INTO ytChannels SET ? \
-        ', info, function (err, results) {
+            INSERT INTO ytChannels SET ? ON DUPLICATE KEY UPDATE ? \
+        ', [info, info], function (err, results) {
             if (err) {
+                debug('setChannelInfo', err);
+                reject(err);
+            } else {
+                resolve();
+            }
+        });
+    });
+};
+
+Youtube.prototype.updateChannelPublishedAfter = function (channelId, publishedAfter) {
+    var db = this.gOptions.db;
+    return new Promise(function (resolve, reject) {
+        db.connection.query('\
+            UPDATE ytChannels SET publishedAfter = ? WHERE id = ? \
+        ', [publishedAfter, channelId], function (err, results) {
+            if (err) {
+                debug('updateChannelPublishedAfter', err);
                 reject(err);
             } else {
                 resolve();
@@ -130,7 +156,6 @@ Youtube.prototype.getChannelTitle = function (channelId) {
     });
 };
 
-
 /**
  * @param {String} channelId
  * @return {Promise}
@@ -139,6 +164,14 @@ Youtube.prototype.getChannelLocalTitle = function (channelId) {
     return this.getChannelInfo(channelId).then(function (info) {
         return info.localTitle || info.title || channelId;
     });
+};
+
+/**
+ * @param {ChannelInfo} info
+ * @return {String}
+ */
+Youtube.prototype.getChannelLocalTitleFromInfo = function (info) {
+    return info.localTitle || info.title || info.id;
 };
 
 /**
@@ -210,6 +243,38 @@ Youtube.prototype.saveState = function() {
         stateList: stateList
     });
 };
+
+/**
+ * @typedef {{}} VideoSnippet
+ * @property {String} publishedAt // 2017-02-18T01:00:00.000Z
+ * @property {String} channelId
+ * @property {String} title
+ * @property {String} description
+ * @property {{}} thumbnails
+ * @property {{}} thumbnails.default
+ * @property {String} thumbnails.default.url
+ * @property {String} thumbnails.default.width
+ * @property {String} thumbnails.default.height
+ * @property {{}} thumbnails.medium
+ * @property {String} thumbnails.medium.url
+ * @property {String} thumbnails.medium.width
+ * @property {String} thumbnails.medium.height
+ * @property {{}} thumbnails.high
+ * @property {String} thumbnails.high.url
+ * @property {String} thumbnails.high.width
+ * @property {String} thumbnails.high.height
+ * @property {{}} thumbnails.standard
+ * @property {String} thumbnails.standard.url
+ * @property {String} thumbnails.standard.width
+ * @property {String} thumbnails.standard.height
+ * @property {{}} thumbnails.maxres
+ * @property {String} thumbnails.maxres.url
+ * @property {String} thumbnails.maxres.width
+ * @property {String} thumbnails.maxres.height
+ * @property {String} channelTitle
+ * @property {String} type
+ * @property {String} groupId
+ */
 
 /**
  * @private
@@ -417,18 +482,12 @@ Youtube.prototype.requestChannelIdByQuery = function(query) {
     });
 };
 
-var channelRe = /^UC/;
-
 /**
  * @param {String} userId
  * @return {Promise}
  */
 Youtube.prototype.requestChannelIdByUsername = function(userId) {
     var _this = this;
-    if (channelRe.test(userId)) {
-        return Promise.resolve(userId);
-    }
-
     return requestPromise({
         method: 'GET',
         url: 'https://www.googleapis.com/youtube/v3/channels',
@@ -457,29 +516,59 @@ Youtube.prototype.requestChannelIdByUsername = function(userId) {
     });
 };
 
+Youtube.prototype.insertItem = function (/*VideoSnippet*/snippet) {
+    var db = this.gOptions.db;
+    if (snippet.type !== 'upload') {
+        return Promise.resolve();
+    }
+
+    var id = this.getVideoIdFromThumbs(snippet);
+    if (!id) {
+        debug('Video ID is not found! %j', snippet);
+        return Promise.resolve();
+    }
+
+    var video = {
+        id: id,
+        channelId: snippet.channelId,
+        publishedAt: snippet.publishedAt,
+        snippet: JSON.stringify(snippet)
+    };
+
+    return new Promise(function (resolve, reject) {
+        db.connection.query('\
+            INSERT INTO ytVideos SET ? ON DUPLICATE KEY UPDATE ? \
+        ', [video, video], function (err, results) {
+            if (err) {
+                debug('insertItem', err);
+            }
+
+            resolve();
+        });
+    });
+};
+
 /**
- * @param {[]} _channelIdList
+ * @param {String[]} _channelIdList
  * @param {boolean} isFullCheck
  * @return {Promise}
  */
 Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
-    // todo: fix me
-    return Promise.resolve([]);
-
     var _this = this;
 
-    var streamList = [];
-
-    var requestPages = function (channelId) {
-        var stateItem = _this.config.stateList[channelId];
-
-        var lastRequestTime = stateItem && stateItem.lastRequestTime;
-        if (isFullCheck || !lastRequestTime) {
-            lastRequestTime = parseInt((Date.now() - 3 * 24 * 60 * 60 * 1000) / 1000);
+    var requestPages = function (/*ChannelInfo*/info) {
+        var channelId = info.id;
+        var publishedAfter = info.publishedAfter;
+        if (isFullCheck || !publishedAfter) {
+            publishedAfter = new Date((parseInt(Date.now() / 1000) - 3 * 24 * 60 * 60) * 1000).toISOString();
         }
-        var publishedAfter = new Date(lastRequestTime * 1000).toISOString();
+        var lastPublishedAt = '';
 
         var pageLimit = 100;
+        /**
+         * @param {String} [pageToken]
+         * @return {Promise}
+         */
         var getPage = function (pageToken) {
             var retryLimit = 5;
             var requestPage = function () {
@@ -510,34 +599,37 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
 
                     return response;
                 }).catch(function (err) {
-                    retryLimit--;
-                    if (retryLimit > 0) {
-                        return new Promise(function (resolve) {
-                            setTimeout(resolve, 250);
-                        }).then(function () {
-                            // debug('Retry %s requestPage %s', retryLimit, channelId, err);
-                            return requestPage();
-                        });
+                    if (retryLimit-- < 1) {
+                        throw err;
                     }
 
-                    throw err;
+                    return new Promise(function (resolve) {
+                        setTimeout(resolve, 250);
+                    }).then(function () {
+                        return requestPage();
+                    });
                 });
             };
 
             return requestPage().then(function (response) {
+                /**
+                 * @type {{
+                 * [nextPageToken]: String,
+                 * items: []
+                 * }}
+                 */
                 var responseBody = response.body;
-                return _this.getChannelLocalTitle(channelId).then(function (channelLocalTitle) {
-                    try {
-                        var streams = _this.apiNormalization(channelId, responseBody, isFullCheck, lastRequestTime, channelLocalTitle);
-                        streamList.push.apply(streamList, streams);
-                    } catch (err) {
-                        debug('Unexpected response %j', response, err);
-                        throw new CustomError('Unexpected response');
+                var promiseList = responseBody.items.map(function (item) {
+                    var snippet = item.snippet;
+                    if (lastPublishedAt < snippet.publishedAt) {
+                        lastPublishedAt = snippet.publishedAt;
                     }
-
+                    return _this.insertItem(snippet);
+                });
+                return Promise.all(promiseList).then(function () {
                     if (responseBody.nextPageToken) {
                         if (pageLimit-- < 1) {
-                            throw new CustomError('Page limit reached');
+                            throw new CustomError('Page limit reached ' + channelId);
                         }
 
                         return getPage(responseBody.nextPageToken);
@@ -546,22 +638,32 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
             });
         };
 
-        return getPage().catch(function(err) {
-            debug('getPage error! %s', channelId, err);
+        return getPage().then(function () {
+            if (lastPublishedAt) {
+                return _this.updateChannelPublishedAfter(info.id, lastPublishedAt);
+            }
+        }).catch(function(err) {
+            debug('requestPages error! %s', channelId, err);
         });
     };
 
-    var threadCount = 50;
+    var threadCount = 25;
     var partSize = Math.ceil(_channelIdList.length / threadCount);
 
     var requestList = base.arrToParts(_channelIdList, partSize).map(function (arr) {
         return base.arrayToChainPromise(arr, function (channelId) {
-            return requestPages(channelId);
+            return _this.getChannelInfo(channelId).then(function (info) {
+                if (info.id) {
+                    return requestPages(info);
+                } else {
+                    debug('Channel info is not found!', channelId);
+                }
+            });
         });
     });
 
-    return Promise.all(requestList).then(function() {
-        return streamList;
+    return Promise.all(requestList).then(function () {
+        return [];
     });
 };
 
@@ -635,6 +737,10 @@ Youtube.prototype.getChannelId = function(channelName) {
     return _this.requestChannelIdByVideoUrl(channelName).catch(function (err) {
         if (!err instanceof CustomError) {
             throw err;
+        }
+
+        if (/^UC/.test(channelName)) {
+            return channelName;
         }
 
         return _this.requestChannelIdByUsername(channelName).then(function (idUserId) {
