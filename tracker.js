@@ -99,15 +99,26 @@ Tracker.prototype.send = function(params) {
         }
     }
 
-    return requestPromise({
-        url: 'https://www.google-analytics.com/collect',
-        method: 'POST',
-        form: params,
-        gzip: true,
-        forever: true
-    }).catch(function (err) {
-        debug('track error', err);
-    });
+    var limit = 5;
+    var send = function () {
+        return requestPromise({
+            url: 'https://www.google-analytics.com/collect',
+            method: 'POST',
+            form: params,
+            gzip: true,
+            forever: true
+        }).catch(function (err) {
+            if (limit-- < 1) {
+                debug('Track error %s %s %s', err.name, err.statusCode, err.message);
+            } else {
+                return new Promise(function (resolve) {
+                    setTimeout(resolve, 250);
+                }).then(function () {
+                    return send();
+                });
+            }
+        });
+    };
 };
 
 module.exports = Tracker;

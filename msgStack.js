@@ -15,71 +15,91 @@ var MsgStack = function (options) {
 
     this.promiseChatIdMap = {};
 
-    options.events.on('notifyAll', function (videoList) {
-        return _this.notifyAll(videoList);
-    });
+    this.onReady = this.init();
+};
 
-    this.onReady = base.storage.get(['msgStackObj', 'chatMsgStack']).then(function(storage) {
-        _this.config.msgStackObj = storage.msgStackObj || {};
-        _this.config.chatMsgStack = storage.chatMsgStack || {};
-        _this.stack = _this.initStack();
+MsgStack.prototype.init = function () {
+    var db = this.gOptions.db;
+    var promise = Promise.resolve();
+    promise = promise.then(function () {
+        return new Promise(function (resolve, reject) {
+            db.connection.query('\
+            CREATE TABLE IF NOT EXISTS `messages` ( \
+                `id` INT NOT NULL AUTO_INCREMENT, \
+                `videoId` VARCHAR(255) NOT NULL, \
+                `channelId` VARCHAR(255) NOT NULL, \
+                `publishedAt` TEXT NOT NULL, \
+                `data` TEXT NOT NULL, \
+                `imageFileId` TEXT, \
+            PRIMARY KEY (`id`),\
+            UNIQUE INDEX `videoIdChannelId_UNIQUE` (`videoId` ASC, `channelId` ASC)); \
+        ', function (err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    });
+    promise = promise.then(function () {
+        return new Promise(function (resolve, reject) {
+            db.connection.query('\
+                CREATE TABLE IF NOT EXISTS `userIdMessageId` ( \
+                    `userId` VARCHAR(255) NOT NULL, \
+                    `messageId` INT NOT NULL, \
+                UNIQUE INDEX `userIdMessageId_UNIQUE` (`userId` ASC, `messageId` ASC), \
+                FOREIGN KEY (`messageId`) \
+                    REFERENCES `messages` (`id`) \
+                    ON DELETE CASCADE \
+                    ON UPDATE CASCADE); \
+            ', function (err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    });
+    return promise;
+};
+
+MsgStack.prototype.insertInStack = function (userId, messageId) {
+    var db = this.gOptions.db;
+    return new Promise(function (resolve, reject) {
+        db.connection.query('\
+            INSERT INTO userIdMessageId SET userId = ?, messageId = ? ON DUPLICATE KEY UPDATE userId = userId \
+        ', [userId, messageId], function (err, results) {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
+            }
+        });
     });
 };
 
-MsgStack.prototype.initStack = function () {
-    var msgStackObj = this.config.msgStackObj;
-    return {
-        getItem: function (msgId) {
-            return msgStackObj[msgId];
-        },
-        addItem: function (msgId, videoItem) {
-            msgStackObj[msgId] = videoItem;
-        },
-        removeItem: function (msgId) {
-            delete msgStackObj[msgId];
-        },
-        getKeys: function () {
-            return Object.keys(msgStackObj);
-        },
-        save: function () {
-            return base.storage.set({msgStackObj: msgStackObj});
-        }
-    }
-};
-
-MsgStack.prototype.getChatIdList = function (videoItem) {
+MsgStack.prototype.getChatIdList = function (service, channelId) {
     var chatList = this.gOptions.storage.chatList;
     var chatIdList = [];
+    var chatItem, userChannelList;
     for (var chatId in chatList) {
-        var chatItem = chatList[chatId];
-        var userChannelList = chatItem.serviceList && chatItem.serviceList[videoItem._service];
-        if (!userChannelList) {
-            continue;
+        chatItem = chatList[chatId];
+        if (chatItem.serviceList) {
+            userChannelList = chatItem.serviceList[service];
+            if (userChannelList) {
+                if (userChannelList.indexOf(channelId) !== -1) {
+                    chatIdList.push(chatItem.chatId);
+                }
+            }
         }
-        if (userChannelList.indexOf(videoItem._channelName) === -1) {
-            continue;
-        }
-        chatIdList.push(chatItem.chatId);
     }
     return chatIdList;
 };
 
-MsgStack.prototype.addInStack = function (videoItem) {
-    var chatMsgStack = this.config.chatMsgStack;
-
-    var msgId = videoItem._videoId;
-    this.stack.addItem(msgId, videoItem);
-
-    this.getChatIdList(videoItem).forEach(function (chatId) {
-        var msgStack = base.getObjectItem(chatMsgStack, chatId, {});
-        var msgList = base.getObjectItem(msgStack, 'stack', []);
-        base.removeItemFromArray(msgList, msgId);
-        msgList.push(msgId);
-    });
-};
-
 MsgStack.prototype.clear = function () {
-    var _this = this;
+    /*var _this = this;
     var chatMsgStack = this.config.chatMsgStack;
     var chatList = this.gOptions.storage.chatList;
 
@@ -99,7 +119,7 @@ MsgStack.prototype.clear = function () {
         if (usedMsgId.indexOf(msgId) === -1) {
             _this.stack.removeItem(msgId);
         }
-    });
+    });*/
 };
 
 MsgStack.prototype.callMsgList = function (chatId) {
@@ -174,23 +194,6 @@ MsgStack.prototype.callMsgList = function (chatId) {
     });
 };
 
-MsgStack.prototype.saveChatMsgStack = function () {
-    var chatMsgStack = this.config.chatMsgStack;
-
-    return base.storage.set({
-        chatMsgStack: chatMsgStack
-    });
-};
-
-MsgStack.prototype.save = function () {
-    var _this = this;
-
-    return Promise.all([
-        _this.saveChatMsgStack(),
-        _this.stack.save()
-    ]);
-};
-
 MsgStack.prototype.callStack = function () {
     var _this = this;
     var promiseChatIdMap = _this.promiseChatIdMap;
@@ -225,7 +228,6 @@ MsgStack.prototype.notifyAll = function () {
 
     return _this.callStack().then(function () {
         _this.clear();
-        return _this.save();
     });
 };
 

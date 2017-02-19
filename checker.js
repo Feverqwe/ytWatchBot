@@ -80,14 +80,17 @@ Checker.prototype.getChannelList = function() {
     for (var chatId in chatList) {
         var chatItem = chatList[chatId];
         for (var service in chatItem.serviceList) {
-            var channelList = serviceList[service] = serviceList[service] || [];
-
             var userChannelList = chatItem.serviceList[service];
+
+            var channelList = serviceList[service];
+            if (!channelList) {
+                channelList = serviceList[service] = [];
+            }
+
             for (var i = 0, channelName; channelName = userChannelList[i]; i++) {
-                if (channelList.indexOf(channelName) !== -1) {
-                    continue;
+                if (channelList.indexOf(channelName) === -1) {
+                    channelList.push(channelName);
                 }
-                channelList.push(channelName);
             }
         }
     }
@@ -95,110 +98,57 @@ Checker.prototype.getChannelList = function() {
     return serviceList;
 };
 
-Checker.prototype.cleanServices = function() {
-    var _this = this;
-    var serviceChannelList = _this.getChannelList();
-    var services = _this.gOptions.services;
-
-    var promiseList = [];
-
-    for (var service in serviceChannelList) {
-        if (!serviceChannelList.hasOwnProperty(service)) {
-            continue;
-        }
-
-        var currentService = services[service];
-        if (!currentService) {
-            debug('Service %s is not found!', service);
-            continue;
-        }
-
-        var channelList = serviceChannelList[service];
-
-        if (currentService.clean) {
-            promiseList.push(currentService.clean(channelList));
-        }
-    }
-
-    return Promise.all(promiseList);
-};
-
 Checker.prototype.updateList = function(filterServiceChannelList) {
     var _this = this;
-
-    var isFullCheck = !filterServiceChannelList;
-
-    var onGetVideoList = function(videoList, currentService) {
-        if (isFullCheck) {
-            var subscribeList = [];
-            videoList.forEach(function(item) {
-                var channelName = item._channelName;
-                if (item._service === 'youtube' && subscribeList.indexOf(channelName) === -1) {
-                    subscribeList.push(channelName);
-                }
-            });
-            if (subscribeList.length) {
-                // debug('Subscribed %s channels! %j', subscribeList.length, subscribeList);
-                _this.gOptions.events.emit('subscribe', subscribeList);
-            }
-        }
-
-        videoList.sort(function(a, b) {
-            return a.publishedAt > b.publishedAt;
-        });
-
-        var msgStack = _this.gOptions.msgStack;
-        videoList.forEach(function (videoItem) {
-            msgStack.addInStack(videoItem);
-            msgStack.sendLog(videoItem);
-        });
-
-        return Promise.all([
-            msgStack.save(),
-            currentService.saveState()
-        ]).then(function () {
-            _this.gOptions.events.emit('notifyAll');
-        });
-    };
-
-    var queue = Promise.resolve();
-
-    if (isFullCheck) {
-        queue = queue.then(function() {
-            return _this.cleanServices().catch(function (err) {
-                debug('cleanServices error!', err);
-            });
-        });
+    if (!filterServiceChannelList) {
+        filterServiceChannelList = {};
     }
 
-    var serviceChannelList = _this.getChannelList();
+    var msgStack = _this.gOptions.msgStack;
     var services = _this.gOptions.services;
+    var serviceUserChannelList = _this.getChannelList();
+    var queue = Promise.resolve();
 
-    Object.keys(serviceChannelList).forEach(function (service) {
-        var currentService = services[service];
-        if (!currentService) {
-            debug('Service %s is not found!', service);
-            return;
-        }
+    Object.keys(services).forEach(function (serviceName) {
+        var service = services[serviceName];
+        var userChannelList = serviceUserChannelList[serviceName];
+        var filterChannelList = filterServiceChannelList[serviceName];
+        var isFullCheck = !filterChannelList;
 
-        var channelList = serviceChannelList[service];
-
-        var filterChannelList = filterServiceChannelList && filterServiceChannelList[service];
-        if (filterChannelList && service === 'youtube') {
-            channelList = filterChannelList.filter(function(channelName) {
-                return channelList.indexOf(channelName) !== -1;
+        if (filterChannelList) {
+            userChannelList = filterChannelList.filter(function(channelName) {
+                return userChannelList.indexOf(channelName) !== -1;
             });
 
-            if (!channelList.length) {
+            if (!userChannelList.length) {
                 _this.gOptions.events.emit('unsubscribe', filterChannelList);
             }
         }
 
         queue = queue.then(function() {
-            return currentService.getVideoList(channelList, isFullCheck).then(function(videoList) {
-                return onGetVideoList(videoList, currentService);
-            });
+            return service.getVideoList(userChannelList, isFullCheck);
+            /**
+             * @typedef {{}} stackItem
+             * @property {String} channelId
+             * @property {String} videoId
+             * @property {String} publishedAt
+             * @property {String} data
+             */
+        }).then(function (/*[stackItem]*/items) {
+            if (isFullCheck && items.length) {
+                var channelList = [];
+                items.forEach(function (item) {
+                    if (channelList.indexOf(item.channelId) === -1) {
+                        channelList.push(item.channelId);
+                    }
+                });
+                _this.gOptions.events.emit('subscribe', channelList);
+            }
         });
+    });
+
+    queue.then(function () {
+        _this.gOptions.events.emit('checkStack');
     });
 
     return queue;

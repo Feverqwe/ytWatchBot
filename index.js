@@ -57,6 +57,9 @@ var options = {
         options.db = new Db(options);
         return options.db.onReady;
     }).then(function() {
+        options.msgStack = new MsgStack(options);
+        return options.msgStack.onReady;
+    }).then(function() {
         return Promise.all(options.serviceList.map(function(name) {
             var service = require('./services/' + name);
             service = options.services[name] = new service(options);
@@ -167,10 +170,6 @@ var options = {
         options.bot.answerCallbackQuery = quote.wrapper(options.bot.answerCallbackQuery.bind(options.bot));
     }).then(function() {
         options.tracker = new Tracker(options);
-    }).then(function() {
-        options.msgStack = new MsgStack(options);
-        
-        return options.msgStack.onReady;
     }).then(function() {
         options.msgSender = new MsgSender(options);
     }).then(function() {
