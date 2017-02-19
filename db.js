@@ -2,6 +2,7 @@
  * Created by Anton on 19.02.2017.
  */
 var debug = require('debug')('app:db');
+var mysql = require('mysql');
 
 var Db = function (options) {
     this.config = options.config.db;
@@ -12,22 +13,37 @@ var Db = function (options) {
 
 Db.prototype.init = function () {
     "use strict";
-    var _this = this;
-    var mysql = require('mysql');
+    var connection = this.connection = this.getConnection();
 
-    var db = _this.connection = mysql.createConnection({
+    return new Promise(function (resolve, reject) {
+        connection.connect(function(err) {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
+            }
+        });
+    });
+};
+
+Db.prototype.getConnection = function () {
+    return mysql.createConnection({
         host: this.config.host,
         user: this.config.user,
         password: this.config.password,
         database: this.config.database
     });
+};
+
+Db.prototype.newConnection = function () {
+    var connection = this.getConnection();
 
     return new Promise(function (resolve, reject) {
-        db.connect(function(err) {
+        connection.connect(function(err) {
             if (err) {
                 reject(err);
             } else {
-                resolve();
+                resolve(connection);
             }
         });
     });

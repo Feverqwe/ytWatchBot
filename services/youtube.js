@@ -285,43 +285,49 @@ Youtube.prototype.insertItem = function (info, chatIdList, snippet) {
         });
     };
     var insert = function (video) {
-        return new Promise(function (resolve, reject) {
-            db.connection.beginTransaction(function (err) {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve();
-                }
-            });
-        }).then(function () {
+        return db.newConnection().then(function (connection) {
             return new Promise(function (resolve, reject) {
-                db.connection.query('INSERT INTO messages SET ?', video, function (err, results) {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve(results.insertId);
-                    }
-                });
-            });
-        }).then(function (messageId) {
-            return Promise.all(chatIdList.map(function (userId) {
-                return _this.gOptions.msgStack.insertInStack(userId, messageId);
-            }));
-        }).catch(function (err) {
-            return new Promise(function (resolve) {
-                db.connection.rollback(resolve);
-            }).then(function () {
-                throw err;
-            });
-        }).then(function () {
-            return new Promise(function (resolve, reject) {
-                db.connection.commit(function(err) {
+                connection.beginTransaction(function (err) {
                     if (err) {
                         reject(err);
                     } else {
                         resolve();
                     }
                 });
+            }).then(function () {
+                return new Promise(function (resolve, reject) {
+                    connection.query('INSERT INTO messages SET ?', video, function (err, results) {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(results.insertId);
+                        }
+                    });
+                });
+            }).then(function (messageId) {
+                return Promise.all(chatIdList.map(function (userId) {
+                    return _this.gOptions.msgStack.insertInStack(connection, userId, messageId);
+                }));
+            }).then(function () {
+                return new Promise(function (resolve, reject) {
+                    console.log('commit');
+                    connection.commit(function(err) {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve();
+                        }
+                    });
+                });
+            }).catch(function (err) {
+                return new Promise(function (resolve) {
+                    console.log('rollback');
+                    connection.rollback(resolve);
+                }).then(function () {
+                    throw err;
+                });
+            }).finally(function () {
+                connection.end();
             });
         });
     };

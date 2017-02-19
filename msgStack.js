@@ -69,10 +69,9 @@ MsgStack.prototype.init = function () {
     return promise;
 };
 
-MsgStack.prototype.insertInStack = function (userId, messageId) {
-    var db = this.gOptions.db;
+MsgStack.prototype.insertInStack = function (connection, userId, messageId) {
     return new Promise(function (resolve, reject) {
-        db.connection.query('\
+        connection.query('\
             INSERT INTO userIdMessageId SET userId = ?, messageId = ? ON DUPLICATE KEY UPDATE userId = userId \
         ', [userId, messageId], function (err, results) {
             if (err) {
