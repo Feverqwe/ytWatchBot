@@ -23,12 +23,19 @@ var Youtube = function(options) {
     });
 };
 
+/**
+ * @return {Promise}
+ */
 Youtube.prototype.saveChannelInfo = function () {
     return base.storage.set({
         ytChannelInfo: this.config.channelInfo
     });
 };
 
+/**
+ * @param {String} channelId
+ * @return {{}}
+ */
 Youtube.prototype.getChannelInfo = function (channelId) {
     var obj = this.config.channelInfo[channelId];
     if (!obj) {
@@ -37,11 +44,17 @@ Youtube.prototype.getChannelInfo = function (channelId) {
     return obj;
 };
 
+// todo: unused!
 Youtube.prototype.removeChannelInfo = function (channelId) {
     delete this.config.channelInfo[channelId];
     return this.saveChannelInfo();
 };
 
+/**
+ * @param {String} channelId
+ * @param {String} title
+ * @return {Promise}
+ */
 Youtube.prototype.setChannelTitle = function(channelId, title) {
     var info = this.getChannelInfo(channelId);
     if (info.title !== title) {
@@ -52,11 +65,20 @@ Youtube.prototype.setChannelTitle = function(channelId, title) {
     return Promise.resolve();
 };
 
+/**
+ * @param {String} channelId
+ * @return {String}
+ */
 Youtube.prototype.getChannelTitle = function (channelId) {
     var info = this.getChannelInfo(channelId);
     return info.title || channelId;
 };
 
+/**
+ * @param {String} channelId
+ * @param {String} localTitle
+ * @return {Promise}
+ */
 Youtube.prototype.setChannelLocalTitle = function(channelId, localTitle) {
     var info = this.getChannelInfo(channelId);
     if (info.title !== localTitle && info.localTitle !== localTitle) {
@@ -67,11 +89,20 @@ Youtube.prototype.setChannelLocalTitle = function(channelId, localTitle) {
     return Promise.resolve();
 };
 
+/**
+ * @param {String} channelId
+ * @return {String}
+ */
 Youtube.prototype.getChannelLocalTitle = function (channelId) {
     var info = this.getChannelInfo(channelId);
     return info.localTitle || info.title || channelId;
 };
 
+/**
+ * @param {String} channelId
+ * @param {String} username
+ * @return {Promise}
+ */
 Youtube.prototype.setChannelUsername = function(channelId, username) {
     var info = this.getChannelInfo(channelId);
     if (info.username !== username) {
@@ -82,6 +113,10 @@ Youtube.prototype.setChannelUsername = function(channelId, username) {
     return Promise.resolve();
 };
 
+/**
+ * @param {String[]} channelIdList
+ * @return {Promise}
+ */
 Youtube.prototype.clean = function(channelIdList) {
     var _this = this;
     var promiseList = [];
@@ -117,6 +152,11 @@ Youtube.prototype.clean = function(channelIdList) {
     return Promise.all(promiseList);
 };
 
+/**
+ * @param {String} channelId
+ * @param {String} videoId
+ * @return {boolean}
+ */
 Youtube.prototype.videoIdInList = function(channelId, videoId) {
     var stateList = this.config.stateList;
     var videoIdObj = stateList[channelId] && stateList[channelId].videoIdList;
@@ -127,6 +167,9 @@ Youtube.prototype.videoIdInList = function(channelId, videoId) {
     return !!videoIdObj[videoId];
 };
 
+/**
+ * @return {Promise}
+ */
 Youtube.prototype.saveState = function() {
     var stateList = this.config.stateList;
     return base.storage.set({
@@ -134,6 +177,10 @@ Youtube.prototype.saveState = function() {
     });
 };
 
+/**
+ * @param {{}} snippet
+ * @return {String}
+ */
 Youtube.prototype.getVideoIdFromThumbs = function(snippet) {
     var videoId = null;
 
@@ -151,6 +198,13 @@ Youtube.prototype.getVideoIdFromThumbs = function(snippet) {
     return videoId;
 };
 
+/**
+ * @param {String} channelId
+ * @param {{items:[]}} data
+ * @param {boolean} isFullCheck
+ * @param {number} lastRequestTime
+ * @return {[]}
+ */
 Youtube.prototype.apiNormalization = function(channelId, data, isFullCheck, lastRequestTime) {
     var _this = this;
 
@@ -261,6 +315,10 @@ Youtube.prototype.apiNormalization = function(channelId, data, isFullCheck, last
     return videoList;
 };
 
+/**
+ * @param {String} channelId
+ * @return {Promise}
+ */
 Youtube.prototype.requestChannelLocalTitle = function(channelId) {
     var _this = this;
     return requestPromise({
@@ -301,6 +359,10 @@ Youtube.prototype.requestChannelLocalTitle = function(channelId) {
     });
 };
 
+/**
+ * @param {String} query
+ * @return {Promise}
+ */
 Youtube.prototype.requestChannelIdByQuery = function(query) {
     var _this = this;
     return requestPromise({
@@ -340,6 +402,10 @@ Youtube.prototype.requestChannelIdByQuery = function(query) {
 
 var channelRe = /^UC/;
 
+/**
+ * @param {String} userId
+ * @return {Promise}
+ */
 Youtube.prototype.requestChannelIdByUsername = function(userId) {
     var _this = this;
     if (channelRe.test(userId)) {
@@ -382,6 +448,11 @@ Youtube.prototype.requestChannelIdByUsername = function(userId) {
     });
 };
 
+/**
+ * @param {[]} _channelIdList
+ * @param {boolean} isFullCheck
+ * @return {Promise}
+ */
 Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
     var _this = this;
 
@@ -485,6 +556,10 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
     });
 };
 
+/**
+ * @param {String} url
+ * @return {Promise}
+ */
 Youtube.prototype.requestChannelIdByVideoUrl = function (url) {
     var _this = this;
 
@@ -542,7 +617,7 @@ Youtube.prototype.requestChannelIdByVideoUrl = function (url) {
 /**
  * Response userId in lowerCase or channelId (case sensitive)
  * @param {String} channelName
- * @returns {*}
+ * @returns {Promise}
  */
 Youtube.prototype.getChannelId = function(channelName) {
     var _this = this;

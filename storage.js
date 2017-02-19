@@ -161,7 +161,10 @@ var Storage = function() {
             });
         });
     };
-
+    /**
+     * @param {String[]|{}|String} keys
+     * @return {Promise}
+     */
     this.get = function(keys) {
         var items = {};
         var defaultItems = {};
@@ -192,6 +195,10 @@ var Storage = function() {
             return items;
         });
     };
+    /**
+     * @param {{}} items
+     * @return {Promise}
+     */
     this.set = function(items) {
         var promiseList = Object.keys(items).map(function (key) {
             if (items[key] !== undefined) {
@@ -201,6 +208,10 @@ var Storage = function() {
 
         return Promise.all(promiseList);
     };
+    /**
+     * @param {String[]|String} keys
+     * @return {Promise}
+     */
     this.remove = function(keys) {
         var _keys = [];
         if (Array.isArray(keys)) {
