@@ -1,13 +1,12 @@
 /**
  * Created by Anton on 06.12.2015.
  */
-var Promise = require('bluebird');
-var debug = require('debug')('chat');
+"use strict";
+var debug = require('debug')('app:chat');
 var commands = require('./commands');
 var base = require('./base');
 
 var Chat = function(options) {
-    "use strict";
     var _this = this;
     this.gOptions = options;
 
@@ -18,7 +17,7 @@ var Chat = function(options) {
     this.onMessage = (function (orig) {
         return function () {
             var args = arguments;
-            return Promise.try(function() {
+            return Promise.resolve().then(function() {
                 return orig.apply(_this, args);
             });
         };
@@ -36,13 +35,11 @@ var Chat = function(options) {
 };
 
 Chat.prototype.bindBot = function() {
-    "use strict";
     this.gOptions.bot.on('message', this.onMessage.bind(this));
     this.gOptions.bot.on('callback_query', this.onCallbackQuery.bind(this));
 };
 
 Chat.prototype.checkArgs = function(msg, args, isCallbackQuery) {
-    "use strict";
     var bot = this.gOptions.bot;
     var language = this.gOptions.language;
     var serviceList = this.gOptions.serviceList;
@@ -125,7 +122,6 @@ Chat.prototype.msgParser = function(text) {
 };
 
 Chat.prototype.removeChannel = function(channelName) {
-    "use strict";
     var chatList = this.gOptions.storage.chatList;
 
     var needSave = false;
@@ -152,7 +148,6 @@ Chat.prototype.removeChannel = function(channelName) {
 };
 
 Chat.prototype.removeChat = function(chatId) {
-    "use strict";
     var chatList = this.gOptions.storage.chatList;
 
     var chatItem = chatList[chatId];
@@ -168,7 +163,6 @@ Chat.prototype.removeChat = function(chatId) {
 };
 
 Chat.prototype.chatMigrate = function(oldChatId, newChatId) {
-    "use strict";
     var chatList = this.gOptions.storage.chatList;
     var chatItem = chatList[oldChatId];
 
@@ -192,7 +186,6 @@ Chat.prototype.callbackQueryToMsg = function (callbackQuery) {
 };
 
 Chat.prototype.onCallbackQuery = function (callbackQuery) {
-    "use strict";
     var _this = this;
 
     var data = callbackQuery.data;
@@ -252,7 +245,6 @@ Chat.prototype.onCallbackQuery = function (callbackQuery) {
 };
 
 Chat.prototype.onMessage = function(msg) {
-    "use strict";
     var _this = this;
     var text = msg.text;
     var chatId = msg.chat.id;
@@ -328,7 +320,6 @@ Chat.prototype.onMessage = function(msg) {
 };
 
 Chat.prototype.track = function(msg, title) {
-    "use strict";
     return this.gOptions.tracker.track({
         text: msg.text,
         from: {

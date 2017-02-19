@@ -1,14 +1,14 @@
 /**
  * Created by Anton on 21.05.2016.
  */
+"use strict";
 var base = require('./base');
-var debug = require('debug')('MsgStack');
-var debugLog = require('debug')('MsgStack:log');
+var debug = require('debug')('app:MsgStack');
+var debugLog = require('debug')('app:MsgStack:log');
 debugLog.log = console.log.bind(console);
 var Promise = require('bluebird');
 
 var MsgStack = function (options) {
-    "use strict";
     var _this = this;
     this.gOptions = options;
     this.config = {};

@@ -1,29 +1,20 @@
 /**
  * Created by anton on 31.01.16.
  */
-var Promise = require('bluebird');
-var debug = require('debug')('tracker');
+"use strict";
+var debug = require('debug')('app:tracker');
 var request = require('request');
-var Uuid = require('node-uuid');
-var requestPromise = Promise.promisify(request);
+var Uuid = require('uuid');
+var requestPromise = require('request-promise');
 
 var Tracker = function(options) {
-    "use strict";
     this.gOptions = options;
     this.cache = {};
 
     this.tid = options.config.gaId;
-    /*this.botanToken = options.config.botanToken;
-
-    if (this.botanToken) {
-        this.botan = require('botanio')(this.botanToken);
-    } else {
-        this.botan = {track: function(data, action){debug("Send in Botan %s, %j", action, data)}};
-    }*/
 };
 
 Tracker.prototype.getUuid = function(id) {
-    "use strict";
 
     var cid = this.cache[id];
     if (cid) {
@@ -62,7 +53,6 @@ Tracker.prototype.getUuid = function(id) {
 };
 
 Tracker.prototype.track = function(msg, action) {
-    "use strict";
     return Promise.all([
         this.trackerSend(msg, action)/*,
         this.botan.track(msg, action)*/
@@ -72,7 +62,6 @@ Tracker.prototype.track = function(msg, action) {
 };
 
 Tracker.prototype.trackerSend = function(msg, action) {
-    "use strict";
     var id = msg.chat.id;
 
     var params = this.sendEvent('bot', action, msg.text);
@@ -82,7 +71,6 @@ Tracker.prototype.trackerSend = function(msg, action) {
 };
 
 Tracker.prototype.sendEvent = function(category, action, label) {
-    "use strict";
     var params = {
         ec: category,
         ea: action,
@@ -94,7 +82,6 @@ Tracker.prototype.sendEvent = function(category, action, label) {
 };
 
 Tracker.prototype.send = function(params) {
-    "use strict";
     if (!this.tid) {
         debug('Send in ga %j', params);
         return;
@@ -112,29 +99,15 @@ Tracker.prototype.send = function(params) {
         }
     }
 
-    var retry = 5;
-    var sendRequest = function () {
-        return requestPromise({
-            url: 'https://www.google-analytics.com/collect',
-            method: 'POST',
-            form: params,
-            gzip: true,
-            forever: true
-        }).catch(function (err) {
-            retry--;
-            if (err.code === 'ECONNRESET' && retry > 0) {
-                return new Promise(function (resolve) {
-                    setTimeout(resolve, 250);
-                }).then(function () {
-                    return sendRequest();
-                })
-            }
-
-            throw err;
-        });
-    };
-
-    return sendRequest();
+    return requestPromise({
+        url: 'https://www.google-analytics.com/collect',
+        method: 'POST',
+        form: params,
+        gzip: true,
+        forever: true
+    }).catch(function (err) {
+        debug('track error', err);
+    });
 };
 
 module.exports = Tracker;

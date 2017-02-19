@@ -1,14 +1,14 @@
 /**
  * Created by Anton on 02.10.2016.
  */
+"use strict";
 var base = require('./base');
-var debug = require('debug')('MsgSender');
+var debug = require('debug')('app:MsgSender');
 var Promise = require('bluebird');
 var request = require('request');
 var requestPromise = Promise.promisify(request);
 
 var MsgSender = function (options) {
-    "use strict";
     var _this = this;
     _this.gOptions = options;
 
@@ -16,7 +16,6 @@ var MsgSender = function (options) {
 };
 
 MsgSender.prototype.onSendMsgError = function(err, chatId) {
-    "use strict";
     var _this = this;
     var errMsg = err.message;
     var needKick = /^403\s+/.test(errMsg);
@@ -60,7 +59,6 @@ MsgSender.prototype.onSendMsgError = function(err, chatId) {
 };
 
 MsgSender.prototype.downloadImg = function (stream) {
-    "use strict";
     var _this = this;
 
     var requestLimit = 10;
@@ -121,7 +119,6 @@ MsgSender.prototype.downloadImg = function (stream) {
 };
 
 MsgSender.prototype.getPicId = function(chatId, text, stream) {
-    "use strict";
     var _this = this;
 
     var sendPicLimit = 0;
@@ -178,7 +175,6 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
 };
 
 MsgSender.prototype.sendMsg = function(chatId, noPhotoText, stream) {
-    "use strict";
     var _this = this;
     var bot = _this.gOptions.bot;
 
@@ -197,7 +193,6 @@ MsgSender.prototype.sendMsg = function(chatId, noPhotoText, stream) {
 };
 
 MsgSender.prototype.sendPhoto = function(chatId, fileId, text, stream) {
-    "use strict";
     var _this = this;
     var bot = _this.gOptions.bot;
 
@@ -216,7 +211,6 @@ MsgSender.prototype.sendPhoto = function(chatId, fileId, text, stream) {
 };
 
 MsgSender.prototype.send = function(chatIdList, text, noPhotoText, stream) {
-    "use strict";
     var _this = this;
     var photoId = stream._photoId;
     var promiseList = [];
@@ -234,7 +228,6 @@ MsgSender.prototype.send = function(chatIdList, text, noPhotoText, stream) {
 };
 
 MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
-    "use strict";
     var _this = this;
     var requestPromiseMap = _this.requestPromiseMap;
     var requestId = stream._videoId;
@@ -280,7 +273,6 @@ MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
 };
 
 MsgSender.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream, useCache) {
-    "use strict";
     var _this = this;
 
     if (!stream.preview.length) {
@@ -301,7 +293,6 @@ MsgSender.prototype.sendNotify = function(chatIdList, text, noPhotoText, stream,
 };
 
 MsgSender.prototype.track = function(chatId, stream, title) {
-    "use strict";
     return this.gOptions.tracker.track({
         text: stream._channelName,
         from: {

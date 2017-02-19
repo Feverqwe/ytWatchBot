@@ -2,15 +2,13 @@
   "name": "application-name",
   "version": "0.0.1",
   "dependencies": {
+    "bluebird": "^3.4.7",
+    "debug": "^2.6.1",
     "node-telegram-bot-api": "0.21.1",
-    "debug": "^2.2.0",
-    "bluebird": "^3.4.6",
-    "request": "^2.74.0",
-    "botanio": "^0.0.6",
-    "path": "^0.12.7",
-    "events": "^1.1.1",
-    "pubsubhubbub": "0.4.1",
-    "xmldoc": "0.5.1",
-    "node-uuid": "^1.4.7"
+    "pubsubhubbub": "^0.4.1",
+    "request": "^2.79.0",
+    "request-promise": "^4.1.1",
+    "uuid": "^3.0.1",
+    "xmldoc": "^1.0.0"
   }
 }

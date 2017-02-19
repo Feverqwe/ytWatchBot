@@ -1,10 +1,10 @@
 /**
  * Created by anton on 01.10.16.
  */
-
+"use strict";
 var path = require('path');
 var Promise = require('bluebird');
-var debug = require('debug')('storage');
+var debug = require('debug')('app:storage');
 var fs = require('fs');
 
 var keyPromiseMap = {};
@@ -24,7 +24,6 @@ var inStack = function (key, fn) {
 };
 
 var Storage = function() {
-    "use strict";
     var storagePath = path.join(__dirname, './storage');
 
     var accessFile = function (keyPath, mode) {

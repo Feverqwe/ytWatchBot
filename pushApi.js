@@ -1,13 +1,12 @@
 /**
  * Created by Anton on 18.12.2015.
  */
-var debug = require('debug')('pubsub');
+"use strict";
+var debug = require('debug')('app:pubsub');
 var pubSubHubbub = require("pubsubhubbub");
-var Promise = require('bluebird');
 var xmldoc = require("xmldoc");
 
 var PushApi = function(options) {
-    "use strict";
     var _this = this;
     this.gOptions = options;
 
@@ -58,7 +57,6 @@ var PushApi = function(options) {
 };
 
 PushApi.prototype.initListener = function(resolve) {
-    "use strict";
     var _this = this;
     var pubsub = this.pubsub;
 
@@ -75,23 +73,22 @@ PushApi.prototype.initListener = function(resolve) {
     });
 
     pubsub.on('feed', function(data) {
-        Promise.try(function() {
+        try {
             var feed = _this.prepareData(data.feed.toString());
             _this.gOptions.events.emit('feed', feed);
-        }).catch(function(err) {
+        } catch (err) {
             if (err.message === 'Entry is not found!') {
                 return;
             }
 
             debug('Parse xml error!', err);
-        });
+        }
     });
 
     this.pubsub.listen(_this.gOptions.config.push.port);
 };
 
 PushApi.prototype.subscribe = function(channelList) {
-    "use strict";
     var _this = this;
     var pubsub = this.pubsub;
 
@@ -121,7 +118,6 @@ PushApi.prototype.subscribe = function(channelList) {
 };
 
 PushApi.prototype.unsubscribe = function(channelList) {
-    "use strict";
     var _this = this;
     var pubsub = this.pubsub;
 
@@ -151,7 +147,6 @@ PushApi.prototype.unsubscribe = function(channelList) {
 };
 
 PushApi.prototype.prepareData = function(xml) {
-    "use strict";
     var document = new xmldoc.XmlDocument(xml);
 
     var getChildNode = function(root, name) {

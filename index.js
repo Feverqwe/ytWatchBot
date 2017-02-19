@@ -1,22 +1,18 @@
 /**
  * Created by Anton on 06.12.2015.
  */
-var Debug = require('debug');
-
-var debug = Debug('index');
-var debugLog = Debug('index:log');
-debugLog.log = console.log.bind(console);
-var Promise = require('bluebird');
-var base = require('./base');
-var PushApi = require('./pushApi');
-var Checker = require('./checker');
-var Chat = require('./chat');
-var TelegramBotApi = require('node-telegram-bot-api');
-var EventEmitter = require('events').EventEmitter;
-var Daemon = require('./daemon');
-var Tracker = require('./tracker');
-var MsgStack = require('./msgStack');
-var MsgSender = require('./msgSender');
+"use strict";
+const debug = require('debug')('app:index');
+const base = require('./base');
+const PushApi = require('./pushApi');
+const Checker = require('./checker');
+const Chat = require('./chat');
+const TelegramBotApi = require('node-telegram-bot-api');
+const EventEmitter = require('events');
+const Daemon = require('./daemon');
+const Tracker = require('./tracker');
+const MsgStack = require('./msgStack');
+const MsgSender = require('./msgSender');
 
 var options = {
     config: {},
@@ -40,32 +36,26 @@ var options = {
 };
 
 (function() {
-    "use strict";
-    return Promise.resolve().then(function() {
-        options.events = new EventEmitter();
-    }).then(function() {
-        return base.loadConfig().then(function(config) {
+    options.events = new EventEmitter();
+    Promise.all([
+        base.loadConfig().then(function(config) {
             options.config = config;
 
             config.botName && (config.botName = config.botName.toLowerCase());
-        });
-    }).then(function() {
-        return base.loadLanguage().then(function(language) {
+        }),
+        base.loadLanguage().then(function(language) {
             options.language = language;
-        });
-    }).then(function() {
-        return base.storage.get(Object.keys(options.storage)).then(function(storage) {
+        }),
+        base.storage.get(Object.keys(options.storage)).then(function(storage) {
             for (var key in storage) {
                 options.storage[key] = storage[key];
             }
-        });
-    }).then(function() {
+        })
+    ]).then(function() {
         return Promise.all(options.serviceList.map(function(name) {
-            return Promise.try(function() {
-                var service = require('./services/' + name);
-                service = options.services[name] = new service(options);
-                return service.onReady;
-            });
+            var service = require('./services/' + name);
+            service = options.services[name] = new service(options);
+            return service.onReady;
         }));
     }).then(function() {
         options.daemon = new Daemon(options);

@@ -1,19 +1,19 @@
 /**
  * Created by Anton on 06.12.2015.
  */
-var path = require('path');
-var Promise = require('bluebird');
-var debug = require('debug')('base');
-var Storage = require('./storage');
+"use strict";
+const fs = require('fs');
+const path = require('path');
+const debug = require('debug')('app:base');
+const Storage = require('./storage');
+const Promise = require('bluebird');
 
 /**
  *
  * @returns {bluebird|exports|module.exports}
  */
 module.exports.loadConfig = function() {
-    "use strict";
     return Promise.resolve().then(function() {
-        var fs = require('fs');
         return JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json')));
     });
 };
@@ -23,10 +23,7 @@ module.exports.loadConfig = function() {
  * @returns {bluebird|exports|module.exports}
  */
 module.exports.loadLanguage = function() {
-    "use strict";
     return Promise.resolve().then(function() {
-        var fs = require('fs');
-
         var language = JSON.parse(fs.readFileSync(path.join(__dirname, 'language.json')));
 
         for (var key in language) {
@@ -85,50 +82,7 @@ module.exports.htmlSanitize = function (type, text, url) {
     throw new Error("htmlSanitize error");
 };
 
-module.exports.markDownSanitize = function(text, char) {
-    "use strict";
-    if (char === '*') {
-        text = text.replace(/\*/g, String.fromCharCode(735));
-    }
-    if (char === '_') {
-        text = text.replace(/_/g, String.fromCharCode(717));
-    }
-    if (char === '[') {
-        text = text.replace(/\[/g, '(');
-        text = text.replace(/\]/g, ')');
-    }
-    if (!char) {
-        text = text.replace(/([*_\[])/g, '\\$1');
-    }
-
-    return text;
-};
-
-module.exports.getDate = function() {
-    "use strict";
-    var today = new Date();
-    var h = today.getHours();
-    var m = today.getMinutes();
-    var s = today.getSeconds();
-    if (h < 10) {
-        h = '0' + h;
-    }
-    if (m < 10) {
-        m = '0' + m;
-    }
-    if (s < 10) {
-        s = '0' + s;
-    }
-    return today.getDate() + "/"
-        + (today.getMonth()+1)  + "/"
-        + today.getFullYear() + " @ "
-        + h + ":"
-        + m + ":"
-        + s;
-};
-
 module.exports.getNowStreamPhotoText = function(gOptions, videoItem) {
-    "use strict";
     var getText = function (stripLen) {
         var textArr = [];
 
@@ -165,7 +119,6 @@ module.exports.getNowStreamPhotoText = function(gOptions, videoItem) {
 };
 
 module.exports.getNowStreamText = function(gOptions, videoItem) {
-    "use strict";
     var textArr = [];
 
     var title = '';
@@ -189,7 +142,6 @@ module.exports.getNowStreamText = function(gOptions, videoItem) {
 };
 
 module.exports.extend = function() {
-    "use strict";
     var obj = arguments[0];
     for (var i = 1, len = arguments.length; i < len; i++) {
         var item = arguments[i];
@@ -201,7 +153,6 @@ module.exports.extend = function() {
 };
 
 module.exports.getChannelTitle = function(gOptions, service, channelName) {
-    "use strict";
     var title = channelName;
 
     var services = gOptions.services;
@@ -213,7 +164,6 @@ module.exports.getChannelTitle = function(gOptions, service, channelName) {
 };
 
 module.exports.getChannelLocalTitle = function(gOptions, service, channelName) {
-    "use strict";
     var title = channelName;
 
     var services = gOptions.services;
@@ -228,7 +178,6 @@ module.exports.getChannelLocalTitle = function(gOptions, service, channelName) {
 };
 
 module.exports.getChannelUrl = function(service, channelName) {
-    "use strict";
     var url = '';
     if (service === 'youtube') {
         url = 'https://youtube.com/';
@@ -248,7 +197,6 @@ module.exports.getChannelUrl = function(service, channelName) {
  * @constructor
  */
 module.exports.Quote = function (callPerSecond) {
-    "use strict";
     var getTime = function() {
         return parseInt(Date.now() / 1000);
     };
@@ -411,14 +359,14 @@ module.exports.noCacheUrl = function (url) {
 
 module.exports.arrayToChainPromise = function (arr, callbackPromise) {
     var next = function () {
-        var promise = null;
+        var result = null;
         var item = arr.shift();
         if (item) {
-            promise = callbackPromise(item).then(next);
+            result = callbackPromise(item).then(next);
         } else {
-            promise = Promise.resolve();
+            result = Promise.resolve();
         }
-        return promise;
+        return result;
     };
     return next();
 };
