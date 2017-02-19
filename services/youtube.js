@@ -170,7 +170,7 @@ Youtube.prototype.getChannelLocalTitle = function (channelId) {
  * @param {ChannelInfo} info
  * @return {String}
  */
-Youtube.prototype.getChannelLocalTitleFromInfo = function (info) {
+var getChannelLocalTitleFromInfo = function (info) {
     return info.localTitle || info.title || info.id;
 };
 
@@ -237,11 +237,12 @@ Youtube.prototype.videoIdInList = function(channelId, videoId) {
 /**
  * @return {Promise}
  */
+// todo: rm it
 Youtube.prototype.saveState = function() {
-    var stateList = this.config.stateList;
+    /*var stateList = this.config.stateList;
     return base.storage.set({
         stateList: stateList
-    });
+    });*/
 };
 
 /**
@@ -282,241 +283,25 @@ Youtube.prototype.saveState = function() {
  * @return {String}
  */
 Youtube.prototype.getVideoIdFromThumbs = function(snippet) {
-    var videoId = null;
+    var id = null;
 
     var thumbnails = snippet.thumbnails;
     thumbnails && Object.keys(thumbnails).some(function(quality) {
-        var url = thumbnails[quality].url;
-        url = url && url.match(/vi\/([^\/]+)/);
-        url = url && url[1];
-        if (url) {
-            videoId = url;
+        var m = /vi\/([^\/]+)/.exec(thumbnails[quality].url);
+        if (m) {
+            id = m[1];
             return true;
         }
     });
 
-    return videoId;
+    return id;
 };
 
 /**
- * @private
- * @param {String} channelId
- * @param {{items:[]}} data
- * @param {boolean} isFullCheck
- * @param {number} lastRequestTime
- * @param {String} channelLocalTitle
- * @return {[]}
+ * @param {VideoSnippet} snippet
+ * @returns {Promise}
  */
-Youtube.prototype.apiNormalization = function(channelId, data, isFullCheck, lastRequestTime, channelLocalTitle) {
-    var _this = this;
-
-    var stateList = this.config.stateList;
-
-    var channelObj = base.getObjectItem(stateList, channelId, {});
-    var videoIdObj = base.getObjectItem(channelObj, 'videoIdList', {});
-
-    var lastPubTime = 0;
-
-    var videoList = [];
-    data.items.forEach(function(origItem) {
-        var snippet = origItem.snippet;
-
-        if (!snippet) {
-            debug('Snippet is not found! %j', origItem);
-            return;
-        }
-
-        if (snippet.type !== 'upload') {
-            return;
-        }
-
-        if (!snippet.publishedAt) {
-            debug('publishedAt is not found! %j', origItem);
-            return;
-        }
-
-        var videoId = _this.getVideoIdFromThumbs(snippet);
-        if (!videoId) {
-            debug('Video ID is not found! %j', origItem);
-            return;
-        }
-
-        var pubTime = parseInt(new Date(snippet.publishedAt).getTime() / 1000);
-        if (lastPubTime < pubTime) {
-            lastPubTime = pubTime;
-        }
-
-        var isExists = !!videoIdObj[videoId];
-
-        videoIdObj[videoId] = parseInt(Date.now() / 1000);
-
-        if (isExists) {
-            return;
-        }
-
-        var previewList = [];
-
-        var thumbnails = snippet.thumbnails;
-        thumbnails && Object.keys(thumbnails).forEach(function(quality) {
-            var item = thumbnails[quality];
-            previewList.push([item.width, item.url]);
-        });
-
-        previewList.sort(function(a, b) {
-            return a[0] > b[0] ? -1 : 1;
-        });
-
-        previewList = previewList.map(function(item) {
-            return item[1];
-        });
-
-        if (!snippet.thumbnails) {
-            debug('Thumbnails is not found! %j', origItem);
-        }
-
-        var item = {
-            _service: 'youtube',
-            _channelName: channelId,
-            _videoId: videoId,
-
-            url: 'https://youtu.be/' + videoId,
-            publishedAt: snippet.publishedAt,
-            title: snippet.title,
-            preview: previewList,
-            channel: {
-                title: channelLocalTitle,
-                id: snippet.channelId
-            }
-        };
-
-        videoList.push(item);
-    });
-
-    if (lastPubTime) {
-        channelObj.lastRequestTime = lastPubTime + 1;
-    }
-
-    if (isFullCheck) {
-        for (var videoId in videoIdObj) {
-            if (videoIdObj[videoId] < lastRequestTime) {
-                delete videoIdObj[videoId];
-            }
-        }
-    }
-
-    if (Object.keys(videoIdObj).length === 0) {
-        delete channelObj.videoIdList;
-    }
-
-    if (Object.keys(channelObj).length === 0) {
-        delete stateList[channelId];
-    }
-
-    return videoList;
-};
-
-/**
- * @param {String} channelId
- * @return {Promise}
- */
-Youtube.prototype.requestChannelLocalTitle = function(channelId) {
-    var _this = this;
-    return requestPromise({
-        method: 'GET',
-        url: 'https://www.googleapis.com/youtube/v3/search',
-        qs: {
-            part: 'snippet',
-            channelId: channelId,
-            type: 'channel',
-            maxResults: 1,
-            fields: 'items/snippet',
-            key: _this.config.token
-        },
-        json: true,
-        gzip: true,
-        forever: true
-    }).then(function(response) {
-        var responseBody = response.body;
-        var localTitle = '';
-        responseBody.items.some(function (item) {
-            return localTitle = item.snippet.title;
-        });
-        return localTitle;
-    }).catch(function(err) {
-        debug('requestChannelLocalTitle %s error!', channelId, err);
-    });
-};
-
-/**
- * @param {String} query
- * @return {Promise}
- */
-Youtube.prototype.requestChannelIdByQuery = function(query) {
-    var _this = this;
-    return requestPromise({
-        method: 'GET',
-        url: 'https://www.googleapis.com/youtube/v3/search',
-        qs: {
-            part: 'snippet',
-            q: JSON.stringify(query),
-            type: 'channel',
-            maxResults: 1,
-            fields: 'items(id)',
-            key: _this.config.token
-        },
-        json: true,
-        gzip: true,
-        forever: true
-    }).then(function(response) {
-        var responseBody = response.body;
-
-        var channelId = '';
-        responseBody.items.some(function (item) {
-            return channelId = item.id.channelId;
-        });
-        if (!channelId) {
-            throw new CustomError('Channel ID is not found by query!');
-        }
-
-        return channelId;
-    });
-};
-
-/**
- * @param {String} userId
- * @return {Promise}
- */
-Youtube.prototype.requestChannelIdByUsername = function(userId) {
-    var _this = this;
-    return requestPromise({
-        method: 'GET',
-        url: 'https://www.googleapis.com/youtube/v3/channels',
-        qs: {
-            part: 'snippet',
-            forUsername: userId,
-            maxResults: 1,
-            fields: 'items/id',
-            key: _this.config.token
-        },
-        json: true,
-        gzip: true,
-        forever: true
-    }).then(function(response) {
-        var responseBody = response.body;
-
-        var id = '';
-        responseBody.items.some(function (item) {
-            return id = item.id;
-        });
-        if (!id) {
-            throw new CustomError('Channel ID is not found by userId!');
-        }
-
-        return {id: id, userId: userId};
-    });
-};
-
-Youtube.prototype.insertItem = function (/*VideoSnippet*/snippet) {
+Youtube.prototype.insertItem = function (snippet) {
     var db = this.gOptions.db;
     if (snippet.type !== 'upload') {
         return Promise.resolve();
@@ -664,6 +449,107 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
 
     return Promise.all(requestList).then(function () {
         return [];
+    });
+};
+
+/**
+ * @param {String} channelId
+ * @return {Promise}
+ */
+Youtube.prototype.requestChannelLocalTitle = function(channelId) {
+    var _this = this;
+    return requestPromise({
+        method: 'GET',
+        url: 'https://www.googleapis.com/youtube/v3/search',
+        qs: {
+            part: 'snippet',
+            channelId: channelId,
+            type: 'channel',
+            maxResults: 1,
+            fields: 'items/snippet',
+            key: _this.config.token
+        },
+        json: true,
+        gzip: true,
+        forever: true
+    }).then(function(response) {
+        var responseBody = response.body;
+        var localTitle = '';
+        responseBody.items.some(function (item) {
+            return localTitle = item.snippet.title;
+        });
+        return localTitle;
+    }).catch(function(err) {
+        debug('requestChannelLocalTitle %s error!', channelId, err);
+    });
+};
+
+/**
+ * @param {String} query
+ * @return {Promise}
+ */
+Youtube.prototype.requestChannelIdByQuery = function(query) {
+    var _this = this;
+    return requestPromise({
+        method: 'GET',
+        url: 'https://www.googleapis.com/youtube/v3/search',
+        qs: {
+            part: 'snippet',
+            q: JSON.stringify(query),
+            type: 'channel',
+            maxResults: 1,
+            fields: 'items(id)',
+            key: _this.config.token
+        },
+        json: true,
+        gzip: true,
+        forever: true
+    }).then(function(response) {
+        var responseBody = response.body;
+
+        var channelId = '';
+        responseBody.items.some(function (item) {
+            return channelId = item.id.channelId;
+        });
+        if (!channelId) {
+            throw new CustomError('Channel ID is not found by query!');
+        }
+
+        return channelId;
+    });
+};
+
+/**
+ * @param {String} userId
+ * @return {Promise}
+ */
+Youtube.prototype.requestChannelIdByUsername = function(userId) {
+    var _this = this;
+    return requestPromise({
+        method: 'GET',
+        url: 'https://www.googleapis.com/youtube/v3/channels',
+        qs: {
+            part: 'snippet',
+            forUsername: userId,
+            maxResults: 1,
+            fields: 'items/id',
+            key: _this.config.token
+        },
+        json: true,
+        gzip: true,
+        forever: true
+    }).then(function(response) {
+        var responseBody = response.body;
+
+        var id = '';
+        responseBody.items.some(function (item) {
+            return id = item.id;
+        });
+        if (!id) {
+            throw new CustomError('Channel ID is not found by userId!');
+        }
+
+        return {id: id, userId: userId};
     });
 };
 
