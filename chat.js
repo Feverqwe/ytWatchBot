@@ -238,7 +238,9 @@ Chat.prototype.onCallbackQuery = function (callbackQuery) {
     return commandFunc.apply(this, args).then(function () {
         return _this.gOptions.bot.answerCallbackQuery(callbackQuery.id, '...');
     }).catch(function(err) {
-        debug('Execute callback query command %s error!', action, err);
+        if (!/message is not modified/.test(err.message)) {
+            debug('Execute callback query command %s error!', action, err);
+        }
     }).then(function() {
         _this.track(origMsg, action)
     });
