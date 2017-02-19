@@ -153,31 +153,52 @@ utils.extend = function() {
     return obj;
 };
 
+/**
+ * @param {{}} gOptions
+ * @param {String} service
+ * @param {String} channelName
+ * @return {Promise}
+ */
 utils.getChannelTitle = function(gOptions, service, channelName) {
-    var title = channelName;
-
     var services = gOptions.services;
+
+    var result;
     if (services[service].getChannelTitle) {
-        title = services[service].getChannelTitle(channelName);
+        result = services[service].getChannelTitle(channelName);
+    } else {
+        result = Promise.resolve(channelName);
     }
 
-    return title;
+    return result;
 };
 
+/**
+ * @param {{}} gOptions
+ * @param {String} service
+ * @param {String} channelName
+ * @return {Promise}
+ */
 utils.getChannelLocalTitle = function(gOptions, service, channelName) {
-    var title = channelName;
-
     var services = gOptions.services;
+
+    var result;
     if (services[service].getChannelLocalTitle) {
-        title = services[service].getChannelLocalTitle(channelName);
+        result = services[service].getChannelLocalTitle(channelName);
     } else
     if (services[service].getChannelTitle) {
-        title = services[service].getChannelTitle(channelName);
+        result = services[service].getChannelTitle(channelName);
+    } else {
+        result = Promise.resolve(channelName);
     }
 
-    return title;
+    return result;
 };
 
+/**
+ * @param {String} service
+ * @param {String} channelName
+ * @return {String}
+ */
 utils.getChannelUrl = function(service, channelName) {
     var url = '';
     if (service === 'youtube') {

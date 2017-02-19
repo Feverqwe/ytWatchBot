@@ -33,6 +33,7 @@ Youtube.prototype.saveChannelInfo = function () {
 };
 
 /**
+ * @private
  * @param {String} channelId
  * @return {{}}
  */
@@ -67,11 +68,11 @@ Youtube.prototype.setChannelTitle = function(channelId, title) {
 
 /**
  * @param {String} channelId
- * @return {String}
+ * @return {Promise}
  */
 Youtube.prototype.getChannelTitle = function (channelId) {
     var info = this.getChannelInfo(channelId);
-    return info.title || channelId;
+    return Promise.resolve(info.title || channelId);
 };
 
 /**
@@ -91,11 +92,11 @@ Youtube.prototype.setChannelLocalTitle = function(channelId, localTitle) {
 
 /**
  * @param {String} channelId
- * @return {String}
+ * @return {Promise}
  */
 Youtube.prototype.getChannelLocalTitle = function (channelId) {
     var info = this.getChannelInfo(channelId);
-    return info.localTitle || info.title || channelId;
+    return Promise.resolve(info.localTitle || info.title || channelId);
 };
 
 /**
@@ -155,16 +156,13 @@ Youtube.prototype.clean = function(channelIdList) {
 /**
  * @param {String} channelId
  * @param {String} videoId
- * @return {boolean}
+ * @return {Promise}
  */
 Youtube.prototype.videoIdInList = function(channelId, videoId) {
     var stateList = this.config.stateList;
     var videoIdObj = stateList[channelId] && stateList[channelId].videoIdList;
-    if (!videoIdObj) {
-        return false;
-    }
 
-    return !!videoIdObj[videoId];
+    return Promise.resolve(!!(videoIdObj && videoIdObj[videoId]));
 };
 
 /**
@@ -178,6 +176,7 @@ Youtube.prototype.saveState = function() {
 };
 
 /**
+ * @private
  * @param {{}} snippet
  * @return {String}
  */
@@ -199,21 +198,21 @@ Youtube.prototype.getVideoIdFromThumbs = function(snippet) {
 };
 
 /**
+ * @private
  * @param {String} channelId
  * @param {{items:[]}} data
  * @param {boolean} isFullCheck
  * @param {number} lastRequestTime
+ * @param {String} channelLocalTitle
  * @return {[]}
  */
-Youtube.prototype.apiNormalization = function(channelId, data, isFullCheck, lastRequestTime) {
+Youtube.prototype.apiNormalization = function(channelId, data, isFullCheck, lastRequestTime, channelLocalTitle) {
     var _this = this;
 
     var stateList = this.config.stateList;
 
     var channelObj = base.getObjectItem(stateList, channelId, {});
     var videoIdObj = base.getObjectItem(channelObj, 'videoIdList', {});
-
-    var channelLocalTitle = this.getChannelLocalTitle(channelId);
 
     var lastPubTime = 0;
 
@@ -514,26 +513,23 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
 
             return requestPage().then(function (response) {
                 var responseBody = response.body;
-                var promise = null;
-
-                try {
-                    var streams = _this.apiNormalization(channelId, responseBody, isFullCheck, lastRequestTime);
-                    streamList.push.apply(streamList, streams);
-                } catch (e) {
-                    debug('Unexpected response %j', response, e);
-                    throw new CustomError('Unexpected response');
-                }
-
-                if (responseBody.nextPageToken) {
-                    pageLimit--;
-                    if (pageLimit > 0) {
-                        promise = getPage(responseBody.nextPageToken);
-                    } else {
-                        throw new CustomError('Page limit reached');
+                return _this.getChannelLocalTitle(channelId).then(function (channelLocalTitle) {
+                    try {
+                        var streams = _this.apiNormalization(channelId, responseBody, isFullCheck, lastRequestTime, channelLocalTitle);
+                        streamList.push.apply(streamList, streams);
+                    } catch (err) {
+                        debug('Unexpected response %j', response, err);
+                        throw new CustomError('Unexpected response');
                     }
-                }
 
-                return promise;
+                    if (responseBody.nextPageToken) {
+                        if (pageLimit-- < 1) {
+                            throw new CustomError('Page limit reached');
+                        }
+
+                        return getPage(responseBody.nextPageToken);
+                    }
+                });
             });
         };
 
@@ -617,7 +613,7 @@ Youtube.prototype.requestChannelIdByVideoUrl = function (url) {
 /**
  * Response userId in lowerCase or channelId (case sensitive)
  * @param {String} channelName
- * @returns {Promise}
+ * @return {Promise}
  */
 Youtube.prototype.getChannelId = function(channelName) {
     var _this = this;
