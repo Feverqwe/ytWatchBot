@@ -286,21 +286,47 @@ Youtube.prototype.insertItem = function (info, chatIdList, snippet) {
     };
     var insert = function (video) {
         return new Promise(function (resolve, reject) {
-            db.connection.query('INSERT INTO messages SET ?', video, function (err, results) {
+            db.connection.beginTransaction(function (err) {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve(results.insertId);
+                    resolve();
                 }
+            });
+        }).then(function () {
+            return new Promise(function (resolve, reject) {
+                db.connection.query('INSERT INTO messages SET ?', video, function (err, results) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results.insertId);
+                    }
+                });
+            });
+        }).then(function (messageId) {
+            return Promise.all(chatIdList.map(function (userId) {
+                return _this.gOptions.msgStack.insertInStack(userId, messageId);
+            }));
+        }).catch(function (err) {
+            return new Promise(function (resolve) {
+                db.connection.rollback(resolve);
+            }).then(function () {
+                throw err;
+            });
+        }).then(function () {
+            return new Promise(function (resolve, reject) {
+                db.connection.commit(function(err) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve();
+                    }
+                });
             });
         });
     };
-    return insert(item).then(function (messageId) {
-        return Promise.all(chatIdList.map(function (userId) {
-            return _this.gOptions.msgStack.insertInStack(userId, messageId);
-        })).then(function () {
-            return item;
-        });
+    return insert(item).then(function () {
+        return item;
     }, function (err) {
         if (err.code === 'ER_DUP_ENTRY') {
             return update(item);

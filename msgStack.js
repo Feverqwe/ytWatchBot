@@ -13,6 +13,10 @@ var MsgStack = function (options) {
     this.gOptions = options;
     this.config = {};
 
+    options.events.on('checkStack', function () {
+        _this.checkStack();
+    });
+
     this.promiseChatIdMap = {};
 
     this.onReady = this.init();
@@ -96,30 +100,6 @@ MsgStack.prototype.getChatIdList = function (service, channelId) {
         }
     }
     return chatIdList;
-};
-
-MsgStack.prototype.clear = function () {
-    /*var _this = this;
-    var chatMsgStack = this.config.chatMsgStack;
-    var chatList = this.gOptions.storage.chatList;
-
-    var usedMsgId = [];
-    Object.keys(chatMsgStack).forEach(function (chatId) {
-        if (!chatList[chatId]) {
-            delete chatMsgStack[chatId];
-            return;
-        }
-
-        var msgStack = chatMsgStack[chatId] || {};
-        var msgList = msgStack.stack || [];
-        usedMsgId.push.apply(usedMsgId, msgList);
-    });
-
-    this.stack.getKeys().forEach(function (msgId) {
-        if (usedMsgId.indexOf(msgId) === -1) {
-            _this.stack.removeItem(msgId);
-        }
-    });*/
 };
 
 MsgStack.prototype.callMsgList = function (chatId) {
@@ -223,12 +203,11 @@ MsgStack.prototype.sendLog = function (stream) {
     debugLog('[s] %j', debugItem);
 };
 
-MsgStack.prototype.notifyAll = function () {
+MsgStack.prototype.checkStack = function () {
     var _this = this;
 
-    return _this.callStack().then(function () {
-        _this.clear();
-    });
+    console.log('checkStack')
+    // return _this.callStack();
 };
 
 module.exports = MsgStack;
