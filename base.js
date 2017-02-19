@@ -8,11 +8,12 @@ const debug = require('debug')('app:base');
 const Storage = require('./storage');
 const Promise = require('bluebird');
 
+var utils = {};
 /**
  *
  * @returns {bluebird|exports|module.exports}
  */
-module.exports.loadConfig = function() {
+utils.loadConfig = function() {
     return Promise.resolve().then(function() {
         return JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json')));
     });
@@ -22,7 +23,7 @@ module.exports.loadConfig = function() {
  *
  * @returns {bluebird|exports|module.exports}
  */
-module.exports.loadLanguage = function() {
+utils.loadLanguage = function() {
     return Promise.resolve().then(function() {
         var language = JSON.parse(fs.readFileSync(path.join(__dirname, 'language.json')));
 
@@ -38,14 +39,14 @@ module.exports.loadLanguage = function() {
     });
 };
 
-module.exports.storage = new Storage();
+utils.storage = new Storage();
 
 /**
  * @param {string} type
  * @param {string} [text]
  * @param {string} [url]
  */
-module.exports.htmlSanitize = function (type, text, url) {
+utils.htmlSanitize = function (type, text, url) {
     if (!text) {
         text = type;
         type = '';
@@ -82,7 +83,7 @@ module.exports.htmlSanitize = function (type, text, url) {
     throw new Error("htmlSanitize error");
 };
 
-module.exports.getNowStreamPhotoText = function(gOptions, videoItem) {
+utils.getNowStreamPhotoText = function(gOptions, videoItem) {
     var getText = function (stripLen) {
         var textArr = [];
 
@@ -118,7 +119,7 @@ module.exports.getNowStreamPhotoText = function(gOptions, videoItem) {
     return text;
 };
 
-module.exports.getNowStreamText = function(gOptions, videoItem) {
+utils.getNowStreamText = function(gOptions, videoItem) {
     var textArr = [];
 
     var title = '';
@@ -141,7 +142,7 @@ module.exports.getNowStreamText = function(gOptions, videoItem) {
     return textArr.join('\n');
 };
 
-module.exports.extend = function() {
+utils.extend = function() {
     var obj = arguments[0];
     for (var i = 1, len = arguments.length; i < len; i++) {
         var item = arguments[i];
@@ -152,7 +153,7 @@ module.exports.extend = function() {
     return obj;
 };
 
-module.exports.getChannelTitle = function(gOptions, service, channelName) {
+utils.getChannelTitle = function(gOptions, service, channelName) {
     var title = channelName;
 
     var services = gOptions.services;
@@ -163,7 +164,7 @@ module.exports.getChannelTitle = function(gOptions, service, channelName) {
     return title;
 };
 
-module.exports.getChannelLocalTitle = function(gOptions, service, channelName) {
+utils.getChannelLocalTitle = function(gOptions, service, channelName) {
     var title = channelName;
 
     var services = gOptions.services;
@@ -177,7 +178,7 @@ module.exports.getChannelLocalTitle = function(gOptions, service, channelName) {
     return title;
 };
 
-module.exports.getChannelUrl = function(service, channelName) {
+utils.getChannelUrl = function(service, channelName) {
     var url = '';
     if (service === 'youtube') {
         url = 'https://youtube.com/';
@@ -196,7 +197,7 @@ module.exports.getChannelUrl = function(service, channelName) {
  * @param {number} callPerSecond
  * @constructor
  */
-module.exports.Quote = function (callPerSecond) {
+utils.Quote = function (callPerSecond) {
     var getTime = function() {
         return parseInt(Date.now() / 1000);
     };
@@ -242,11 +243,11 @@ module.exports.Quote = function (callPerSecond) {
     };
 };
 
-module.exports.getRandomInt = function (min, max) {
+utils.getRandomInt = function (min, max) {
     return Math.floor(Math.random() * (max - min)) + min;
 };
 
-module.exports.arrToParts = function (arr, quote) {
+utils.arrToParts = function (arr, quote) {
     arr = arr.slice(0);
 
     var arrList = [];
@@ -257,7 +258,7 @@ module.exports.arrToParts = function (arr, quote) {
     return arrList;
 };
 
-var getNow = module.exports.getNow = function () {
+utils.getNow = function () {
     return parseInt(Date.now() / 1000);
 };
 
@@ -267,7 +268,7 @@ var getNow = module.exports.getNow = function () {
  * @param {*} defaultValue
  * @returns {*}
  */
-module.exports.getObjectItem = function (obj, key, defaultValue) {
+utils.getObjectItem = function (obj, key, defaultValue) {
     var item = obj[key];
     if (!item) {
         item = obj[key] = defaultValue;
@@ -279,14 +280,14 @@ module.exports.getObjectItem = function (obj, key, defaultValue) {
  * @param {Array} arr
  * @param {*} item
  */
-module.exports.removeItemFromArray = function (arr, item) {
+utils.removeItemFromArray = function (arr, item) {
     var pos = arr.indexOf(item);
     if (pos !== -1) {
         arr.splice(pos, 1);
     }
 };
 
-module.exports.dDblUpdates = function (updates) {
+utils.dDblUpdates = function (updates) {
     var _this = this;
     var dDblUpdates = updates.slice(0);
     var map = {};
@@ -316,7 +317,7 @@ module.exports.dDblUpdates = function (updates) {
     return dDblUpdates;
 };
 
-module.exports.pageBtnList = function (btnList, updCommand, page, mediumBtn) {
+utils.pageBtnList = function (btnList, updCommand, page, mediumBtn) {
     page = parseInt(page || 0);
     if (mediumBtn && !Array.isArray(mediumBtn)) {
         mediumBtn = [mediumBtn];
@@ -352,12 +353,12 @@ module.exports.pageBtnList = function (btnList, updCommand, page, mediumBtn) {
 };
 
 var sepRe = /\?/;
-module.exports.noCacheUrl = function (url) {
+utils.noCacheUrl = function (url) {
     var sep = sepRe.test(url) ? '&' : '?';
-    return url + sep + '_=' + getNow();
+    return url + sep + '_=' + utils.getNow();
 };
 
-module.exports.arrayToChainPromise = function (arr, callbackPromise) {
+utils.arrayToChainPromise = function (arr, callbackPromise) {
     var next = function () {
         var result = null;
         var item = arr.shift();
@@ -370,3 +371,5 @@ module.exports.arrayToChainPromise = function (arr, callbackPromise) {
     };
     return next();
 };
+
+module.exports = utils;
