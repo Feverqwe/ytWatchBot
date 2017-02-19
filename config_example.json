@@ -11,5 +11,12 @@
     "secret": "",
     "callbackUrl": ""
   },
-  "sendPhotoMaxRetry": 3
+  "sendPhotoMaxRetry": 3,
+  "db": {
+    "host": "localhost",
+    "port": 3306,
+    "database": "ytWatchBot",
+    "user": "",
+    "password": ""
+  }
 }

@@ -13,6 +13,7 @@ const Daemon = require('./daemon');
 const Tracker = require('./tracker');
 const MsgStack = require('./msgStack');
 const MsgSender = require('./msgSender');
+const Db = require('./db');
 
 var options = {
     config: {},
@@ -32,7 +33,8 @@ var options = {
     },
     services: {},
     events: null,
-    tracker: null
+    tracker: null,
+    db: null
 };
 
 (function() {
@@ -52,6 +54,9 @@ var options = {
             }
         })
     ]).then(function() {
+        options.db = new Db(options);
+        return options.db.onReady;
+    }).then(function() {
         return Promise.all(options.serviceList.map(function(name) {
             var service = require('./services/' + name);
             service = options.services[name] = new service(options);

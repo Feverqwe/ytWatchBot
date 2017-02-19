@@ -4,6 +4,7 @@
   "dependencies": {
     "bluebird": "^3.4.7",
     "debug": "^2.6.1",
+    "mysql": "^2.13.0",
     "node-telegram-bot-api": "0.21.1",
     "pubsubhubbub": "^0.4.1",
     "request": "^2.79.0",
