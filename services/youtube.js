@@ -203,9 +203,10 @@ Youtube.prototype.getVideoIdFromThumbs = function(snippet) {
  * @param {{items:[]}} data
  * @param {boolean} isFullCheck
  * @param {number} lastRequestTime
+ * @param {String} channelLocalTitle
  * @return {[]}
  */
-Youtube.prototype.apiNormalization = function(channelId, data, isFullCheck, lastRequestTime) {
+Youtube.prototype.apiNormalization = function(channelId, data, isFullCheck, lastRequestTime, channelLocalTitle) {
     var _this = this;
 
     var stateList = this.config.stateList;
@@ -282,8 +283,7 @@ Youtube.prototype.apiNormalization = function(channelId, data, isFullCheck, last
             title: snippet.title,
             preview: previewList,
             channel: {
-                // todo: rollback channelLocalTitle!
-                title: channelId,
+                title: channelLocalTitle,
                 id: snippet.channelId
             }
         };
@@ -513,26 +513,23 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
 
             return requestPage().then(function (response) {
                 var responseBody = response.body;
-                var promise = null;
-
-                try {
-                    var streams = _this.apiNormalization(channelId, responseBody, isFullCheck, lastRequestTime);
-                    streamList.push.apply(streamList, streams);
-                } catch (e) {
-                    debug('Unexpected response %j', response, e);
-                    throw new CustomError('Unexpected response');
-                }
-
-                if (responseBody.nextPageToken) {
-                    pageLimit--;
-                    if (pageLimit > 0) {
-                        promise = getPage(responseBody.nextPageToken);
-                    } else {
-                        throw new CustomError('Page limit reached');
+                return _this.getChannelLocalTitle(channelId).then(function (channelLocalTitle) {
+                    try {
+                        var streams = _this.apiNormalization(channelId, responseBody, isFullCheck, lastRequestTime, channelLocalTitle);
+                        streamList.push.apply(streamList, streams);
+                    } catch (err) {
+                        debug('Unexpected response %j', response, err);
+                        throw new CustomError('Unexpected response');
                     }
-                }
 
-                return promise;
+                    if (responseBody.nextPageToken) {
+                        if (pageLimit-- < 1) {
+                            throw new CustomError('Page limit reached');
+                        }
+
+                        return getPage(responseBody.nextPageToken);
+                    }
+                });
             });
         };
 

@@ -194,6 +194,11 @@ utils.getChannelLocalTitle = function(gOptions, service, channelName) {
     return result;
 };
 
+/**
+ * @param {String} service
+ * @param {String} channelName
+ * @return {String}
+ */
 utils.getChannelUrl = function(service, channelName) {
     var url = '';
     if (service === 'youtube') {
