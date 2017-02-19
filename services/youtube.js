@@ -33,6 +33,7 @@ Youtube.prototype.saveChannelInfo = function () {
 };
 
 /**
+ * @private
  * @param {String} channelId
  * @return {{}}
  */
@@ -67,11 +68,11 @@ Youtube.prototype.setChannelTitle = function(channelId, title) {
 
 /**
  * @param {String} channelId
- * @return {String}
+ * @return {Promise}
  */
 Youtube.prototype.getChannelTitle = function (channelId) {
     var info = this.getChannelInfo(channelId);
-    return info.title || channelId;
+    return Promise.resolve(info.title || channelId);
 };
 
 /**
@@ -91,11 +92,11 @@ Youtube.prototype.setChannelLocalTitle = function(channelId, localTitle) {
 
 /**
  * @param {String} channelId
- * @return {String}
+ * @return {Promise}
  */
 Youtube.prototype.getChannelLocalTitle = function (channelId) {
     var info = this.getChannelInfo(channelId);
-    return info.localTitle || info.title || channelId;
+    return Promise.resolve(info.localTitle || info.title || channelId);
 };
 
 /**
@@ -155,16 +156,13 @@ Youtube.prototype.clean = function(channelIdList) {
 /**
  * @param {String} channelId
  * @param {String} videoId
- * @return {boolean}
+ * @return {Promise}
  */
 Youtube.prototype.videoIdInList = function(channelId, videoId) {
     var stateList = this.config.stateList;
     var videoIdObj = stateList[channelId] && stateList[channelId].videoIdList;
-    if (!videoIdObj) {
-        return false;
-    }
 
-    return !!videoIdObj[videoId];
+    return Promise.resolve(!!(videoIdObj && videoIdObj[videoId]));
 };
 
 /**
@@ -178,6 +176,7 @@ Youtube.prototype.saveState = function() {
 };
 
 /**
+ * @private
  * @param {{}} snippet
  * @return {String}
  */
@@ -199,6 +198,7 @@ Youtube.prototype.getVideoIdFromThumbs = function(snippet) {
 };
 
 /**
+ * @private
  * @param {String} channelId
  * @param {{items:[]}} data
  * @param {boolean} isFullCheck
@@ -212,8 +212,6 @@ Youtube.prototype.apiNormalization = function(channelId, data, isFullCheck, last
 
     var channelObj = base.getObjectItem(stateList, channelId, {});
     var videoIdObj = base.getObjectItem(channelObj, 'videoIdList', {});
-
-    var channelLocalTitle = this.getChannelLocalTitle(channelId);
 
     var lastPubTime = 0;
 
@@ -284,7 +282,8 @@ Youtube.prototype.apiNormalization = function(channelId, data, isFullCheck, last
             title: snippet.title,
             preview: previewList,
             channel: {
-                title: channelLocalTitle,
+                // todo: rollback channelLocalTitle!
+                title: channelId,
                 id: snippet.channelId
             }
         };
@@ -617,7 +616,7 @@ Youtube.prototype.requestChannelIdByVideoUrl = function (url) {
 /**
  * Response userId in lowerCase or channelId (case sensitive)
  * @param {String} channelName
- * @returns {Promise}
+ * @return {Promise}
  */
 Youtube.prototype.getChannelId = function(channelName) {
     var _this = this;

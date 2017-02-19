@@ -122,7 +122,9 @@ var getDeleteChannelList = function (chatItem, page, mediumBtn) {
         channelList.forEach(function(channelName) {
             var btnItem = {};
 
-            var title = base.getChannelLocalTitle(_this.gOptions, service, channelName);
+            // todo: rollback getChannelLocalTitle
+            // var title = base.getChannelLocalTitle(_this.gOptions, service, channelName);
+            var title = channelName;
             if (!oneServiceMode) {
                 title += ' (' + _this.gOptions.serviceToTitle[service] + ')';
             }
@@ -226,7 +228,9 @@ var commands = {
 
             channelList.push(channelName);
 
-            var title = base.getChannelLocalTitle(_this.gOptions, service, channelName);
+            // todo: rollback channel local title
+            // var title = base.getChannelLocalTitle(_this.gOptions, service, channelName);
+            var title = channelName;
             var url = base.getChannelUrl(service, channelName);
 
             var displayName = base.htmlSanitize('a', title, url);
@@ -634,7 +638,9 @@ var commands = {
                     return base.htmlSanitize(channelName);
                 }
 
-                var title = base.getChannelLocalTitle(_this.gOptions, service, channelName);
+                // todo: rollback channel local title
+                // var title = base.getChannelLocalTitle(_this.gOptions, service, channelName);
+                var title = channelName;
 
                 return base.htmlSanitize('a', title, url);
             });

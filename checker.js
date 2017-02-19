@@ -23,20 +23,21 @@ var Checker = function(options) {
 
         var videoId = data['yt:videoId'];
 
-        var hasVideoId = options.services.youtube.videoIdInList(channelId, videoId);
-        if (hasVideoId) {
-            return;
-        }
+        options.services.youtube.videoIdInList(channelId, videoId).then(function (hasVideoId) {
+            if (hasVideoId) {
+                return;
+            }
 
-        var isTimeout = _this.isFeedTimeout(channelId);
-        if (isTimeout) {
-            return;
-        }
+            var isTimeout = _this.isFeedTimeout(channelId);
+            if (isTimeout) {
+                return;
+            }
 
-        // debug('Feed event, %j', data);
+            // debug('Feed event, %j', data);
 
-        _this.updateList({youtube: [channelId]}).catch(function(err) {
-            debug('updateList error!', err);
+            return _this.updateList({youtube: [channelId]}).catch(function(err) {
+                debug('updateList error!', err);
+            });
         });
     });
 };
