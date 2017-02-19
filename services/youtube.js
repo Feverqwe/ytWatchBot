@@ -310,7 +310,6 @@ Youtube.prototype.insertItem = function (info, chatIdList, snippet) {
                 }));
             }).then(function () {
                 return new Promise(function (resolve, reject) {
-                    console.log('commit');
                     connection.commit(function(err) {
                         if (err) {
                             reject(err);
@@ -321,7 +320,6 @@ Youtube.prototype.insertItem = function (info, chatIdList, snippet) {
                 });
             }).catch(function (err) {
                 return new Promise(function (resolve) {
-                    console.log('rollback');
                     connection.rollback(resolve);
                 }).then(function () {
                     throw err;
