@@ -103,7 +103,7 @@ MsgStack.prototype.getStackItems = function () {
             WHERE userIdMessageId.timeout < ? \
             GROUP BY messages.id \
             ORDER BY messages.publishedAt ASC \
-            LIMIT 30; \
+            LIMIT 20; \
         ', [base.getNow()], function (err, results) {
             if (err) {
                 reject(err);
@@ -225,6 +225,8 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
     });
 };
 
+var inProgress = [];
+
 MsgStack.prototype.checkStack = function () {
     var _this = this;
 
@@ -235,7 +237,19 @@ MsgStack.prototype.checkStack = function () {
             if (!items.length) return;
 
             return Promise.all(items.map(function (item) {
-                return _this.sendItem(item);
+                var key = item.userId + '_' + item.messageId;
+                if (inProgress.indexOf(key) !== -1) {
+                    debug('sendItem dbl skip %s %s', item.userId, item.messageId);
+                    return;
+                }
+
+                inProgress.push(key);
+                return _this.sendItem(item).finally(function () {
+                    var pos = inProgress.indexOf(key);
+                    if (pos !== -1) {
+                        inProgress.splice(pos, 1);
+                    }
+                });
             })).then(function () {
                 if (limit-- < 1) {
                     debug('checkStack part limit!');
