@@ -70,6 +70,12 @@ MsgStack.prototype.init = function () {
             return db.newConnection().then(function (connection) {
                 return new Promise(function (resolve, reject) {
                     var data;
+                    if (/^{/.test(item.data)) {
+                        // legacy
+                        data = JSON.parse(item.data);
+                    } else {
+                        data = JSON.parse(decodeURIComponent(Buffer.from(item.data, 'base64').toString('utf8')));
+                    }
                     var video = {
                         id: 'y_' + item.videoId,
                         videoId: item.videoId,
