@@ -60,7 +60,6 @@ var options = {
         options.msgStack = new MsgStack(options);
         return options.msgStack.onReady;
     }).then(function() {
-        throw new Error('migrated');
         return Promise.all(options.serviceList.map(function(name) {
             var service = require('./services/' + name);
             service = options.services[name] = new service(options);

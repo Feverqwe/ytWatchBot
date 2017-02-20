@@ -65,55 +65,6 @@ MsgStack.prototype.init = function () {
             });
         });
     });
-    promise = promise.then(function () {
-        var moveInNewTable = function (item) {
-            return Promise.resolve().then(function () {
-                var data;
-                try {
-                    if (/^{/.test(item.data)) {
-                        data = JSON.parse(item.data);
-                    } else {
-                        data = JSON.parse(decodeURIComponent(Buffer.from(item.data, 'base64').toString('utf8')));
-                    }
-                } catch (e) {
-                    debug('parseError 2', item.videoId);
-                    return;
-                }
-                var video = {
-                    id: 'y_' + item.videoId,
-                    videoId: item.videoId,
-                    channelId: item.channelId,
-                    publishedAt: item.publishedAt,
-                    data: encodeURIComponent(JSON.stringify(data))
-                };
-                return new Promise(function (resolve, reject) {
-                    db.connection.query('INSERT INTO messages SET ?', video, function (err, results) {
-                        if (err) {
-                            reject(err);
-                        } else {
-                            resolve();
-                        }
-                    });
-                });
-            });
-        };
-        return db.newConnection().then(function (connection) {
-            return new Promise(function (resolve, reject) {
-                connection.query('SELECT * FROM messages_old').on('error', function(err) {
-                    reject(err);
-                }).on('result', function (row) {
-                    connection.pause();
-                    moveInNewTable(row).then(function () {
-                        connection.resume();
-                    });
-                }).on('end', function () {
-                    resolve();
-                });
-            }).then(function () {
-                connection.end();
-            });
-        });
-    });
     return promise;
 };
 
