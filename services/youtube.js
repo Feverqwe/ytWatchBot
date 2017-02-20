@@ -730,8 +730,7 @@ Youtube.prototype.getChannelId = function(channelName) {
     var channel = {
         id: null,
         title: null,
-        localTitle: null,
-        username: null
+        localTitle: null
     };
 
     return _this.requestChannelIdByVideoUrl(channelName).catch(function (err) {
