@@ -44,9 +44,9 @@ Youtube.prototype.init = function () {
             });
         });
     });
-    promise = promise.then(function () {
+    /*promise = promise.then(function () {
         return _this.migrate();
-    });
+    });*/
     return promise;
 };
 
