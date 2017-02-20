@@ -98,14 +98,14 @@ Youtube.prototype.setChannelInfo = function(info) {
     });
 };
 
-Youtube.prototype.updateChannelPublishedAfter = function (channelId, publishedAfter) {
+Youtube.prototype.setChannelPublishedAfter = function (channelId, publishedAfter) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
             UPDATE ytChannels SET publishedAfter = ? WHERE id = ? \
         ', [publishedAfter, channelId], function (err, results) {
             if (err) {
-                debug('updateChannelPublishedAfter', err);
+                debug('setChannelPublishedAfter', err);
                 reject(err);
             } else {
                 resolve();
@@ -438,7 +438,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
 
         return getPage().then(function () {
             if (lastPublishedAt) {
-                return _this.updateChannelPublishedAfter(info.id, lastPublishedAt);
+                return _this.setChannelPublishedAfter(info.id, lastPublishedAt);
             }
         }).catch(function(err) {
             debug('requestPages error! %s', channelId, err);
