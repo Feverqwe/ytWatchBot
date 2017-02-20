@@ -67,41 +67,37 @@ MsgStack.prototype.init = function () {
     });
     promise = promise.then(function () {
         var moveInNewTable = function (item) {
-            return db.newConnection().then(function (connection) {
-                return new Promise(function (resolve, reject) {
-                    var data;
-                    if (/^{/.test(item.data)) {
-                        // legacy
-                        try {
-                            data = JSON.parse(item.data);
-                        } catch (e) {
-                            debug('parseError 1', item.videoId);
-                            return resolve();
-                        }
-                    } else {
-                        try {
-                            data = JSON.parse(decodeURIComponent(Buffer.from(item.data, 'base64').toString('utf8')));
-                        } catch (e) {
-                            debug('parseError 2', item.videoId);
-                            return resolve();
-                        }
+            return new Promise(function (resolve, reject) {
+                var data;
+                if (/^{/.test(item.data)) {
+                    // legacy
+                    try {
+                        data = JSON.parse(item.data);
+                    } catch (e) {
+                        debug('parseError 1', item.videoId);
+                        return resolve();
                     }
-                    var video = {
-                        id: 'y_' + item.videoId,
-                        videoId: item.videoId,
-                        channelId: item.channelId,
-                        publishedAt: item.publishedAt,
-                        data: encodeURIComponent(JSON.stringify(data))
-                    };
-                    connection.query('INSERT INTO messages SET ?', video, function (err, results) {
-                        if (err) {
-                            reject(err);
-                        } else {
-                            resolve();
-                        }
-                    });
-                }).then(function () {
-                    connection.end();
+                } else {
+                    try {
+                        data = JSON.parse(decodeURIComponent(Buffer.from(item.data, 'base64').toString('utf8')));
+                    } catch (e) {
+                        debug('parseError 2', item.videoId);
+                        return resolve();
+                    }
+                }
+                var video = {
+                    id: 'y_' + item.videoId,
+                    videoId: item.videoId,
+                    channelId: item.channelId,
+                    publishedAt: item.publishedAt,
+                    data: encodeURIComponent(JSON.stringify(data))
+                };
+                db.connection.query('INSERT INTO messages SET ?', video, function (err, results) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve();
+                    }
                 });
             });
         };
