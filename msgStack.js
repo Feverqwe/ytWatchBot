@@ -190,7 +190,11 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
     var imageFileId = item.imageFileId;
     var data = null;
     return _this.setTimeout(userId, messageId, base.getNow() + 5 * 60).then(function () {
-        data = JSON.parse(decodeURIComponent(item.data));
+        if (/^%/.test(item.data)) {
+            data = JSON.parse(decodeURIComponent(item.data));
+        } else {
+            data = JSON.parse(item.data);
+        }
         var chatItem = _this.gOptions.storage.chatList[userId];
         if (!chatItem) {
             debug('chatItem is not found! %s %s', userId, messageId);
