@@ -412,7 +412,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                  * }}
                  */
                 var responseBody = response.body;
-                var promiseList = responseBody.items.map(function (item) {
+                var promise = base.arrayToChainPromise(responseBody.items, function (item) {
                     var snippet = item.snippet;
                     if (lastPublishedAt < snippet.publishedAt) {
                         lastPublishedAt = snippet.publishedAt;
@@ -426,7 +426,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                         });
                     });
                 });
-                return Promise.all(promiseList).then(function () {
+                return promise.then(function () {
                     if (responseBody.nextPageToken) {
                         if (pageLimit-- < 1) {
                             throw new CustomError('Page limit reached ' + channelId);
@@ -447,7 +447,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
         });
     };
 
-    var threadCount = 30;
+    var threadCount = 50;
     var partSize = Math.ceil(_channelIdList.length / threadCount);
 
     var requestList = base.arrToParts(_channelIdList, partSize).map(function (arr) {
