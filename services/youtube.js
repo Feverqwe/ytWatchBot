@@ -22,6 +22,7 @@ var Youtube = function(options) {
 };
 
 Youtube.prototype.init = function () {
+    var _this = this;
     var db = this.gOptions.db;
     var promise = Promise.resolve();
     promise = promise.then(function () {
@@ -43,7 +44,105 @@ Youtube.prototype.init = function () {
             });
         });
     });
+    promise = promise.then(function () {
+        return _this.migrate();
+    });
     return promise;
+};
+
+Youtube.prototype.migrate = function () {
+    var _this = this;
+    var db = this.gOptions.db;
+
+    return base.storage.get(['ytChannelInfo', 'stateList']).then(function(storage) {
+        var stateList = storage.stateList || {};
+        var channelInfo = storage.ytChannelInfo || {};
+
+        var channels = Object.keys(channelInfo);
+        var threadCount = 100;
+        var partSize = Math.ceil(channels.length / threadCount);
+
+        var migrateChannel = function (connection, channelId, data) {
+            var state = stateList[channelId] || {};
+            var videoIdList = state.videoIdList || {};
+            var lastRequestTime = state.lastRequestTime;
+            var publishedAfter = null;
+            if (lastRequestTime) {
+                publishedAfter = new Date(lastRequestTime * 1000).toISOString();
+            }
+            var info = {
+                id: channelId,
+                title: data.localTitle || data.title,
+                localTitle: data.localTitle || null,
+                username: data.username || null,
+                publishedAfter: publishedAfter
+            };
+            return new Promise(function (resolve, reject) {
+                connection.query('\
+                    INSERT INTO ytChannels SET ? ON DUPLICATE KEY UPDATE id = id \
+                ', info, function (err, results) {
+                    if (err) {
+                        if (err.code === 'ER_DUP_ENTRY') {
+                            resolve();
+                        } else {
+                            reject(err);
+                        }
+                    } else {
+                        resolve();
+                    }
+                });
+            }).then(function () {
+                return Promise.all(Object.keys(videoIdList).map(function (videoId) {
+                    var publishedTime = videoIdList[videoId];
+                    var publishedAt = new Date(publishedTime * 1000).toISOString();
+                    return new Promise(function (resolve, reject) {
+                        var video = {
+                            videoId: videoId,
+                            channelId: channelId,
+                            publishedAt: publishedAt,
+                            data: JSON.stringify({
+                                _service: 'youtube',
+                                _channelName: channelId,
+                                _videoId: videoId,
+
+                                url: 'https://youtu.be/' + videoId,
+                                publishedAt: publishedAt,
+                                title: '',
+                                preview: [],
+                                channel: {
+                                    title: info.localTitle || info.title || info.id,
+                                    id: channelId
+                                }
+                            })
+                        };
+                        connection.query('INSERT INTO messages SET ? ON DUPLICATE KEY UPDATE videoId = videoId', video, function (err, results) {
+                            if (err) {
+                                if (err.code === 'ER_DUP_ENTRY') {
+                                    resolve();
+                                } else {
+                                    reject(err);
+                                }
+                            } else {
+                                resolve();
+                            }
+                        });
+                    });
+                }));
+            }).catch(function (err) {
+                debug('Migrate', err);
+            });
+        };
+
+        return Promise.all(base.arrToParts(channels, partSize).map(function (arr) {
+            return base.arrayToChainPromise(arr, function (channelId) {
+                return db.newConnection().then(function (connection) {
+                    return migrateChannel(connection, channelId, channelInfo[channelId]).then(function () {
+                        connection.end();
+                    });
+                });
+            });
+        }));
+    });
 };
 
 /**
@@ -445,7 +544,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
         });
     };
 
-    var threadCount = 25;
+    var threadCount = 50;
     var partSize = Math.ceil(_channelIdList.length / threadCount);
 
     var requestList = base.arrToParts(_channelIdList, partSize).map(function (arr) {

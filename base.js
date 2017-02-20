@@ -271,6 +271,10 @@ utils.getRandomInt = function (min, max) {
 utils.arrToParts = function (arr, quote) {
     arr = arr.slice(0);
 
+    if (isNaN(quote)) {
+        return arr;
+    }
+
     var arrList = [];
     do {
         arrList.push(arr.splice(0, quote));
