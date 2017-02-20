@@ -67,7 +67,7 @@ MsgStack.prototype.init = function () {
     });
     promise = promise.then(function () {
         var moveInNewTable = function (item) {
-            return new Promise(function (resolve, reject) {
+            return Promise.resolve().then(function () {
                 var data;
                 try {
                     if (/^{/.test(item.data)) {
@@ -77,7 +77,7 @@ MsgStack.prototype.init = function () {
                     }
                 } catch (e) {
                     debug('parseError 2', item.videoId);
-                    return resolve();
+                    return;
                 }
                 var video = {
                     id: 'y_' + item.videoId,
@@ -86,12 +86,14 @@ MsgStack.prototype.init = function () {
                     publishedAt: item.publishedAt,
                     data: encodeURIComponent(JSON.stringify(data))
                 };
-                db.connection.query('INSERT INTO messages SET ?', video, function (err, results) {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve();
-                    }
+                return new Promise(function (resolve, reject) {
+                    db.connection.query('INSERT INTO messages SET ?', video, function (err, results) {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve();
+                        }
+                    });
                 });
             });
         };
