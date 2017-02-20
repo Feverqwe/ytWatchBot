@@ -33,8 +33,7 @@ MsgStack.prototype.init = function () {
                 `publishedAt` TEXT NOT NULL, \
                 `data` LONGTEXT NOT NULL, \
                 `imageFileId` TEXT NULL, \
-            UNIQUE INDEX `id_idx` (`id`(255) ASC), \
-            UNIQUE INDEX `videoIdChannelId_UNIQUE` (`videoId` ASC, `channelId` ASC)); \
+            UNIQUE INDEX `id_UNIQUE` (`id`(255) ASC)); \
         ', function (err) {
                 if (err) {
                     reject(err);
