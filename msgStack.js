@@ -102,7 +102,7 @@ MsgStack.prototype.getStackItems = function () {
             WHERE userIdMessageId.timeout < ? \
             GROUP BY messages.id \
             ORDER BY messages.publishedAt ASC \
-            LIMIT 10; \
+            LIMIT 30; \
         ', [base.getNow()], function (err, results) {
             if (err) {
                 reject(err);
@@ -242,7 +242,7 @@ MsgStack.prototype.checkStack = function () {
 
     var _this = this;
 
-    // 300 by 10 = 3000 msg per checkStack
+    // 300 by 30 = 9000 msg per checkStack
     var limit = 300;
     (function nextPart() {
         return _this.getStackItems().then(function (/*[StackItem]*/items) {
