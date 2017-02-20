@@ -397,4 +397,30 @@ utils.arrayToChainPromise = function (arr, callbackPromise) {
     return next();
 };
 
+utils.Pool = function (limit) {
+    var queue = [];
+    var activeCount = 0;
+    var end = function (cb) {
+        return function (result) {
+            activeCount--;
+            next();
+            return cb(result);
+        };
+    };
+    var next = function () {
+        var item;
+        while (queue.length && activeCount < limit) {
+            item = queue.shift();
+            activeCount++;
+            item[0]().then(end(item[1]), end(item[2]));
+        }
+    };
+    this.push = function (callbackPromise) {
+        return new Promise(function (resolve, reject) {
+            queue.push([callbackPromise, resolve, reject]);
+            next();
+        });
+    };
+};
+
 module.exports = utils;

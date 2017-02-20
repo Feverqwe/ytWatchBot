@@ -349,6 +349,8 @@ Youtube.prototype.insertItem = function (info, chatIdList, snippet) {
 Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
     var _this = this;
 
+    var insertPool = new base.Pool(30);
+
     var requestPages = function (/*ChannelInfo*/info, chatIdList) {
         var channelId = info.id;
         var publishedAfter = info.publishedAfter;
@@ -412,21 +414,23 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                  * }}
                  */
                 var responseBody = response.body;
-                var promise = base.arrayToChainPromise(responseBody.items, function (item) {
+                var promiseList = responseBody.items.map(function (item) {
                     var snippet = item.snippet;
                     if (lastPublishedAt < snippet.publishedAt) {
                         lastPublishedAt = snippet.publishedAt;
                     }
-                    return _this.insertItem(info, chatIdList, snippet).then(function (item) {
-                        item && newItems.push({
-                            service: 'youtube',
-                            videoId: item.id,
-                            channelId: item.channelId,
-                            publishedAt: item.id
+                    return insertPool.push(function () {
+                        return _this.insertItem(info, chatIdList, snippet).then(function (item) {
+                            item && newItems.push({
+                                service: 'youtube',
+                                videoId: item.id,
+                                channelId: item.channelId,
+                                publishedAt: item.id
+                            });
                         });
                     });
                 });
-                return promise.then(function () {
+                return Promise.all(promiseList).then(function () {
                     if (responseBody.nextPageToken) {
                         if (pageLimit-- < 1) {
                             throw new CustomError('Page limit reached ' + channelId);
