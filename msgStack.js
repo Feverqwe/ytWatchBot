@@ -225,31 +225,25 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
     });
 };
 
-var inProgress = [];
+var lock = false;
 
 MsgStack.prototype.checkStack = function () {
+    if (lock) return;
+    lock = true;
+
     var _this = this;
 
     // 300 by 30 = 9000 msg per checkStack
     var limit = 300;
     (function nextPart() {
         return _this.getStackItems().then(function (/*[StackItem]*/items) {
-            if (!items.length) return;
+            if (!items.length) {
+                lock = false;
+                return;
+            }
 
             return Promise.all(items.map(function (item) {
-                var key = item.userId + '_' + item.messageId;
-                if (inProgress.indexOf(key) !== -1) {
-                    debug('sendItem dbl skip %s %s', item.userId, item.messageId);
-                    return;
-                }
-
-                inProgress.push(key);
-                return _this.sendItem(item).finally(function () {
-                    var pos = inProgress.indexOf(key);
-                    if (pos !== -1) {
-                        inProgress.splice(pos, 1);
-                    }
-                });
+                return _this.sendItem(item);
             })).then(function () {
                 if (limit-- < 1) {
                     debug('checkStack part limit!');
