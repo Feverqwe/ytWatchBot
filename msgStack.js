@@ -27,13 +27,13 @@ MsgStack.prototype.init = function () {
         return new Promise(function (resolve, reject) {
             db.connection.query('\
             CREATE TABLE IF NOT EXISTS `messages` ( \
-                `id` VARCHAR(255) NOT NULL, \
-                `videoId` VARCHAR(255) NOT NULL, \
-                `channelId` VARCHAR(255) NOT NULL, \
+                `id` VARCHAR(191) NOT NULL, \
+                `videoId` VARCHAR(191) NOT NULL, \
+                `channelId` VARCHAR(191) NOT NULL, \
                 `publishedAt` TEXT NOT NULL, \
                 `data` LONGTEXT NOT NULL, \
                 `imageFileId` TEXT NULL, \
-            UNIQUE INDEX `id_UNIQUE` (`id`(255) ASC)); \
+            UNIQUE INDEX `id_UNIQUE` (`id`(191) ASC)); \
         ', function (err) {
                 if (err) {
                     reject(err);
@@ -47,8 +47,8 @@ MsgStack.prototype.init = function () {
         return new Promise(function (resolve, reject) {
             db.connection.query('\
                 CREATE TABLE IF NOT EXISTS `userIdMessageId` ( \
-                    `userId` VARCHAR(255) NOT NULL, \
-                    `messageId` VARCHAR(255) NOT NULL, \
+                    `userId` VARCHAR(191) NOT NULL, \
+                    `messageId` VARCHAR(191) NOT NULL, \
                     `timeout` INT NULL DEFAULT 0, \
                 UNIQUE INDEX `userIdMessageId_UNIQUE` (`userId` ASC, `messageId` ASC), \
                 FOREIGN KEY (`messageId`) \

@@ -29,7 +29,7 @@ Youtube.prototype.init = function () {
         return new Promise(function (resolve, reject) {
             db.connection.query('\
             CREATE TABLE IF NOT EXISTS `ytChannels` ( \
-                `id` VARCHAR(255) NOT NULL, \
+                `id` VARCHAR(191) NOT NULL, \
                 `title` TEXT NOT NULL, \
                 `localTitle` TEXT NULL, \
                 `username` TEXT NULL, \
