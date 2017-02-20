@@ -233,7 +233,7 @@ MsgStack.prototype.checkStack = function () {
 
     var _this = this;
 
-    // 300 by 30 = 9000 msg per checkStack
+    // 300 by 10 = 3000 msg per checkStack
     var limit = 300;
     (function nextPart() {
         return _this.getStackItems().then(function (/*[StackItem]*/items) {
