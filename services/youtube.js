@@ -367,7 +367,7 @@ Youtube.prototype.insertItem = function (info, chatIdList, snippet) {
         videoId: id,
         channelId: snippet.channelId,
         publishedAt: snippet.publishedAt,
-        data: JSON.stringify(data)
+        data: btoa(encodeURIComponent(JSON.stringify(data)))
     };
 
     var update = function (video) {
