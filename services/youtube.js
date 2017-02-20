@@ -268,6 +268,7 @@ Youtube.prototype.insertItem = function (info, chatIdList, snippet) {
     var encodedData = Buffer.from(encodeURIComponent(JSON.stringify(data)), 'utf8').toString('base64');
 
     var item = {
+        id: 'y_' + id,
         videoId: id,
         channelId: snippet.channelId,
         publishedAt: snippet.publishedAt,
@@ -301,7 +302,7 @@ Youtube.prototype.insertItem = function (info, chatIdList, snippet) {
                         if (err) {
                             reject(err);
                         } else {
-                            resolve(results.insertId);
+                            resolve(video.id);
                         }
                     });
                 });
