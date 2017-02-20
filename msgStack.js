@@ -247,6 +247,7 @@ MsgStack.prototype.checkStack = function () {
             })).then(function () {
                 if (limit-- < 1) {
                     debug('checkStack part limit!');
+                    lock = false;
                 } else {
                     return nextPart();
                 }
