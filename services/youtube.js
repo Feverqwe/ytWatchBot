@@ -363,11 +363,13 @@ Youtube.prototype.insertItem = function (info, chatIdList, snippet) {
         }
     };
 
+    var encodedData = Buffer.from(encodeURIComponent(JSON.stringify(data)), 'utf8').toString('base64');
+
     var item = {
         videoId: id,
         channelId: snippet.channelId,
         publishedAt: snippet.publishedAt,
-        data: btoa(encodeURIComponent(JSON.stringify(data)))
+        data: encodedData
     };
 
     var update = function (video) {

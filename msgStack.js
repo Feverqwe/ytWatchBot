@@ -195,7 +195,7 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
             // legacy
             data = JSON.parse(item.data);
         } else {
-            data = JSON.parse(decodeURIComponent(atob(item.data)));
+            data = JSON.parse(decodeURIComponent(Buffer.from(item.data, 'base64').toString('utf8')));
         }
         var chatItem = _this.gOptions.storage.chatList[userId];
         if (!chatItem) {
