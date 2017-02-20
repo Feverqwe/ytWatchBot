@@ -420,13 +420,13 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                         lastPublishedAt = snippet.publishedAt;
                     }
                     return insertPool.push(function () {
-                        return _this.insertItem(info, chatIdList, snippet).then(function (item) {
-                            item && newItems.push({
-                                service: 'youtube',
-                                videoId: item.id,
-                                channelId: item.channelId,
-                                publishedAt: item.id
-                            });
+                        return _this.insertItem(info, chatIdList, snippet);
+                    }).then(function (item) {
+                        item && newItems.push({
+                            service: 'youtube',
+                            videoId: item.id,
+                            channelId: item.channelId,
+                            publishedAt: item.id
                         });
                     });
                 });
