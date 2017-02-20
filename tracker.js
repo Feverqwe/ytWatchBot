@@ -119,6 +119,7 @@ Tracker.prototype.send = function(params) {
             }
         });
     };
+    send();
 };
 
 module.exports = Tracker;

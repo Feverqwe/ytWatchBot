@@ -136,7 +136,7 @@ MsgStack.prototype.sendLog = function (userId, messageId, data) {
     var debugItem = JSON.parse(JSON.stringify(data));
     delete debugItem.preview;
     delete debugItem._videoId;
-    debugLog('[s] %s %s %j', userId, messageId, debugItem);
+    debugLog('[s] %s %s %j', messageId, userId, debugItem);
 };
 
 MsgStack.prototype.setTimeout = function (userId, messageId, timeout) {
