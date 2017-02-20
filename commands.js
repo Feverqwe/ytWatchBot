@@ -894,7 +894,7 @@ var commands = {
             return _this.gOptions.bot.sendMessage(chatId, message);
         });
     },
-    refresh_channel_info: function(msg) {
+    refreshChannelInfo: function(msg) {
         var _this = this;
         var chatId = msg.chat.id;
         var services = _this.gOptions.services;
