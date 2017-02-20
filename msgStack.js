@@ -72,9 +72,19 @@ MsgStack.prototype.init = function () {
                     var data;
                     if (/^{/.test(item.data)) {
                         // legacy
-                        data = JSON.parse(item.data);
+                        try {
+                            data = JSON.parse(item.data);
+                        } catch (e) {
+                            debug('parseError 1', item.videoId);
+                            return resolve();
+                        }
                     } else {
-                        data = JSON.parse(decodeURIComponent(Buffer.from(item.data, 'base64').toString('utf8')));
+                        try {
+                            data = JSON.parse(decodeURIComponent(Buffer.from(item.data, 'base64').toString('utf8')));
+                        } catch (e) {
+                            debug('parseError 2', item.videoId);
+                            return resolve();
+                        }
                     }
                     var video = {
                         id: 'y_' + item.videoId,
