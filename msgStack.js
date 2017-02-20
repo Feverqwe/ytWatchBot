@@ -221,7 +221,7 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
             return _this.setTimeout(userId, messageId, base.getNow() + 6 * 60 * 60);
         }
 
-        debug('sendItem', err);
+        debug('sendItem', userId, messageId, err);
     });
 };
 
