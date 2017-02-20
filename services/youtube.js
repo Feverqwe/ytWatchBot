@@ -72,7 +72,7 @@ Youtube.prototype.migrate = function () {
             }
             var info = {
                 id: channelId,
-                title: data.localTitle || data.title,
+                title: data.title || data.localTitle,
                 localTitle: data.localTitle || null,
                 username: data.username || null,
                 publishedAfter: publishedAfter
