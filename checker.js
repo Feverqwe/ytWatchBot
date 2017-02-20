@@ -111,7 +111,7 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
 
     Object.keys(services).forEach(function (serviceName) {
         var service = services[serviceName];
-        var userChannelList = serviceUserChannelList[serviceName];
+        var userChannelList = serviceUserChannelList[serviceName] || [];
         var filterChannelList = filterServiceChannelList[serviceName];
         var isFullCheck = !filterChannelList;
 

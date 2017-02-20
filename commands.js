@@ -894,7 +894,7 @@ var commands = {
             return _this.gOptions.bot.sendMessage(chatId, message);
         });
     },
-    refreshTitle: function(msg) {
+    refresh_channel_info: function(msg) {
         var _this = this;
         var chatId = msg.chat.id;
         var services = _this.gOptions.services;
@@ -916,9 +916,11 @@ var commands = {
             while (channelList.length) {
                 var arr = channelList.splice(0, 100);
                 (function(service, arr) {
-                    queue = queue.finally(function() {
-                        var promiseList = arr.map(function(userId) {
-                            return services[service].getChannelId(userId);
+                    queue = queue.then(function() {
+                        var promiseList = arr.map(function(id) {
+                            return services[service].getChannelId(id).catch(function (err) {
+                                debug('refreshChannelInfo %s', id, err);
+                            });
                         });
                         return Promise.all(promiseList);
                     });
@@ -926,7 +928,7 @@ var commands = {
             }
         }
 
-        return queue.finally(function() {
+        return queue.then(function() {
             return _this.gOptions.bot.sendMessage(chatId, 'Done!');
         });
     },
