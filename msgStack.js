@@ -69,21 +69,15 @@ MsgStack.prototype.init = function () {
         var moveInNewTable = function (item) {
             return new Promise(function (resolve, reject) {
                 var data;
-                if (/^{/.test(item.data)) {
-                    // legacy
-                    try {
+                try {
+                    if (/^{/.test(item.data)) {
                         data = JSON.parse(item.data);
-                    } catch (e) {
-                        debug('parseError 1', item.videoId);
-                        return resolve();
-                    }
-                } else {
-                    try {
+                    } else {
                         data = JSON.parse(decodeURIComponent(Buffer.from(item.data, 'base64').toString('utf8')));
-                    } catch (e) {
-                        debug('parseError 2', item.videoId);
-                        return resolve();
                     }
+                } catch (e) {
+                    debug('parseError 2', item.videoId);
+                    return resolve();
                 }
                 var video = {
                     id: 'y_' + item.videoId,

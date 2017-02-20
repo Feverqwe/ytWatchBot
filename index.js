@@ -59,8 +59,8 @@ var options = {
     }).then(function() {
         options.msgStack = new MsgStack(options);
         return options.msgStack.onReady;
-        throw new Error('migrated');
     }).then(function() {
+        throw new Error('migrated');
         return Promise.all(options.serviceList.map(function(name) {
             var service = require('./services/' + name);
             service = options.services[name] = new service(options);
