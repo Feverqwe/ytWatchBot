@@ -33,7 +33,7 @@ MsgStack.prototype.init = function () {
                 `publishedAt` TEXT NOT NULL, \
                 `data` LONGTEXT NOT NULL, \
                 `imageFileId` TEXT NULL, \
-            UNIQUE INDEX `id_UNIQUE` (`id`(191) ASC)); \
+            UNIQUE INDEX `id_UNIQUE` (`id` ASC)); \
         ', function (err) {
                 if (err) {
                     reject(err);
