@@ -27,7 +27,7 @@ Youtube.prototype.init = function () {
     var promise = Promise.resolve();
     promise = promise.then(function () {
         return new Promise(function (resolve, reject) {
-            db.connection.query('\
+            db.pool.query('\
             CREATE TABLE IF NOT EXISTS `ytChannels` ( \
                 `id` VARCHAR(191) NOT NULL, \
                 `title` TEXT NOT NULL, \
@@ -64,7 +64,7 @@ Youtube.prototype.init = function () {
 Youtube.prototype.getChannelInfo = function (channelId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
-        db.connection.query('\
+        db.pool.query('\
             SELECT * FROM ytChannels WHERE id = ? LIMIT 1 \
         ', [channelId], function (err, results) {
             if (err) {
@@ -86,7 +86,7 @@ Youtube.prototype.getChannelInfo = function (channelId) {
 Youtube.prototype.setChannelInfo = function(info) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
-        db.connection.query('\
+        db.pool.query('\
             INSERT INTO ytChannels SET ? ON DUPLICATE KEY UPDATE ? \
         ', [info, info], function (err, results) {
             if (err) {
@@ -102,7 +102,7 @@ Youtube.prototype.setChannelInfo = function(info) {
 Youtube.prototype.setChannelPublishedAfter = function (channelId, publishedAfter) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
-        db.connection.query('\
+        db.pool.query('\
             UPDATE ytChannels SET publishedAfter = ? WHERE id = ? \
         ', [publishedAfter, channelId], function (err, results) {
             if (err) {
@@ -159,7 +159,7 @@ Youtube.prototype.getChannelLocalTitle = function (channelId) {
 Youtube.prototype.videoIdInList = function(channelId, videoId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
-        db.connection.query('\
+        db.pool.query('\
             SELECT videoId FROM messages WHERE videoId = ? AND channelId = ? LIMIT 1 \
         ', [videoId, channelId], function (err, results) {
             if (err) {
@@ -275,7 +275,7 @@ Youtube.prototype.insertItem = function (info, chatIdList, snippet) {
 
     var update = function (video) {
         return new Promise(function (resolve, reject) {
-            db.connection.query('UPDATE messages SET ? WHERE videoId = ? AND channelId = ?', [video, video.videoId, video.channelId], function (err, results) {
+            db.pool.query('UPDATE messages SET ? WHERE videoId = ? AND channelId = ?', [video, video.videoId, video.channelId], function (err, results) {
                 if (err) {
                     reject(err);
                 } else {
@@ -447,7 +447,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
         });
     };
 
-    var threadCount = 50;
+    var threadCount = 30;
     var partSize = Math.ceil(_channelIdList.length / threadCount);
 
     var requestList = base.arrToParts(_channelIdList, partSize).map(function (arr) {
