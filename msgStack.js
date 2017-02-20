@@ -6,7 +6,6 @@ var base = require('./base');
 var debug = require('debug')('app:MsgStack');
 var debugLog = require('debug')('app:MsgStack:log');
 debugLog.log = console.log.bind(console);
-var Promise = require('bluebird');
 
 var MsgStack = function (options) {
     var _this = this;
@@ -189,18 +188,20 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
     var userId = item.userId;
     var messageId = item.messageId;
     var imageFileId = item.imageFileId;
-    var data = null;
-    return _this.setTimeout(userId, messageId, base.getNow() + 5 * 60).then(function () {
+    return Promise.resolve().then(function () {
+        var data = null;
         if (/^%/.test(item.data)) {
             data = JSON.parse(decodeURIComponent(item.data));
         } else {
             data = JSON.parse(item.data);
         }
+
         var chatItem = _this.gOptions.storage.chatList[userId];
         if (!chatItem) {
             debug('chatItem is not found! %s %s', userId, messageId);
-            return Promise.resolve();
+            return;
         }
+
         var options = chatItem.options || {};
 
         var text = '';
@@ -217,16 +218,19 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
             chatList.push(userId);
         }
 
-        return _this.gOptions.msgSender.sendNotify(messageId, imageFileId, chatList, text, noPhotoText, data, true);
+        return _this.gOptions.msgSender.sendNotify(messageId, imageFileId, chatList, text, noPhotoText, data, true).then(function () {
+            _this.sendLog(userId, messageId, data);
+        });
     }).then(function () {
-        _this.sendLog(userId, messageId, data);
         return _this.removeItem(userId, messageId);
     }).catch(function (err) {
-        if (/PEER_ID_INVALID/.test(err)) {
-            return _this.setTimeout(userId, messageId, base.getNow() + 6 * 60 * 60);
-        }
-
         debug('sendItem', userId, messageId, err);
+
+        var timeout = 5 * 60;
+        if (/PEER_ID_INVALID/.test(err)) {
+            timeout = 6 * 60 * 60;
+        }
+        return _this.setTimeout(userId, messageId, base.getNow() + timeout);
     });
 };
 
