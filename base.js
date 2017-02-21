@@ -421,6 +421,24 @@ utils.Pool = function (limit) {
             next();
         });
     };
+    this.do = function (getPromise) {
+        return (function next() {
+            var promiseList = [];
+            while (promiseList.length < limit) {
+                var promise = getPromise();
+                if (promise) {
+                    promiseList.push(promise);
+                } else {
+                    break;
+                }
+            }
+            if (!promiseList.length) {
+                return Promise.resolve();
+            } else {
+                return Promise.all(promiseList).then(next);
+            }
+        })();
+    };
 };
 
 module.exports = utils;
