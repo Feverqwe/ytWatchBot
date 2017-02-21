@@ -29,11 +29,11 @@ Youtube.prototype.init = function () {
         return new Promise(function (resolve, reject) {
             db.connection.query('\
             CREATE TABLE IF NOT EXISTS `ytChannels` ( \
-                `id` VARCHAR(191) NOT NULL, \
-                `title` TEXT NOT NULL, \
-                `localTitle` TEXT NULL, \
-                `username` TEXT NULL, \
-                `publishedAfter` TEXT NULL, \
+                `id` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
+                `title` TEXT CHARACTER SET utf8mb4 NOT NULL, \
+                `localTitle` TEXT CHARACTER SET utf8mb4 NULL, \
+                `username` TEXT CHARACTER SET utf8mb4 NULL, \
+                `publishedAfter` TEXT CHARACTER SET utf8mb4 NULL, \
             UNIQUE INDEX `id_UNIQUE` (`id` ASC)); \
         ', function (err) {
                 if (err) {
@@ -270,7 +270,7 @@ Youtube.prototype.insertItem = function (info, chatIdList, snippet) {
         videoId: id,
         channelId: snippet.channelId,
         publishedAt: snippet.publishedAt,
-        data: encodeURIComponent(JSON.stringify(data))
+        data: JSON.stringify(data)
     };
 
     var update = function (video) {
