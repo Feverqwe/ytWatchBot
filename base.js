@@ -422,22 +422,28 @@ utils.Pool = function (limit) {
         });
     };
     this.do = function (getPromise) {
-        return (function next() {
-            var promiseList = [];
-            while (promiseList.length < limit) {
-                var promise = getPromise();
-                if (promise) {
-                    promiseList.push(promise);
-                } else {
-                    break;
-                }
-            }
-            if (!promiseList.length) {
-                return Promise.resolve();
+        var getNext = function () {
+            if (getPromise === null) return;
+
+            var promise = getPromise();
+            if (promise) {
+                return promise.then(function () {
+                    return getNext();
+                });
             } else {
-                return Promise.all(promiseList).then(next);
+                getPromise = null;
             }
-        })();
+        };
+        var promiseList = [];
+        while (promiseList.length < limit) {
+            var promise = getNext();
+            if (promise) {
+                promiseList.push(promise);
+            } else {
+                break;
+            }
+        }
+        return Promise.all(promiseList);
     };
 };
 
