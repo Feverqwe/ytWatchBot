@@ -33,8 +33,7 @@ Db.prototype.getPool = function () {
         host: this.config.host,
         user: this.config.user,
         password: this.config.password,
-        database: this.config.database,
-        charset: 'utf8mb4_unicode_ci'
+        database: this.config.database
     });
 };
 
@@ -43,8 +42,7 @@ Db.prototype.getConnection = function () {
         host: this.config.host,
         user: this.config.user,
         password: this.config.password,
-        database: this.config.database,
-        charset: 'utf8mb4_unicode_ci'
+        database: this.config.database
     });
 };
 
