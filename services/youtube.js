@@ -350,7 +350,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
     var _this = this;
 
     var requestPool = new base.Pool(10);
-    var insertPool = new base.Pool(30);
+    var insertPool = new base.Pool(15);
 
     var requestPages = function (/*ChannelInfo*/info, chatIdList) {
         var channelId = info.id;
