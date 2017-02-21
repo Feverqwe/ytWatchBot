@@ -415,50 +415,10 @@ utils.Pool = function (limit) {
             item[0]().then(end(item[1]), end(item[2]));
         }
     };
-
     this.push = function (callbackPromise) {
         return new Promise(function (resolve, reject) {
             queue.push([callbackPromise, resolve, reject]);
             next();
-        });
-    };
-
-    var queueDo = [];
-    var activeCountDo = 0;
-    var rmDo = function (item) {
-        var pos = queueDo.indexOf(item);
-        if (pos !== -1) {
-            queueDo.splice(pos, 1);
-        }
-    };
-    var nextDo = function () {
-        if (!queueDo.length || activeCountDo >= limit) return;
-
-        var item = queueDo[0];
-        var promise = item[0]();
-        if (!promise) {
-            rmDo(item);
-            nextDo();
-            item[1]();
-        } else {
-            activeCountDo++;
-            promise.then(function () {
-                activeCountDo--;
-
-                nextDo();
-            }, function (err) {
-                activeCountDo--;
-
-                rmDo(item);
-                nextDo();
-                item[2](err);
-            });
-        }
-    };
-    this.do = function (getPromise) {
-        return new Promise(function (resolve, reject) {
-            queueDo.push([getPromise, resolve, reject]);
-            nextDo();
         });
     };
 };
