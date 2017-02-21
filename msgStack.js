@@ -24,7 +24,7 @@ MsgStack.prototype.init = function () {
     var promise = Promise.resolve();
     promise = promise.then(function () {
         return new Promise(function (resolve, reject) {
-            db.pool.query('\
+            db.connection.query('\
             CREATE TABLE IF NOT EXISTS `messages` ( \
                 `id` VARCHAR(191) NOT NULL, \
                 `videoId` VARCHAR(191) NOT NULL, \
@@ -45,7 +45,7 @@ MsgStack.prototype.init = function () {
     });
     promise = promise.then(function () {
         return new Promise(function (resolve, reject) {
-            db.pool.query('\
+            db.connection.query('\
                 CREATE TABLE IF NOT EXISTS `userIdMessageId` ( \
                     `userId` VARCHAR(191) NOT NULL, \
                     `messageId` VARCHAR(191) NOT NULL, \
@@ -96,7 +96,7 @@ MsgStack.prototype.insertInStack = function (connection, userId, messageId) {
 MsgStack.prototype.getStackItems = function () {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
-        db.pool.query('\
+        db.connection.query('\
             SELECT * FROM userIdMessageId \
             LEFT JOIN messages ON userIdMessageId.messageId = messages.id \
             WHERE userIdMessageId.timeout < ? \
@@ -141,7 +141,7 @@ MsgStack.prototype.sendLog = function (userId, messageId, data) {
 MsgStack.prototype.setTimeout = function (userId, messageId, timeout) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
-        db.pool.query('\
+        db.connection.query('\
             UPDATE userIdMessageId SET timeout = ? WHERE userId = ? AND messageId = ?; \
         ', [timeout, userId, messageId], function (err, results) {
             if (err) {
@@ -156,7 +156,7 @@ MsgStack.prototype.setTimeout = function (userId, messageId, timeout) {
 MsgStack.prototype.setImageFileId = function (messageId, imageFileId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
-        db.pool.query('\
+        db.connection.query('\
             UPDATE messages SET imageFileId = ? WHERE id = ?; \
         ', [imageFileId, messageId], function (err, results) {
             if (err) {
@@ -171,7 +171,7 @@ MsgStack.prototype.setImageFileId = function (messageId, imageFileId) {
 MsgStack.prototype.removeItem = function (userId, messageId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
-        db.pool.query('\
+        db.connection.query('\
             DELETE FROM userIdMessageId WHERE userId = ? AND messageId = ?; \
         ', [userId, messageId], function (err, results) {
             if (err) {

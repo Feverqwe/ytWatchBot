@@ -7,16 +7,14 @@ var mysql = require('mysql');
 
 var Db = function (options) {
     this.config = options.config.db;
-    this.pool = null;
+    this.connection = null;
 
     this.onReady = this.init();
 };
 
 Db.prototype.init = function () {
     "use strict";
-    this.pool = this.getPool();
-
-    var connection = this.getConnection();
+    var connection = this.connection = this.getConnection();
 
     return new Promise(function (resolve, reject) {
         connection.connect(function(err) {
@@ -26,8 +24,6 @@ Db.prototype.init = function () {
                 resolve();
             }
         });
-    }).then(function () {
-        connection.end();
     });
 };
 
