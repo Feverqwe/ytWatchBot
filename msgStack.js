@@ -102,7 +102,7 @@ MsgStack.prototype.getStackItems = function () {
             WHERE userIdMessageId.timeout < ? \
             GROUP BY messages.id \
             ORDER BY messages.publishedAt ASC \
-            LIMIT 30; \
+            LIMIT 20; \
         ', [base.getNow()], function (err, results) {
             if (err) {
                 reject(err);
