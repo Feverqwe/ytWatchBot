@@ -453,8 +453,6 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
         });
     };
 
-    var count = 0;
-
     var promise = requestPool.do(function () {
         var channelId = _channelIdList.shift();
         if (!channelId) return;
@@ -462,9 +460,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
         return _this.getChannelInfo(channelId).then(function (info) {
             var chatIdList = _this.gOptions.msgStack.getChatIdList('youtube', channelId);
             if (info.id) {
-                return requestPages(info, chatIdList).then(function () {
-                    count++;
-                });
+                return requestPages(info, chatIdList);
             } else {
                 debug('Channel info is not found!', channelId);
             }
@@ -473,7 +469,6 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
 
     var newItems = [];
     return promise.then(function () {
-        debug('checked', count);
         return newItems;
     });
 };
