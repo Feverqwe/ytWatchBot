@@ -349,6 +349,7 @@ Youtube.prototype.insertItem = function (info, chatIdList, snippet) {
 Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
     var _this = this;
 
+    var requestPool = new base.Pool(10);
     var insertPool = new base.Pool(30);
 
     var requestPages = function (/*ChannelInfo*/info, chatIdList) {
@@ -452,24 +453,22 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
         });
     };
 
-    var threadCount = 10;
-    var partSize = Math.ceil(_channelIdList.length / threadCount);
+    var promise = requestPool.do(function () {
+        var channelId = _channelIdList.shift();
+        if (!channelId) return;
 
-    var requestList = base.arrToParts(_channelIdList, partSize).map(function (arr) {
-        return base.arrayToChainPromise(arr, function (channelId) {
-            return _this.getChannelInfo(channelId).then(function (info) {
-                var chatIdList = _this.gOptions.msgStack.getChatIdList('youtube', channelId);
-                if (info.id) {
-                    return requestPages(info, chatIdList);
-                } else {
-                    debug('Channel info is not found!', channelId);
-                }
-            });
+        return _this.getChannelInfo(channelId).then(function (info) {
+            var chatIdList = _this.gOptions.msgStack.getChatIdList('youtube', channelId);
+            if (info.id) {
+                return requestPages(info, chatIdList);
+            } else {
+                debug('Channel info is not found!', channelId);
+            }
         });
     });
 
     var newItems = [];
-    return Promise.all(requestList).then(function () {
+    return promise.then(function () {
         return newItems;
     });
 };
