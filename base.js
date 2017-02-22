@@ -215,49 +215,45 @@ utils.getChannelUrl = function(service, channelName) {
 };
 
 /**
- * @param {number} callPerSecond
+ * @param {number} limitPerSecond
  * @constructor
  */
-utils.Quote = function (callPerSecond) {
-    var getTime = function() {
-        return parseInt(Date.now() / 1000);
-    };
+utils.Quote = function (limitPerSecond) {
+    var time = 0;
+    var timeMs = 0;
+    var count = 0;
+    var sleep = function (callback) {
+        var nowMs = Date.now();
+        var now = parseInt(nowMs / 1000);
+        if (time !== now) {
+            time = now;
+            timeMs = nowMs;
+            count = 0;
+        }
 
-    var timeCountMap = {};
-    var timeout = function () {
-        return new Promise(function (resolve) {
-            (function wait() {
-                var now = getTime();
-                if (!timeCountMap[now]) {
-                    timeCountMap[now] = 0;
-                }
-                timeCountMap[now]++;
+        count++;
 
-                if (timeCountMap[now] > callPerSecond) {
-                    setTimeout(wait, 1000);
-                } else {
-                    resolve();
-                }
-            })();
-        });
+        if (count > limitPerSecond) {
+            setTimeout(function () {
+                callback();
+            }, nowMs - timeMs);
+        } else {
+            callback();
+        }
     };
 
     /**
-     * @param {Function} cb
+     * @param {Function} callback
+     * @param {Object} thisArg
      * @returns {Function}
      */
-    this.wrapper = function(cb) {
+    this.wrapper = function(callback, thisArg) {
         return function () {
             var args = [].slice.call(arguments);
 
-            return timeout().then(function () {
-                return cb.apply(null, args);
-            }).finally(function () {
-                var now = getTime();
-                Object.keys(timeCountMap).forEach(function (time) {
-                    if (time < now) {
-                        delete timeCountMap[time];
-                    }
+            return new Promise(function (resolve) {
+                sleep(function () {
+                    resolve(callback.apply(thisArg, args));
                 });
             });
         };
