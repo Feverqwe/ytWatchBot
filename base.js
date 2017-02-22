@@ -224,13 +224,13 @@ utils.Quote = function (limitPerSecond) {
     var count = 0;
     var timer = null;
     var next = function () {
+        if (timer !== null) return;
+
         var now = Date.now();
         if (now - time >= 1000) {
             time = now;
             count = 0;
         }
-
-        if (timer !== null) return;
 
         while (queue.length && count < limitPerSecond) {
             count++;
