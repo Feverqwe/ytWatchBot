@@ -398,52 +398,79 @@ utils.arrayToChainPromise = function (arr, callbackPromise) {
 };
 
 utils.Pool = function (limit) {
-    var queue = [];
-    var activeCount = 0;
+    var queuePush = [];
+    var activeCountPush = 0;
     var end = function (cb) {
         return function (result) {
-            activeCount--;
-            next();
+            activeCountPush--;
+            nextPush();
             return cb(result);
         };
     };
-    var next = function () {
+    var nextPush = function () {
         var item;
-        while (queue.length && activeCount < limit) {
-            item = queue.shift();
-            activeCount++;
+        while (queuePush.length && activeCountPush < limit) {
+            item = queuePush.shift();
+            activeCountPush++;
             item[0]().then(end(item[1]), end(item[2]));
         }
     };
     this.push = function (callbackPromise) {
         return new Promise(function (resolve, reject) {
-            queue.push([callbackPromise, resolve, reject]);
-            next();
+            queuePush.push([callbackPromise, resolve, reject]);
+            nextPush();
         });
     };
-    this.do = function (getPromise) {
-        var getNext = function () {
-            if (getPromise === null) return;
 
-            var promise = getPromise();
-            if (promise) {
-                return promise.then(function () {
-                    return getNext();
-                });
-            } else {
-                getPromise = null;
-            }
-        };
-        var promiseList = [];
-        while (promiseList.length < limit) {
-            var promise = getNext();
-            if (promise) {
-                promiseList.push(promise);
-            } else {
+    var waitArr = [];
+    var activeCountDo = 0;
+    var getPromiseFnArr = [];
+    var rejectAll = function (err) {
+        getPromiseFnArr.splice(0);
+        activeCountDo = 0;
+
+        var item;
+        while (item = waitArr.shift()) {
+            item[1](err);
+        }
+    };
+    var resolveAll = function () {
+        var item;
+        while (item = waitArr.shift()) {
+            item[0]();
+        }
+    };
+    var runPromise = function () {
+        if (!getPromiseFnArr.length) return;
+
+        var promise = getPromiseFnArr[0]();
+        if (!promise) {
+            getPromiseFnArr.shift();
+            return runPromise();
+        } else {
+            activeCountDo++;
+            return promise.then(function () {
+                activeCountDo--;
+                nextDo();
+            }, rejectAll);
+        }
+    };
+    var nextDo = function () {
+        while (activeCountDo < limit) {
+            if (!runPromise()) {
                 break;
             }
         }
-        return Promise.all(promiseList);
+        if (!activeCountDo) {
+            resolveAll();
+        }
+    };
+    this.do = function (getPromiseFn) {
+        return new Promise(function (resolve, reject) {
+            getPromiseFnArr.push(getPromiseFn);
+            waitArr.push([resolve, reject]);
+            nextDo();
+        });
     };
 };
 
