@@ -219,7 +219,7 @@ utils.getChannelUrl = function(service, channelName) {
  * @constructor
  */
 utils.Quote = function (limitPerSecond) {
-    var quote = [];
+    var queue = [];
     var time = 0;
     var count = 0;
     var timer = null;
@@ -232,9 +232,9 @@ utils.Quote = function (limitPerSecond) {
 
         if (timer !== null) return;
 
-        while (quote.length && count < limitPerSecond) {
+        while (queue.length && count < limitPerSecond) {
             count++;
-            quote.shift()();
+            queue.shift()();
         }
 
         if (count === limitPerSecond) {
@@ -255,7 +255,7 @@ utils.Quote = function (limitPerSecond) {
             var args = [].slice.call(arguments);
 
             return new Promise(function (resolve) {
-                quote.push(function () {
+                queue.push(function () {
                     resolve(callback.apply(thisArg, args));
                 });
                 next();
