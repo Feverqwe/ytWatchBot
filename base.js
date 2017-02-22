@@ -219,26 +219,29 @@ utils.getChannelUrl = function(service, channelName) {
  * @constructor
  */
 utils.Quote = function (limitPerSecond) {
+    var quote = [];
     var time = 0;
-    var timeMs = 0;
     var count = 0;
-    var sleep = function (callback) {
-        var nowMs = Date.now();
-        var now = parseInt(nowMs / 1000);
-        if (time !== now) {
+    var timer = null;
+    var next = function () {
+        var now = Date.now();
+        if (now - time >= 1000) {
             time = now;
-            timeMs = nowMs;
             count = 0;
         }
 
-        count++;
+        if (timer !== null) return;
 
-        if (count > limitPerSecond) {
-            setTimeout(function () {
-                sleep(callback);
-            }, 1000 - (nowMs - timeMs));
-        } else {
-            callback();
+        while (quote.length && count < limitPerSecond) {
+            count++;
+            quote.shift()();
+        }
+
+        if (count === limitPerSecond) {
+            timer = setTimeout(function () {
+                timer = null;
+                next();
+            }, 1000);
         }
     };
 
@@ -252,9 +255,10 @@ utils.Quote = function (limitPerSecond) {
             var args = [].slice.call(arguments);
 
             return new Promise(function (resolve) {
-                sleep(function () {
+                quote.push(function () {
                     resolve(callback.apply(thisArg, args));
                 });
+                next();
             });
         };
     };
