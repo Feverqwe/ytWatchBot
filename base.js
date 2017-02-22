@@ -235,8 +235,8 @@ utils.Quote = function (limitPerSecond) {
 
         if (count > limitPerSecond) {
             setTimeout(function () {
-                callback();
-            }, nowMs - timeMs);
+                sleep(callback);
+            }, 1000 - (nowMs - timeMs));
         } else {
             callback();
         }
