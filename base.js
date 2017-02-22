@@ -241,7 +241,7 @@ utils.Quote = function (limitPerSecond) {
             timer = setTimeout(function () {
                 timer = null;
                 next();
-            }, 1000);
+            }, 1000 - (Date.now() - time));
         }
     };
 
