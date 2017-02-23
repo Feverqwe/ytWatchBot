@@ -627,40 +627,72 @@ var commands = {
     list: function (msg) {
         var _this = this;
         var chatId = msg.chat.id;
-        var chatItem = _this.gOptions.storage.chatList[chatId];
 
-        if (!chatItem) {
-            return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
-        }
+        return _this.gOptions.users.getChannels(chatId).then(function (items) {
+            var services = [];
 
-        var serviceList = [];
+            var serviceObjMap = {};
+            items.forEach(function (item) {
+                var service = serviceObjMap[item.service];
+                if (!service) {
+                    service = serviceObjMap[item.service] = {
+                        name: item.service,
+                        count: 0,
+                        channels: [],
+                        channelObjMap: {}
+                    };
+                    services.push(service);
+                }
 
-        var promise = Promise.resolve();
-        Object.keys(chatItem.serviceList).forEach(function (service) {
-            promise = promise.then(function () {
-                return Promise.all(chatItem.serviceList[service].map(function(channelName) {
-                    return base.getChannelLocalTitle(_this.gOptions, service, channelName).then(function (title) {
-                        var url = base.getChannelUrl(service, channelName);
-                        if (!url) {
-                            debug('URL is empty!');
-                            return base.htmlSanitize(channelName);
-                        }
+                var channelId = item.channelId;
+                var channel = service.channelObjMap[channelId];
+                if (!channel) {
+                    channel = service.channelObjMap[channelId] = {
+                        id: channelId
+                    };
+                    service.count++;
+                    service.channels.push(channel);
+                }
+            });
+            serviceObjMap = null;
 
-                        return base.htmlSanitize('a', title, url);
-                    });
-                })).then(function (channelList) {
-                    serviceList.push(base.htmlSanitize('b', _this.gOptions.serviceToTitle[service]) + ':\n' + channelList.join('\n'));
+            var sortFn = function (aa, bb) {
+                var a = aa.count;
+                var b = bb.count;
+                return a === b ? 0 : a > b ? -1 : 1;
+            };
+
+            services.sort(sortFn);
+
+            services.forEach(function (service) {
+                delete service.channelObjMap;
+            });
+
+            return Promise.all(services.map(function (service) {
+                return Promise.all(service.channels.map(function (channel) {
+                    return base.getChannelTitle(_this.gOptions, service.name, channel.id).then(function (title) {
+                        channel.title = title;
+                    })
+                }));
+            })).then(function () {
+                return {
+                    services: services
+                };
+            });
+        }).then(function (info) {
+            var textArr = [];
+
+            info.services.forEach(function (service) {
+                textArr.push(base.htmlSanitize('b', _this.gOptions.serviceToTitle[service.name]) + ':');
+                service.channels.forEach(function (channel) {
+                    textArr.push(base.htmlSanitize('a', channel.title, base.getChannelUrl(service, channel.id)));
                 });
             });
-        });
 
-        return promise.then(function () {
-            return _this.gOptions.bot.sendMessage(
-                chatId, serviceList.join('\n\n'), {
-                    disable_web_page_preview: true,
-                    parse_mode: 'HTML'
-                }
-            );
+            return _this.gOptions.bot.sendMessage(chatId, textArr.join('\n\n'), {
+                disable_web_page_preview: true,
+                parse_mode: 'HTML'
+            });
         });
     },
     setchannel: function (msg, channelName) {
