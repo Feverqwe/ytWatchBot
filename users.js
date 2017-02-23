@@ -216,11 +216,26 @@ Users.prototype.removeChannel = function (userId, service, channelId) {
     });
 };
 
-Users.prototype.getAllChannels = function () {
+Users.prototype.getAllUserChannels = function () {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
             SELECT * FROM userIdChannelId; \
+        ', function (err, results) {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(results);
+            }
+        });
+    });
+};
+
+Users.prototype.getAllChannels = function () {
+    var db = this.gOptions.db;
+    return new Promise(function (resolve, reject) {
+        db.connection.query('\
+            SELECT DISTINCT service, channelId FROM userIdChannelId; \
         ', function (err, results) {
             if (err) {
                 reject(err);
@@ -246,12 +261,12 @@ Users.prototype.getUsersByChannel = function (service, channelId) {
     });
 };
 
-Users.prototype.getAllUsers = function (service, channelId) {
+Users.prototype.getAllUsers = function () {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
-            SELECT DISTINCT userId FROM userIdChannelId; \
-        ', [service, channelId], function (err, results) {
+            SELECT id FROM users; \
+        ', function (err, results) {
             if (err) {
                 reject(err);
             } else {

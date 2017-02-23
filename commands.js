@@ -786,88 +786,85 @@ var commands = {
         }
     },
     top: function (msg) {
-        var service, channelList, channelName;
         var _this = this;
         var chatId = msg.chat.id;
-        var chatList = _this.gOptions.storage.chatList;
 
-        var userCount = 0;
-        var channelCount = 0;
+        return _this.gOptions.users.getAllUserChannels().then(function (items) {
+            var users = [];
+            var channels = [];
+            var services = [];
 
-        var top = {};
-        for (var _chatId in chatList) {
-            var chatItem = chatList[_chatId];
-            if (!chatItem.serviceList) {
-                continue;
-            }
-
-            userCount++;
-
-            for (var n = 0; service = _this.gOptions.serviceList[n]; n++) {
-                var userChannelList = chatItem.serviceList[service];
-                if (!userChannelList) {
-                    continue;
+            var serviceObjMap = {};
+            items.forEach(function (item) {
+                var userId = item.userId;
+                if (users.indexOf(userId) === -1) {
+                    users.push(userId);
                 }
 
-                channelList = top[service];
-                if (channelList === undefined) {
-                    channelList = top[service] = {};
+                var service = serviceObjMap[item.service];
+                if (!service) {
+                    service = serviceObjMap[item.service] = {
+                        name: item.service,
+                        count: 0,
+                        channels: [],
+                        channelObjMap: {}
+                    };
+                    services.push(service);
                 }
 
-                for (var i = 0; channelName = userChannelList[i]; i++) {
-                    if (channelList[channelName] === undefined) {
-                        channelList[channelName] = 0;
-                    }
-                    channelList[channelName]++;
+                var channelId = item.channelId;
+                var channel = service.channelObjMap[channelId];
+                if (!channel) {
+                    channel = service.channelObjMap[channelId] = {
+                        id: channelId,
+                        count: 0
+                    };
+                    service.count++;
+                    service.channels.push(channel);
+                    channels.push(channel);
                 }
-            }
-        }
+                channel.count++;
+            });
+            serviceObjMap = null;
 
-        var topObj = {};
-        for (service in top) {
-            channelList = top[service];
+            var sortFn = function (aa, bb) {
+                var a = aa.count;
+                var b = bb.count;
+                return a === b ? 0 : a > b ? -1 : 1;
+            };
 
-            channelCount += Object.keys(channelList).length;
+            services.sort(sortFn);
 
-            if (!topObj[service]) {
-                topObj[service] = [];
-            }
+            services.forEach(function (service) {
+                delete service.channelObjMap;
 
-            for (channelName in channelList) {
-                var count = channelList[channelName];
-                topObj[service].push([channelName, count]);
-            }
-        }
+                service.channels.sort(sortFn).splice(10);
+            });
 
-        var textArr = [];
-
-        textArr.push(_this.gOptions.language.users.replace('{count}', userCount));
-        textArr.push(_this.gOptions.language.channels.replace('{count}', channelCount));
-
-        var _topObj = {};
-        var promiseList = [];
-        Object.keys(topObj).forEach(function (service) {
-            _topObj[service] = [];
-            topObj[service].sort(function (a, b) {
-                return a[1] === b[1] ? 0 : a[1] > b[1] ? -1 : 1
-            }).splice(10);
-            topObj[service].forEach(function (item) {
-                promiseList.push(base.getChannelTitle(_this.gOptions, service, item[0]).then(function (title) {
-                    return {service: service, title: title};
+            return Promise.all(services.map(function (service) {
+                return Promise.all(service.channels.map(function (channel) {
+                    return base.getChannelTitle(_this.gOptions, service.name, channel.id).then(function (title) {
+                        channel.title = title;
+                    })
                 }));
+            })).then(function () {
+                return {
+                    users: users,
+                    channels: channels,
+                    services: services
+                };
             });
-        });
+        }).then(function (info) {
+            var textArr = [];
 
-        return Promise.all(promiseList).then(function (result) {
-            result.forEach(function (item) {
-                _topObj[item.service].push(item.title);
-            });
+            textArr.push(_this.gOptions.language.users.replace('{count}', info.users.length));
+            textArr.push(_this.gOptions.language.channels.replace('{count}', info.channels.length));
 
-            Object.keys(_topObj).forEach(function (service) {
+            info.services.forEach(function (service) {
                 textArr.push('');
                 textArr.push(_this.gOptions.serviceToTitle[service] + ':');
-                _topObj[service].forEach(function (title, index) {
-                    textArr.push((index + 1) + '. ' + title);
+                service.channels.forEach(function (channel, index) {
+                    textArr.push((index + 1) + '. ' + channel.title);
                 });
             });
 
@@ -897,39 +894,29 @@ var commands = {
     refreshChannelInfo: function(msg) {
         var _this = this;
         var chatId = msg.chat.id;
-        var services = _this.gOptions.services;
 
-        var queue = Promise.resolve();
+        return _this.gOptions.checker.getChannelList().then(function (serviceChannelList) {
+            var pool = new base.Pool(100);
+            var promiseList = [];
 
-        var serviceChannelList = _this.gOptions.checker.getChannelList();
-        for (var service in serviceChannelList) {
-            if (!serviceChannelList.hasOwnProperty(service)) {
-                continue;
-            }
+            var services = _this.gOptions.services;
+            Object.keys(serviceChannelList).forEach(function (serviceName) {
+                var service = services[serviceName];
+                if (!service) {
+                    debug('Service %s is not found!', serviceName);
+                    return;
+                }
 
-            if (!services[service]) {
-                debug('Service %s is not found!', service);
-                continue;
-            }
+                serviceChannelList[serviceName].forEach(function (id) {
+                    promiseList.push(pool.push(service.getChannelId(id).catch(function (err) {
+                        debug('refreshChannelInfo %s', id, err);
+                    })));
+                });
+            });
 
-            var channelList = JSON.parse(JSON.stringify(serviceChannelList[service]));
-            while (channelList.length) {
-                var arr = channelList.splice(0, 100);
-                (function(service, arr) {
-                    queue = queue.then(function() {
-                        var promiseList = arr.map(function(id) {
-                            return services[service].getChannelId(id).catch(function (err) {
-                                debug('refreshChannelInfo %s', id, err);
-                            });
-                        });
-                        return Promise.all(promiseList);
-                    });
-                })(service, arr);
-            }
-        }
-
-        return queue.then(function() {
-            return _this.gOptions.bot.sendMessage(chatId, 'Done!');
+            return Promise.all(promiseList).then(function() {
+                return _this.gOptions.bot.sendMessage(chatId, 'Done!');
+            });
         });
     },
     checkUserAlive: function(msg) {
@@ -939,10 +926,10 @@ var commands = {
         var queue = Promise.resolve();
 
         _this.gOptions.users.getAllUsers().then(function (chatList) {
-            chatList.forEach(function () {
-                queue = queue.then(function (chatId) {
+            chatList.forEach(function (chatId) {
+                queue = queue.then(function () {
                     return _this.gOptions.bot.sendChatAction(chatId, 'typing').catch(function (err) {
-                        debug('Send chat action error! %s', chatId, err);
+                        debug('checkUserAlive %s', chatId, err);
                         _this.gOptions.msgSender.onSendMsgError(err, chatId);
                     });
                 });
