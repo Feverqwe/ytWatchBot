@@ -67,7 +67,7 @@ Users.prototype.getChat = function (id) {
         });
     });
 };
-
+  
 Users.prototype.setChat = function (id, uuid, data) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {

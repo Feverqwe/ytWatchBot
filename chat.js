@@ -174,18 +174,21 @@ Chat.prototype.onCallbackQuery = function (callbackQuery) {
         }
     }
 
-    args.unshift(callbackQuery);
+    return _this.gOptions.users.initChat(callbackQuery.id).then(function (chat) {
+        args.unshift(chat);
+        args.unshift(callbackQuery);
 
-    var origMsg = this.callbackQueryToMsg(callbackQuery);
+        var origMsg = this.callbackQueryToMsg(callbackQuery);
 
-    return commandFunc.apply(this, args).then(function () {
-        return _this.gOptions.bot.answerCallbackQuery(callbackQuery.id, '...');
-    }).catch(function(err) {
-        if (!/message is not modified/.test(err.message)) {
-            debug('Execute callback query command %s error!', action, err);
-        }
-    }).then(function() {
-        _this.track(origMsg, action)
+        return commandFunc.apply(this, args).then(function () {
+            return _this.gOptions.bot.answerCallbackQuery(callbackQuery.id, '...');
+        }).catch(function (err) {
+            if (!/message is not modified/.test(err.message)) {
+                debug('Execute callback query command %s error!', action, err);
+            }
+        }).then(function () {
+            _this.track(origMsg, action)
+        });
     });
 };
 
@@ -253,14 +256,17 @@ Chat.prototype.onMessage = function(msg) {
         }
     }
 
-    args.unshift(msg);
+    return _this.gOptions.users.initChat(id).then(function (chat) {
+        args.unshift(chat);
+        args.unshift(msg);
 
-    var origMsg = JSON.parse(JSON.stringify(msg));
+        var origMsg = JSON.parse(JSON.stringify(msg));
 
-    return commandFunc.apply(this, args).catch(function(err) {
-        debug('Execute command %s error!', action, err);
-    }).then(function() {
-        _this.track(origMsg, action)
+        return commandFunc.apply(this, args).catch(function(err) {
+            debug('Execute command %s error!', action, err);
+        }).then(function() {
+            _this.track(origMsg, action)
+        });
     });
 };
 
