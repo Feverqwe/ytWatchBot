@@ -68,12 +68,11 @@ Users.prototype.getChat = function (id) {
     });
 };
 
-Users.prototype.setChat = function (id, uuid, data) {
+Users.prototype.setChat = function (id, data) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         var item = {
             id: id,
-            uuid: uuid,
             data: data
         };
         db.connection.query('\

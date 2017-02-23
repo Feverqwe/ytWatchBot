@@ -215,55 +215,61 @@ var commands = {
             })
         });
     },
-    a: function (msg, channelName, service) {
+    a: function (msg, channelId, service) {
         var _this = this;
         var chatId = msg.chat.id;
 
-        return _this.gOptions.services[service].getChannelId(channelName).then(function (channelName) {
-            return base.getChannelLocalTitle(_this.gOptions, service, channelName).then(function (title) {
+        return _this.gOptions.services[service].getChannelId(channelId).then(function (channelId) {
+            return base.getChannelLocalTitle(_this.gOptions, service, channelId).then(function (title) {
+                return _this.gOptions.users.getChat(chatId).then(function (chat) {
+                    return _this.gOptions.users.getChannels(chatId).then(function (channels) {
+                        var found = channels.some(function (item) {
+                            return item.service === service && item.channelId === channelId;
+                        });
 
-                var chatList = _this.gOptions.storage.chatList;
-                var chatItem = chatList[chatId] = chatList[chatId] || {};
-                chatItem.chatId = chatId;
-
-                var serviceList = chatItem.serviceList = chatItem.serviceList || {};
-                var channelList = serviceList[service] = serviceList[service] || [];
-
-                if (channelList.indexOf(channelName) !== -1) {
-                    return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.channelExists);
-                }
-
-                channelList.push(channelName);
-
-                var url = base.getChannelUrl(service, channelName);
-
-                var displayName = base.htmlSanitize('a', title, url);
-
-                if (service === 'youtube') {
-                    _this.gOptions.events.emit('subscribe', channelName);
-                }
-
-                return base.storage.set({chatList: chatList}).then(function () {
-                    return _this.gOptions.bot.sendMessage(
-                        chatId,
-                        _this.gOptions.language.channelAdded
-                            .replace('{channelName}', displayName)
-                            .replace('{serviceName}', base.htmlSanitize(_this.gOptions.serviceToTitle[service])),
-                        {
-                            disable_web_page_preview: true,
-                            parse_mode: 'HTML'
+                        if (found) {
+                            return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.channelExists);
                         }
-                    );
+
+                        var promise = Promise.resolve();
+                        if (!chat) {
+                            promise = promise.then(function () {
+                                return _this.gOptions.users.setChat(chatId, JSON.stringify({}));
+                            });
+                        }
+                        promise = promise.then(function () {
+                            return _this.gOptions.users.insertChannel(chatId, service, channelId).then(function () {
+                                var url = base.getChannelUrl(service, channelId);
+                                var displayName = base.htmlSanitize('a', title, url);
+
+                                if (service === 'youtube') {
+                                    _this.gOptions.events.emit('subscribe', channelId);
+                                }
+
+                                return _this.gOptions.bot.sendMessage(
+                                    chatId,
+                                    _this.gOptions.language.channelAdded
+                                        .replace('{channelName}', displayName)
+                                        .replace('{serviceName}', base.htmlSanitize(_this.gOptions.serviceToTitle[service])),
+                                    {
+                                        disable_web_page_preview: true,
+                                        parse_mode: 'HTML'
+                                    }
+                                );
+                            });
+                        });
+                        return promise;
+                    });
                 });
             });
         }).catch(function(err) {
             if (!err instanceof CustomError) {
-                debug('Channel %s (%s) is not found!', channelName, service, err);
+                debug('Channel %s (%s) is not found!', channelId, service, err);
             }
             return _this.gOptions.bot.sendMessage(
                 chatId,
                 _this.gOptions.language.channelIsNotFound
-                    .replace('{channelName}', channelName)
+                    .replace('{channelName}', channelId)
                     .replace('{serviceName}', _this.gOptions.serviceToTitle[service])
             );
         });
