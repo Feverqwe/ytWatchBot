@@ -254,9 +254,13 @@ utils.Quote = function (limitPerSecond) {
         return function () {
             var args = [].slice.call(arguments);
 
-            return new Promise(function (resolve) {
+            return new Promise(function (resolve, reject) {
                 queue.push(function () {
-                    resolve(callback.apply(thisArg, args));
+                    try {
+                        resolve(callback.apply(thisArg, args));
+                    } catch (err) {
+                        reject(err);
+                    }
                 });
                 next();
             });
