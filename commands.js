@@ -600,21 +600,18 @@ var commands = {
         var _this = this;
         var msg = callbackQuery.message;
         var chatId = msg.chat.id;
-        var chatItem = _this.gOptions.storage.chatList[chatId];
-
-        if (!chatItem) {
-            return _this.gOptions.bot.editMessageText(
-                chatId,
-                _this.gOptions.language.emptyServiceList,
-                {
-                    message_id: msg.message_id
-                }
-            );
-        }
-
-        delete _this.gOptions.storage.chatList[chatId];
-
-        return base.storage.set({chatList: _this.gOptions.storage.chatList}).then(function () {
+        return _this.gOptions.users.getChat(chatId).then(function (chatItem) {
+            if (!chatItem) {
+                return _this.gOptions.bot.editMessageText(
+                    chatId,
+                    _this.gOptions.language.emptyServiceList,
+                    {
+                        message_id: msg.message_id
+                    }
+                );
+            }
+            return _this.gOptions.users.removeChat(chatItem.id);
+        }).then(function () {
             return _this.gOptions.bot.editMessageText(
                 chatId,
                 _this.gOptions.language.cleared,
