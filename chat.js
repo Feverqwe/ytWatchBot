@@ -121,63 +121,6 @@ Chat.prototype.msgParser = function(text) {
     return list;
 };
 
-Chat.prototype.removeChannel = function(channelName) {
-    var chatList = this.gOptions.storage.chatList;
-
-    var needSave = false;
-
-    Object.keys(chatList).forEach(function (chatId) {
-        var item = chatList[chatId];
-        var options = item.options;
-
-        if (options && options.channel === channelName) {
-            delete options.channel;
-            delete options.mute;
-            if (!Object.keys(options).length) {
-                delete item.options;
-            }
-            needSave = true;
-        }
-    });
-
-    if (!needSave) {
-        return Promise.resolve();
-    } else {
-        return base.storage.set({chatList: chatList});
-    }
-};
-
-Chat.prototype.removeChat = function(chatId) {
-    var chatList = this.gOptions.storage.chatList;
-
-    var chatItem = chatList[chatId];
-    if (!chatItem) {
-        return Promise.resolve();
-    }
-
-    delete chatList[chatId];
-
-    debug('Chat %s removed! %j', chatId, chatItem);
-
-    return base.storage.set({chatList: chatList});
-};
-
-Chat.prototype.chatMigrate = function(oldChatId, newChatId) {
-    var chatList = this.gOptions.storage.chatList;
-    var chatItem = chatList[oldChatId];
-
-    if (!chatItem) {
-        return;
-    }
-
-    delete chatList[oldChatId];
-    chatList[newChatId] = chatItem;
-    chatItem.chatId = newChatId;
-    debug('Chat migrate from %s to %s', oldChatId, newChatId);
-
-    return base.storage.set({chatList: chatList});
-};
-
 Chat.prototype.callbackQueryToMsg = function (callbackQuery) {
     var msg = JSON.parse(JSON.stringify(callbackQuery.message));
     msg.from = callbackQuery.from;
@@ -252,11 +195,11 @@ Chat.prototype.onMessage = function(msg) {
     var chatId = msg.chat.id;
 
     if (msg.migrate_from_chat_id) {
-        return this.chatMigrate(msg.migrate_from_chat_id, chatId);
+        return _this.gOptions.users.changeUserId(msg.migrate_from_chat_id, chatId);
     }
 
     if (msg.migrate_to_chat_id) {
-        return this.chatMigrate(chatId, msg.migrate_to_chat_id);
+        return _this.gOptions.users.changeUserId(chatId, msg.migrate_to_chat_id);
     }
 
     if (!text) {

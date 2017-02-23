@@ -446,12 +446,13 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
         if (!channelId) return;
 
         return _this.getChannelInfo(channelId).then(function (info) {
-            var chatIdList = _this.gOptions.msgStack.getChatIdList('youtube', channelId);
-            if (info.id) {
-                return requestPages(info, chatIdList);
-            } else {
-                debug('Channel info is not found!', channelId);
-            }
+            return _this.gOptions.msgStack.getChatIdList('youtube', channelId).then(function (chatIdList) {
+                if (info.id) {
+                    return requestPages(info, chatIdList);
+                } else {
+                    debug('Channel info is not found!', channelId);
+                }
+            });
         });
     });
 

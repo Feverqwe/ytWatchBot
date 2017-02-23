@@ -19,8 +19,10 @@ Users.prototype.init = function () {
             CREATE TABLE IF NOT EXISTS `users` ( \
                 `id` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
                 `uuid` TEXT CHARACTER SET utf8mb4 NOT NULL, \
+                `channelId` TEXT CHARACTER SET utf8mb4 NULL, \
                 `data` TEXT CHARACTER SET utf8mb4 NOT NULL, \
-            UNIQUE INDEX `id_UNIQUE` (`id` ASC)); \
+            UNIQUE INDEX `id_UNIQUE` (`id` ASC),\
+            UNIQUE INDEX `channelId_UNIQUE` (`channelId` ASC)); \
         ', function (err) {
                 if (err) {
                     reject(err);
@@ -134,6 +136,36 @@ Users.prototype.removeUser = function (id) {
     });
 };
 
+Users.prototype.setUserChannel = function (id, channelId) {
+    var db = this.gOptions.db;
+    return new Promise(function (resolve, reject) {
+        db.connection.query('\
+            UPDATE users SET channelId = ? WHERE id = ?; \
+        ', [channelId, id], function (err) {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
+            }
+        });
+    });
+};
+
+Users.prototype.removeUserChannel = function (channelId) {
+    var db = this.gOptions.db;
+    return new Promise(function (resolve, reject) {
+        db.connection.query('\
+            UPDATE users SET channelId = ? WHERE channelId = ?; \
+        ', [null, channelId], function (err) {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
+            }
+        });
+    });
+};
+
 Users.prototype.getChannels = function (userId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
@@ -188,8 +220,23 @@ Users.prototype.getAllChannels = function () {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
-            SELECT service, channelId FROM userIdChannelId; \
+            SELECT * FROM userIdChannelId; \
         ', function (err, results) {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(results);
+            }
+        });
+    });
+};
+
+Users.prototype.getUsersByChannel = function (service, channelId) {
+    var db = this.gOptions.db;
+    return new Promise(function (resolve, reject) {
+        db.connection.query('\
+            SELECT userId FROM userIdChannelId WHERE service = ? AND channelId = ?; \
+        ', [service, channelId], function (err, results) {
             if (err) {
                 reject(err);
             } else {

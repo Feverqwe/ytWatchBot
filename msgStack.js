@@ -114,21 +114,10 @@ MsgStack.prototype.getStackItems = function () {
 };
 
 MsgStack.prototype.getChatIdList = function (service, channelId) {
-    var chatList = this.gOptions.storage.chatList;
-    var chatIdList = [];
-    var chatItem, userChannelList;
-    for (var chatId in chatList) {
-        chatItem = chatList[chatId];
-        if (chatItem.serviceList) {
-            userChannelList = chatItem.serviceList[service];
-            if (userChannelList) {
-                if (userChannelList.indexOf(channelId) !== -1) {
-                    chatIdList.push(chatItem.chatId);
-                }
-            }
-        }
-    }
-    return chatIdList;
+    var _this = this;
+    return _this.gOptions.users.getUsersByChannel(service, channelId).then(function (chatIdList) {
+        return chatIdList;
+    });
 };
 
 MsgStack.prototype.sendLog = function (userId, messageId, data) {
@@ -196,30 +185,33 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
             data = JSON.parse(item.data);
         }
 
-        var chatItem = _this.gOptions.storage.chatList[userId];
-        if (!chatItem) {
-            debug('chatItem is not found! %s %s', userId, messageId);
-            return;
-        }
+        return _this.gOptions.gOptions.users.getUser(userId).then(function (user) {
+            if (!user) {
+                debug('Can\'t send message %s, user %s is not found!', messageId, userId);
+                return;
+            }
 
-        var options = chatItem.options || {};
+            var options = user.data ? JSON.parse(user.data) : {};
 
-        var text = '';
-        if (!options.hidePreview) {
-            text = base.getNowStreamPhotoText(_this.gOptions, data);
-        }
-        var noPhotoText = base.getNowStreamText(_this.gOptions, data);
+            var text = base.getNowStreamText(_this.gOptions, data);
+            var caption = '';
+            if (!options.hidePreview) {
+                caption = base.getNowStreamPhotoText(_this.gOptions, data);
+            }
 
-        var chatList = [];
-        if (options.channel) {
-            !options.mute && chatList.push(userId);
-            chatList.push(options.channel);
-        } else {
-            chatList.push(userId);
-        }
+            var chatList = [];
+            if (user.channelId) {
+                if (!options.mute) {
+                    chatList.push(user.id);
+                }
+                chatList.push(user.channelId);
+            } else {
+                chatList.push(user.id);
+            }
 
-        return _this.gOptions.msgSender.sendNotify(messageId, imageFileId, chatList, text, noPhotoText, data, true).then(function () {
-            _this.sendLog(userId, messageId, data);
+            return _this.gOptions.msgSender.sendNotify(messageId, imageFileId, chatList, caption, text, data, true).then(function () {
+                _this.sendLog(user.id, messageId, data);
+            });
         });
     }).then(function () {
         return _this.removeItem(userId, messageId);
