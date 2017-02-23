@@ -10,7 +10,7 @@ const Storage = require('./storage');
 var utils = {};
 /**
  *
- * @returns {bluebird|exports|module.exports}
+ * @returns {Promise}
  */
 utils.loadConfig = function() {
     return Promise.resolve().then(function() {
@@ -20,7 +20,7 @@ utils.loadConfig = function() {
 
 /**
  *
- * @returns {bluebird|exports|module.exports}
+ * @returns {Promise}
  */
 utils.loadLanguage = function() {
     return Promise.resolve().then(function() {
@@ -153,7 +153,7 @@ utils.extend = function() {
 };
 
 /**
- * @param {{}} gOptions
+ * @param {Object} gOptions
  * @param {String} service
  * @param {String} channelName
  * @return {Promise}
@@ -172,7 +172,7 @@ utils.getChannelTitle = function(gOptions, service, channelName) {
 };
 
 /**
- * @param {{}} gOptions
+ * @param {Object} gOptions
  * @param {String} service
  * @param {String} channelName
  * @return {Promise}
