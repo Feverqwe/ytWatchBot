@@ -82,7 +82,9 @@ Checker.prototype.getChannelList = function() {
             if (!channelList) {
                 channelList = serviceList[item.service] = [];
             }
-            channelList.push(item.channelId);
+            if (channelList.indexOf(item.channelId) === -1) {
+                channelList.push(item.channelId);
+            }
         });
         return serviceList;
     });

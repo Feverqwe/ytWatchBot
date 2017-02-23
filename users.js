@@ -235,7 +235,7 @@ Users.prototype.getUsersByChannel = function (service, channelId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
-            SELECT userId FROM userIdChannelId WHERE service = ? AND channelId = ?; \
+            SELECT DISTINCT userId FROM userIdChannelId WHERE service = ? AND channelId = ?; \
         ', [service, channelId], function (err, results) {
             if (err) {
                 reject(err);
