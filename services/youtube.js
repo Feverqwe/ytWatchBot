@@ -160,7 +160,7 @@ Youtube.prototype.videoIdInList = function(channelId, videoId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
-            SELECT videoId FROM messages WHERE videoId = ? AND channelId = ? LIMIT 1 \
+            SELECT videoId FROM messages WHERE videoId = ? AND channelId = ? LIMIT 1; \
         ', [videoId, channelId], function (err, results) {
             if (err) {
                 reject(err);
@@ -273,7 +273,7 @@ Youtube.prototype.insertItem = function (info, chatIdList, snippet) {
         data: JSON.stringify(data)
     };
 
-    var insert = function (video) {
+    var insert = function (item) {
         return db.newConnection().then(function (connection) {
             return new Promise(function (resolve, reject) {
                 connection.beginTransaction(function (err) {
@@ -285,11 +285,11 @@ Youtube.prototype.insertItem = function (info, chatIdList, snippet) {
                 });
             }).then(function () {
                 return new Promise(function (resolve, reject) {
-                    connection.query('INSERT INTO messages SET ?', video, function (err, results) {
+                    connection.query('INSERT INTO messages SET ?', item, function (err, results) {
                         if (err) {
                             reject(err);
                         } else {
-                            resolve(video.id);
+                            resolve(item.id);
                         }
                     });
                 });
@@ -318,12 +318,12 @@ Youtube.prototype.insertItem = function (info, chatIdList, snippet) {
             });
         });
     };
-    return insert(item).then(function () {
-        return item;
-    }, function (err) {
-        if (err.code !== 'ER_DUP_ENTRY') {
-            throw err;
-        }
+    return _this.videoIdInList(item.channelId, item.videoId).then(function (exists) {
+        if (exists) return;
+
+        return insert(item).then(function () {
+            return item;
+        });
     }).catch(function (err) {
         debug('insertItem', err);
     });
