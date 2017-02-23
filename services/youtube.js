@@ -65,7 +65,7 @@ Youtube.prototype.getChannelInfo = function (channelId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
-            SELECT * FROM ytChannels WHERE id = ? LIMIT 1 \
+            SELECT * FROM ytChannels WHERE id = ? LIMIT 1; \
         ', [channelId], function (err, results) {
             if (err) {
                 reject(err);

@@ -13,14 +13,12 @@ const Daemon = require('./daemon');
 const Tracker = require('./tracker');
 const MsgStack = require('./msgStack');
 const MsgSender = require('./msgSender');
+const Users = require('.users');
 const Db = require('./db');
 
 var options = {
     config: {},
     language: {},
-    storage: {
-        chatList: {}
-    },
     serviceList: ['youtube'],
     serviceToTitle: {
         youtube: 'Youtube'
@@ -47,15 +45,13 @@ var options = {
         }),
         base.loadLanguage().then(function(language) {
             options.language = language;
-        }),
-        base.storage.get(Object.keys(options.storage)).then(function(storage) {
-            for (var key in storage) {
-                options.storage[key] = storage[key];
-            }
         })
     ]).then(function() {
         options.db = new Db(options);
         return options.db.onReady;
+    }).then(function() {
+        options.users = new Users(options);
+        return options.users.onReady;
     }).then(function() {
         options.msgStack = new MsgStack(options);
         return options.msgStack.onReady;
@@ -66,6 +62,7 @@ var options = {
             return service.onReady;
         }));
     }).then(function() {
+        throw new Error('working...');
         options.daemon = new Daemon(options);
 
         (typeof gc === 'function') && options.events.on('tickTack', function() {
