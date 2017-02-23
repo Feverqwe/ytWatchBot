@@ -273,17 +273,6 @@ Youtube.prototype.insertItem = function (info, chatIdList, snippet) {
         data: JSON.stringify(data)
     };
 
-    var update = function (video) {
-        return new Promise(function (resolve, reject) {
-            db.connection.query('UPDATE messages SET ? WHERE videoId = ? AND channelId = ?', [video, video.videoId, video.channelId], function (err, results) {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve();
-                }
-            });
-        });
-    };
     var insert = function (video) {
         return db.newConnection().then(function (connection) {
             return new Promise(function (resolve, reject) {
@@ -332,10 +321,9 @@ Youtube.prototype.insertItem = function (info, chatIdList, snippet) {
     return insert(item).then(function () {
         return item;
     }, function (err) {
-        if (err.code === 'ER_DUP_ENTRY') {
-            return update(item);
+        if (err.code !== 'ER_DUP_ENTRY') {
+            throw err;
         }
-        throw err;
     }).catch(function (err) {
         debug('insertItem', err);
     });
