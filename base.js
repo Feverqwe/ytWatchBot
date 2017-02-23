@@ -6,7 +6,6 @@ const fs = require('fs');
 const path = require('path');
 const debug = require('debug')('app:base');
 const Storage = require('./storage');
-const Promise = require('bluebird');
 
 var utils = {};
 /**
