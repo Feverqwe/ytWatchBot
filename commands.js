@@ -576,24 +576,24 @@ var commands = {
     clear: function (msg) {
         var _this = this;
         var chatId = msg.chat.id;
-        var chatItem = _this.gOptions.storage.chatList[chatId];
 
-        if (!chatItem) {
-            return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
-        }
+        return _this.gOptions.users.getChat(chatId).then(function (chatItem) {
+            if (!chatItem) {
+                return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
+            }
+            var btnList = [[{
+                text: 'Yes',
+                callback_data: '/clearyes'
+            }, {
+                text: 'No',
+                callback_data: '/c "clear"'
+            }]];
 
-        var btnList = [[{
-            text: 'Yes',
-            callback_data: '/clearyes'
-        }, {
-            text: 'No',
-            callback_data: '/c "clear"'
-        }]];
-
-        return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.clearSure, {
-            reply_markup: JSON.stringify({
-                inline_keyboard: btnList
-            })
+            return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.clearSure, {
+                reply_markup: JSON.stringify({
+                    inline_keyboard: btnList
+                })
+            });
         });
     },
     clearyes__Cb: function(callbackQuery) {
@@ -610,15 +610,16 @@ var commands = {
                     }
                 );
             }
-            return _this.gOptions.users.removeChat(chatItem.id);
-        }).then(function () {
-            return _this.gOptions.bot.editMessageText(
-                chatId,
-                _this.gOptions.language.cleared,
-                {
-                    message_id: msg.message_id
-                }
-            );
+
+            return _this.gOptions.users.removeChat(chatItem.id).then(function () {
+                return _this.gOptions.bot.editMessageText(
+                    chatId,
+                    _this.gOptions.language.cleared,
+                    {
+                        message_id: msg.message_id
+                    }
+                );
+            });
         });
     },
     list: function (msg) {
