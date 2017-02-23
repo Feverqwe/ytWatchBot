@@ -218,10 +218,11 @@ var commands = {
     a: function (msg, channelName, service) {
         var _this = this;
         var chatId = msg.chat.id;
-        var chatList = _this.gOptions.storage.chatList;
 
         return _this.gOptions.services[service].getChannelId(channelName).then(function (channelName) {
             return base.getChannelLocalTitle(_this.gOptions, service, channelName).then(function (title) {
+
+                var chatList = _this.gOptions.storage.chatList;
                 var chatItem = chatList[chatId] = chatList[chatId] || {};
                 chatItem.chatId = chatId;
 

@@ -18,7 +18,6 @@ Users.prototype.init = function () {
             db.connection.query('\
             CREATE TABLE IF NOT EXISTS `users` ( \
                 `id` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
-                `uuid` TEXT CHARACTER SET utf8mb4 NOT NULL, \
                 `channelId` TEXT CHARACTER SET utf8mb4 NULL, \
                 `data` TEXT CHARACTER SET utf8mb4 NOT NULL, \
             UNIQUE INDEX `id_UNIQUE` (`id` ASC),\
