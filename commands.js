@@ -938,20 +938,18 @@ var commands = {
 
         var queue = Promise.resolve();
 
-        var chatList = _this.gOptions.storage.chatList;
-        for (var _chatId in chatList) {
-            var chatItem = chatList[_chatId];
-            (function(chatId) {
-                queue = queue.finally(function () {
+        _this.gOptions.users.getAllUsers().then(function (chatList) {
+            chatList.forEach(function () {
+                queue = queue.then(function (chatId) {
                     return _this.gOptions.bot.sendChatAction(chatId, 'typing').catch(function (err) {
                         debug('Send chat action error! %s', chatId, err);
                         _this.gOptions.msgSender.onSendMsgError(err, chatId);
                     });
                 });
-            })(chatItem.chatId);
-        }
+            });
+        });
 
-        return queue.finally(function() {
+        return queue.then(function() {
             return _this.gOptions.bot.sendMessage(chatId, 'Done!');
         });
     }

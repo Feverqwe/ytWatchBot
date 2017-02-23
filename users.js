@@ -235,7 +235,22 @@ Users.prototype.getUsersByChannel = function (service, channelId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
-            SELECT DISTINCT userId FROM userIdChannelId WHERE service = ? AND channelId = ?; \
+            SELECT userId FROM userIdChannelId WHERE service = ? AND channelId = ?; \
+        ', [service, channelId], function (err, results) {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(results);
+            }
+        });
+    });
+};
+
+Users.prototype.getAllUsers = function (service, channelId) {
+    var db = this.gOptions.db;
+    return new Promise(function (resolve, reject) {
+        db.connection.query('\
+            SELECT DISTINCT userId FROM userIdChannelId; \
         ', [service, channelId], function (err, results) {
             if (err) {
                 reject(err);
