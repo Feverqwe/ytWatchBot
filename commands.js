@@ -790,7 +790,7 @@ var commands = {
         var _this = this;
         var chatId = msg.chat.id;
 
-        return _this.gOptions.users.getAllUserChannels().then(function (items) {
+        return _this.gOptions.users.getAllChatChannels().then(function (items) {
             var users = [];
             var channels = [];
             var services = [];
@@ -926,7 +926,7 @@ var commands = {
 
         var queue = Promise.resolve();
 
-        _this.gOptions.users.getAllUsers().then(function (chatList) {
+        _this.gOptions.users.getAllChatIds().then(function (chatList) {
             chatList.forEach(function (chatId) {
                 queue = queue.then(function () {
                     return _this.gOptions.bot.sendChatAction(chatId, 'typing').catch(function (err) {

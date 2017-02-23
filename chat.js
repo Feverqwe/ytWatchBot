@@ -195,11 +195,11 @@ Chat.prototype.onMessage = function(msg) {
     var chatId = msg.chat.id;
 
     if (msg.migrate_from_chat_id) {
-        return _this.gOptions.users.changeUserId(msg.migrate_from_chat_id, chatId);
+        return _this.gOptions.users.changeChatId(msg.migrate_from_chat_id, chatId);
     }
 
     if (msg.migrate_to_chat_id) {
-        return _this.gOptions.users.changeUserId(chatId, msg.migrate_to_chat_id);
+        return _this.gOptions.users.changeChatId(chatId, msg.migrate_to_chat_id);
     }
 
     if (!text) {

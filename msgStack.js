@@ -115,7 +115,7 @@ MsgStack.prototype.getStackItems = function () {
 
 MsgStack.prototype.getChatIdList = function (service, channelId) {
     var _this = this;
-    return _this.gOptions.users.getUsersByChannel(service, channelId).then(function (chatIdList) {
+    return _this.gOptions.users.getChatIdsByChannel(service, channelId).then(function (chatIdList) {
         return chatIdList;
     });
 };
@@ -185,7 +185,7 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
             data = JSON.parse(item.data);
         }
 
-        return _this.gOptions.gOptions.users.getUser(userId).then(function (user) {
+        return _this.gOptions.gOptions.users.getChat(userId).then(function (user) {
             if (!user) {
                 debug('Can\'t send message %s, user %s is not found!', messageId, userId);
                 return;

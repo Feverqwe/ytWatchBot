@@ -53,7 +53,7 @@ Users.prototype.init = function () {
     return promise;
 };
 
-Users.prototype.getUser = function (id) {
+Users.prototype.getChat = function (id) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
@@ -68,7 +68,7 @@ Users.prototype.getUser = function (id) {
     });
 };
 
-Users.prototype.setUser = function (id, uuid, data) {
+Users.prototype.setChat = function (id, uuid, data) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         var item = {
@@ -88,7 +88,7 @@ Users.prototype.setUser = function (id, uuid, data) {
     });
 };
 
-Users.prototype.changeUserId = function (id, newId) {
+Users.prototype.changeChatId = function (id, newId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
@@ -103,7 +103,7 @@ Users.prototype.changeUserId = function (id, newId) {
     });
 };
 
-Users.prototype.changeUserData = function (id, data) {
+Users.prototype.changeChatData = function (id, data) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
@@ -118,7 +118,7 @@ Users.prototype.changeUserData = function (id, data) {
     });
 };
 
-Users.prototype.removeUser = function (id) {
+Users.prototype.removeChat = function (id) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
@@ -133,7 +133,7 @@ Users.prototype.removeUser = function (id) {
     });
 };
 
-Users.prototype.setUserChannel = function (id, channelId) {
+Users.prototype.setChatChannel = function (id, channelId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
@@ -148,7 +148,7 @@ Users.prototype.setUserChannel = function (id, channelId) {
     });
 };
 
-Users.prototype.removeUserChannel = function (channelId) {
+Users.prototype.removeChatChannel = function (channelId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
@@ -213,7 +213,7 @@ Users.prototype.removeChannel = function (chatId, service, channelId) {
     });
 };
 
-Users.prototype.getAllUserChannels = function () {
+Users.prototype.getAllChatChannels = function () {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
@@ -243,7 +243,7 @@ Users.prototype.getAllChannels = function () {
     });
 };
 
-Users.prototype.getUsersByChannel = function (service, channelId) {
+Users.prototype.getChatIdsByChannel = function (service, channelId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
@@ -258,7 +258,7 @@ Users.prototype.getUsersByChannel = function (service, channelId) {
     });
 };
 
-Users.prototype.getAllUsers = function () {
+Users.prototype.getAllChatIds = function () {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\

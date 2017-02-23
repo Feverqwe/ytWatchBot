@@ -40,16 +40,16 @@ MsgSender.prototype.onSendMsgError = function(err, chatId) {
         if (msg && msg.parameters) {
             var parameters = msg.parameters;
             if (parameters.migrate_to_chat_id) {
-                _this.gOptions.users.changeUserId(chatId, parameters.migrate_to_chat_id);
+                _this.gOptions.users.changeChatId(chatId, parameters.migrate_to_chat_id);
             }
         }
     }
 
     if (needKick) {
         if (/^@\w+$/.test(chatId)) {
-            _this.gOptions.users.removeUserChannel(chatId);
+            _this.gOptions.users.removeChatChannel(chatId);
         } else {
-            _this.gOptions.users.removeUser(chatId);
+            _this.gOptions.users.removeChat(chatId);
         }
     }
 
