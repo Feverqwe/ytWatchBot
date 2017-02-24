@@ -39,6 +39,7 @@ Users.prototype.init = function () {
                 `chatId` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
                 `service` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
                 `channelId` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
+                `insertTime` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, \
             INDEX `chatId_idx` (`chatId` ASC), \
             INDEX `service_idx` (`service` ASC), \
             INDEX `channelId_idx` (`channelId` ASC), \
@@ -207,7 +208,7 @@ Users.prototype.getChannels = function (chatId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
-            SELECT service, channelId FROM chatIdChannelId WHERE chatId = ?; \
+            SELECT service, channelId FROM chatIdChannelId WHERE chatId = ? ORDER BY insertTime ASC; \
         ', [chatId], function (err, results) {
             if (err) {
                 reject(err);
