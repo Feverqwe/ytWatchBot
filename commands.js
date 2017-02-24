@@ -917,16 +917,13 @@ var commands = {
         var chatId = msg.chat.id;
 
         var services = _this.gOptions.services;
-        return _this.gOptions.checker.getChannelList().then(function (serviceChannelList) {
+        return _this.gOptions.users.getAllChannels().then(function (channels) {
             var queue = Promise.resolve();
-            Object.keys(serviceChannelList).forEach(function (serviceName) {
-                var service = services[serviceName];
-
-                serviceChannelList[serviceName].forEach(function (id) {
-                    queue = queue.then(function () {
-                        return service.getChannelId(id).catch(function (err) {
-                            debug('refreshChannelInfo %s', id, err);
-                        });
+            channels.forEach(function (item) {
+                var service = services[item.service];
+                queue = queue.then(function () {
+                    return service.getChannelId(item.channelId).catch(function (err) {
+                        debug('refreshChannelInfo %s', item.channelId, err);
                     });
                 });
             });
