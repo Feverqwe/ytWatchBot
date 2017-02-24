@@ -77,9 +77,9 @@ var optionsBtnList = function (chat) {
         }]);
     }
 
-    if (options.channel) {
+    if (chat.channelId) {
         btnList.push([{
-            text: 'Remove channel (' + options.channel + ')',
+            text: 'Remove channel (' + chat.channelId + ')',
             callback_data: '/setchannel remove'
         }]);
     } else {
@@ -89,7 +89,7 @@ var optionsBtnList = function (chat) {
         }]);
     }
 
-    if (options.channel) {
+    if (chat.channelId) {
         if (options.mute) {
             btnList.push([{
                 text: 'Unmute',
@@ -151,6 +151,9 @@ var setOption = function (_this, chat, optionName, state) {
     var options = chat.options;
 
     options[optionName] = state === '1';
+    if (!options[optionName]) {
+        delete options[optionName];
+    }
 
     var msgText = 'Option ' + optionName + ' (' + state + ') changed!';
 
@@ -709,7 +712,7 @@ var commands = {
             var onGetChannelId = function (msg, channelId) {
                 channelId = channelId.trim();
                 return Promise.resolve().then(function () {
-                    var options = base.getObjectItem(chat, 'options', {});
+                    var options = chat.options;
 
                     if (channelId === 'remove') {
                         chat.channelId = null;
@@ -722,10 +725,13 @@ var commands = {
                         /*if (exists) {
                             throw new Error('CHANNEL_EXISTS');
                         }*/
-                        chat.channelId = channelId;
 
-                        return _this.gOptions.users.setChat(chat);
+                        return _this.gOptions.bot.sendChatAction(channelId, 'typing').then(function () {
+                            chat.channelId = channelId;
+                        });
                     }
+
+                    return _this.gOptions.users.setChat(chat);
                 }).catch(function (err) {
                     var msgText = _this.gOptions.language.telegramChannelError;
                     msgText = msgText.replace('{channelName}', channelId);

@@ -18,7 +18,7 @@ Users.prototype.init = function () {
             db.connection.query('\
             CREATE TABLE IF NOT EXISTS `chats` ( \
                 `id` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
-                `channelId` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
+                `channelId` VARCHAR(191) CHARACTER SET utf8mb4 NULL, \
                 `options` TEXT CHARACTER SET utf8mb4 NOT NULL, \
             UNIQUE INDEX `id_UNIQUE` (`id` ASC), \
             UNIQUE INDEX `channelId_UNIQUE` (`id` ASC)); \
@@ -91,6 +91,7 @@ Users.prototype.setChat = function (chat) {
     return new Promise(function (resolve, reject) {
         var item = {
             id: chat.id,
+            channelId: chat.channelId,
             options: JSON.stringify(chat.options || {})
         };
         db.connection.query('\
