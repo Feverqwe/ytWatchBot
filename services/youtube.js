@@ -195,8 +195,8 @@ var formatDuration = function (str) {
         if (parts[0] === 0) {
             parts.shift();
         }
-        result = parts.map(function (count) {
-            if (count < 10) {
+        result = parts.map(function (count, index) {
+            if (index > 0 && count < 10) {
                 count = '0' + count;
             }
             return count;
@@ -543,7 +543,9 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
             });
         };
 
-        return getPage().catch(function(err) {
+        return getPage().then(function () {
+            return videoIds;
+        }).catch(function(err) {
             debug('requestPages error! %s', channelId, err);
         });
     };
@@ -560,7 +562,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                 }
 
                 return requestNewVideoIds(channel).then(function (videoIds) {
-                    return getVideoIdsInfo(info, videoIds, chatIdList);
+                    return getVideoIdsInfo(channel, videoIds, chatIdList);
                 });
             });
         });
