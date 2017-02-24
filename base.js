@@ -18,26 +18,6 @@ utils.loadConfig = function() {
 };
 
 /**
- *
- * @returns {Promise}
- */
-utils.loadLanguage = function() {
-    return Promise.resolve().then(function() {
-        var language = JSON.parse(fs.readFileSync(path.join(__dirname, 'language.json')));
-
-        for (var key in language) {
-            var item = language[key];
-            if (Array.isArray(item)) {
-                item = item.join('\n');
-            }
-            language[key] = item;
-        }
-
-        return language;
-    });
-};
-
-/**
  * @param {string} type
  * @param {string} [text]
  * @param {string} [url]

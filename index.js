@@ -42,9 +42,6 @@ var options = {
             options.config = config;
 
             config.botName && (config.botName = config.botName.toLowerCase());
-        }),
-        base.loadLanguage().then(function(language) {
-            options.language = language;
         })
     ]).then(function() {
         options.locale = new Locale(options);
