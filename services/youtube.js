@@ -561,9 +561,13 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                 }
 
                 return requestNewVideoIds(channel).then(function (videoIds) {
-                    return Promise.all(base.arrToParts(videoIds, 50).map(function (partVideoIds) {
-                        return getVideoIdsInfo(channel, partVideoIds, chatIdList);
-                    }));
+                    var queue = Promise.resolve();
+                    base.arrToParts(videoIds, 50).forEach(function (partVideoIds) {
+                        queue = queue.then(function () {
+                            return getVideoIdsInfo(channel, partVideoIds, chatIdList);
+                        });
+                    });
+                    return queue;
                 });
             });
         });
