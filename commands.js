@@ -891,7 +891,7 @@ var commands = {
         var chatId = msg.chat.id;
 
         var liveTime = {
-            endTime: '2017,05,05',
+            endTime: '1970-01-01',
             message: [
                 '{count}'
             ]
