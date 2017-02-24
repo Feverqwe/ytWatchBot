@@ -903,7 +903,7 @@ var commands = {
         }
 
         var count = '';
-        var endTime = /\d{4}.\d{2}.\d{2}/.exec(liveTime.endTime);
+        var endTime = /(\d{4}).(\d{2}).(\d{2})/.exec(liveTime.endTime);
         if (endTime) {
             endTime = (new Date(endTime[1], endTime[2], endTime[3])).getTime();
             count = parseInt((endTime - Date.now()) / 1000 / 60 / 60 / 24 / 30 * 10) / 10;
