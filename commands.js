@@ -398,24 +398,26 @@ var commands = {
             }
 
             return _this.gOptions.users.removeChannel(chatId, service, channelId).then(function () {
-                // todo: fix me
-                /*if (channelList.length === 0) {
-                 delete chatItem.serviceList[service];
-
-                 if (Object.keys(chatItem.serviceList).length === 0) {
-                 delete chatList[chatId];
-                 }
-                 }*/
-
-                return _this.gOptions.bot.editMessageText(
-                    chatId,
-                    _this.gOptions.language.channelDeleted
-                        .replace('{channelName}', channelId)
-                        .replace('{serviceName}', _this.gOptions.serviceToTitle[service]),
-                    {
-                        message_id: msg.message_id
+                return _this.gOptions.users.getChannels(chatId).then(function (channels) {
+                    var promise = Promise.resolve();
+                    if (channels.length === 0) {
+                        promise = promise.then(function () {
+                            _this.gOptions.users.removeChat(chatId);
+                        });
                     }
-                );
+                    promise = promise.then(function () {
+                        return _this.gOptions.bot.editMessageText(
+                            chatId,
+                            _this.gOptions.language.channelDeleted
+                                .replace('{channelName}', channelId)
+                                .replace('{serviceName}', _this.gOptions.serviceToTitle[service]),
+                            {
+                                message_id: msg.message_id
+                            }
+                        );
+                    });
+                    return promise;
+                });
             });
         });
     },
@@ -424,8 +426,8 @@ var commands = {
         var msg = callbackQuery.message;
         var chatId = msg.chat.id;
 
-        return _this.gOptions.users.getChat(chatId).then(function (chatItem) {
-            if (!chatItem) {
+        return _this.gOptions.users.getChat(chatId).then(function (chat) {
+            if (!chat) {
                 return _this.gOptions.bot.editMessageText(
                     chatId,
                     _this.gOptions.language.emptyServiceList,
@@ -454,8 +456,8 @@ var commands = {
         var _this = this;
         var chatId = msg.chat.id;
 
-        return _this.gOptions.users.getChat(chatId).then(function (chatItem) {
-            if (!chatItem) {
+        return _this.gOptions.users.getChat(chatId).then(function (chat) {
+            if (!chat) {
                 return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
             }
 
@@ -479,12 +481,12 @@ var commands = {
         var _this = this;
         var chatId = msg.chat.id;
 
-        return _this.gOptions.users.getChat(chatId).then(function (chatItem) {
-            if (!chatItem) {
+        return _this.gOptions.users.getChat(chatId).then(function (chat) {
+            if (!chat) {
                 return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
             }
 
-            return setOption(_this, chatItem, optionName, state).then(function (msgText) {
+            return setOption(_this, chat, optionName, state).then(function (msgText) {
                 return _this.gOptions.bot.sendMessage(chatId, msgText);
             });
         });
@@ -494,8 +496,8 @@ var commands = {
         var msg = callbackQuery.message;
         var chatId = msg.chat.id;
 
-        return _this.gOptions.users.getChat(chatId).then(function (chatItem) {
-            if (!chatItem) {
+        return _this.gOptions.users.getChat(chatId).then(function (chat) {
+            if (!chat) {
                 return _this.gOptions.bot.editMessageText(
                     chatId,
                     _this.gOptions.language.emptyServiceList,
@@ -505,11 +507,11 @@ var commands = {
                 );
             }
 
-            return setOption(_this, chatItem, optionName, state).then(function (msgText) {
+            return setOption(_this, chat, optionName, state).then(function (msgText) {
                 return _this.gOptions.bot.editMessageReplyMarkup(chatId, {
                     message_id: msg.message_id,
                     reply_markup: JSON.stringify({
-                        inline_keyboard: optionsBtnList(chatItem)
+                        inline_keyboard: optionsBtnList(chat)
                     })
                 });
             });
@@ -519,14 +521,14 @@ var commands = {
         var _this = this;
         var chatId = msg.chat.id;
 
-        return _this.gOptions.users.getChat(chatId).then(function (chatItem) {
-            if (!chatItem) {
+        return _this.gOptions.users.getChat(chatId).then(function (chat) {
+            if (!chat) {
                 return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
             }
 
             return _this.gOptions.bot.sendMessage(chatId, 'Options:', {
                 reply_markup: JSON.stringify({
-                    inline_keyboard: optionsBtnList(chatItem)
+                    inline_keyboard: optionsBtnList(chat)
                 })
             });
         });
@@ -573,10 +575,11 @@ var commands = {
         var _this = this;
         var chatId = msg.chat.id;
 
-        return _this.gOptions.users.getChat(chatId).then(function (chatItem) {
-            if (!chatItem) {
+        return _this.gOptions.users.getChat(chatId).then(function (chat) {
+            if (!chat) {
                 return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
             }
+
             var btnList = [[{
                 text: 'Yes',
                 callback_data: '/clearyes'
@@ -596,8 +599,8 @@ var commands = {
         var _this = this;
         var msg = callbackQuery.message;
         var chatId = msg.chat.id;
-        return _this.gOptions.users.getChat(chatId).then(function (chatItem) {
-            if (!chatItem) {
+        return _this.gOptions.users.getChat(chatId).then(function (chat) {
+            if (!chat) {
                 return _this.gOptions.bot.editMessageText(
                     chatId,
                     _this.gOptions.language.emptyServiceList,
@@ -607,7 +610,7 @@ var commands = {
                 );
             }
 
-            return _this.gOptions.users.removeChat(chatItem.id).then(function () {
+            return _this.gOptions.users.removeChat(chat.id).then(function () {
                 return _this.gOptions.bot.editMessageText(
                     chatId,
                     _this.gOptions.language.cleared,
@@ -622,11 +625,11 @@ var commands = {
         var _this = this;
         var chatId = msg.chat.id;
 
-        return _this.gOptions.users.getChannels(chatId).then(function (items) {
+        return _this.gOptions.users.getChannels(chatId).then(function (channels) {
             var services = [];
 
             var serviceObjMap = {};
-            items.forEach(function (item) {
+            channels.forEach(function (item) {
                 var service = serviceObjMap[item.service];
                 if (!service) {
                     service = serviceObjMap[item.service] = {
@@ -693,8 +696,8 @@ var commands = {
         var _this = this;
         var chatId = msg.chat.id;
 
-        return _this.gOptions.users.getChat(chatId).then(function (chatItem) {
-            if (!chatItem) {
+        return _this.gOptions.users.getChat(chatId).then(function (chat) {
+            if (!chat) {
                 return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
             }
 
@@ -709,14 +712,14 @@ var commands = {
             var onGetChannelName = function (msg, channelName) {
                 channelName = channelName.trim();
                 return Promise.try(function () {
-                    var options = base.getObjectItem(chatItem, 'options', {});
+                    var options = base.getObjectItem(chat, 'options', {});
 
                     if (channelName === 'remove') {
                         delete options.channel;
                         delete options.mute;
 
                         if (!Object.keys(options).length) {
-                            delete chatItem.options;
+                            delete chat.options;
                         }
                     } else {
                         if (!/^@\w+$/.test(channelName)) {
@@ -765,7 +768,7 @@ var commands = {
                     return base.storage.set({chatList: chatList}).then(function () {
                         return _this.gOptions.bot.sendMessage(chatId, 'Options:', {
                             reply_markup: JSON.stringify({
-                                inline_keyboard: optionsBtnList(chatItem)
+                                inline_keyboard: optionsBtnList(chat)
                             })
                         });
                     });
