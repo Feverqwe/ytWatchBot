@@ -375,7 +375,6 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                     qs: {
                         part: 'snippet,contentDetails',
                         id: videoIds.join(','),
-                        maxResults: 50,
                         pageToken: pageToken,
                         fields: 'items/id,items/snippet,items/contentDetails,nextPageToken',
                         key: _this.config.token
@@ -562,7 +561,9 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                 }
 
                 return requestNewVideoIds(channel).then(function (videoIds) {
-                    return getVideoIdsInfo(channel, videoIds, chatIdList);
+                    return Promise.all(base.arrToParts(videoIds, 50).map(function (partVideoIds) {
+                        return getVideoIdsInfo(channel, partVideoIds, chatIdList);
+                    }));
                 });
             });
         });
