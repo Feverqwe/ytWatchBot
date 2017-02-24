@@ -117,13 +117,6 @@ MsgStack.prototype.getStackItems = function () {
     });
 };
 
-MsgStack.prototype.getChatIdList = function (service, channelId) {
-    var _this = this;
-    return _this.gOptions.users.getChatIdsByChannel(service, channelId).then(function (chatIdList) {
-        return chatIdList;
-    });
-};
-
 MsgStack.prototype.sendLog = function (chatId, messageId, data) {
     var debugItem = JSON.parse(JSON.stringify(data));
     delete debugItem.preview;
