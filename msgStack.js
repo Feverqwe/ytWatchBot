@@ -143,8 +143,8 @@ MsgStack.prototype.messageIdsExists = function (ids) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
-            SELECT id, videoId FROM messages WHERE id IN (?); \
-        ', [ids], function (err, results) {
+            SELECT id, videoId FROM messages WHERE id IN ?; \
+        ', [[ids]], function (err, results) {
             if (err) {
                 reject(err);
             } else {
