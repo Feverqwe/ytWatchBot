@@ -721,6 +721,7 @@ var commands = {
                             }
 
                             return _this.gOptions.bot.sendChatAction(channelId, 'typing').then(function () {
+                                chat.options.mute = false;
                                 chat.channelId = channelId;
                             });
                         });
