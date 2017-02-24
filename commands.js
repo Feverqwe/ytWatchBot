@@ -151,13 +151,6 @@ var setOption = function (_this, chat, optionName, state) {
     var options = chat.options;
 
     options[optionName] = state === '1';
-    if (!options[optionName]) {
-        delete options[optionName];
-    }
-
-    if (!Object.keys(options).length) {
-        delete chat.options;
-    }
 
     var msgText = 'Option ' + optionName + ' (' + state + ') changed!';
 

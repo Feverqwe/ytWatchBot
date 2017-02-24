@@ -77,7 +77,7 @@ Users.prototype.getChat = function (id) {
                     chat.options = JSON.parse(chat.options);
                 }
             }
-            resolve(results[0]);
+            resolve(chat);
         });
     });
 };

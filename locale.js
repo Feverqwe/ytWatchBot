@@ -16,7 +16,7 @@ Locale.prototype.default = {
     "serviceIsNotSupported": "Oops! Platform {serviceName} is not supported!",
     "channelExists": "This channel already exists!",
     "channelAdded": "Success! Channel {channelName} ({serviceName}) added!",
-    "telegramChannelEnter": "Enter the channel name (example: @channelname):",
+    "telegramChannelEnter": "Enter the channel name (example: @telegram):",
     "telegramChannelError": "Oops! I can't add channel {channelName}!",
     "commandCanceled": "The command {command} has been cancelled.",
     "channelDontExist": "Oops! Can't find channel in watch list!",
