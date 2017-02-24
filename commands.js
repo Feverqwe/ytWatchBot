@@ -672,16 +672,17 @@ var commands = {
                 return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
             }
 
-            var textArr = [];
-
+            var serviceList = [];
             info.services.forEach(function (service) {
-                textArr.push(base.htmlSanitize('b', _this.gOptions.serviceToTitle[service.name]) + ':');
+                var channelList = [];
+                channelList.push(base.htmlSanitize('b', _this.gOptions.serviceToTitle[service.name]) + ':');
                 service.channels.forEach(function (channel) {
-                    textArr.push(base.htmlSanitize('a', channel.title, base.getChannelUrl(service, channel.id)));
+                    channelList.push(base.htmlSanitize('a', channel.title, base.getChannelUrl(service.name, channel.id)));
                 });
+                serviceList.push(channelList.join('\n'));
             });
 
-            return _this.gOptions.bot.sendMessage(chatId, textArr.join('\n\n'), {
+            return _this.gOptions.bot.sendMessage(chatId, serviceList.join('\n\n'), {
                 disable_web_page_preview: true,
                 parse_mode: 'HTML'
             });
