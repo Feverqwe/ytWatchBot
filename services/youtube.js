@@ -618,7 +618,7 @@ Youtube.prototype.requestChannelIdByVideoUrl = function (url) {
 /**
  * Response userId in lowerCase or channelId (case sensitive)
  * @param {String} channelName
- * @return {Promise}
+ * @return {Promise.<{id, localTitle}>}
  */
 Youtube.prototype.getChannelId = function(channelName) {
     var _this = this;
@@ -688,7 +688,10 @@ Youtube.prototype.getChannelId = function(channelName) {
             }).then(function() {
                 return _this.setChannelInfo(channel);
             }).then(function () {
-                return channelId;
+                return {
+                    id: channel.id,
+                    localTitle: getChannelLocalTitleFromInfo(channel)
+                };
             });
         });
     });

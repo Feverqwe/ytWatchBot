@@ -220,47 +220,48 @@ var commands = {
         var _this = this;
         var chatId = msg.chat.id;
 
-        return _this.gOptions.services[service].getChannelId(channelId).then(function (channelId) {
-            return base.getChannelLocalTitle(_this.gOptions, service, channelId).then(function (title) {
+        return _this.gOptions.services[service].getChannelId(channelId).then(function (channel) {
+            var channelId = channel.id;
+            var title = channel.localTitle;
+
+            return _this.gOptions.users.getChannels(chatId).then(function (channels) {
+                var found = channels.some(function (item) {
+                    return item.service === service && item.channelId === channelId;
+                });
+
+                if (found) {
+                    return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.channelExists);
+                }
+
                 return _this.gOptions.users.getChat(chatId).then(function (chat) {
-                    return _this.gOptions.users.getChannels(chatId).then(function (channels) {
-                        var found = channels.some(function (item) {
-                            return item.service === service && item.channelId === channelId;
-                        });
-
-                        if (found) {
-                            return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.channelExists);
-                        }
-
-                        var promise = Promise.resolve();
-                        if (!chat) {
-                            promise = promise.then(function () {
-                                return _this.gOptions.users.setChat({id: chatId});
-                            });
-                        }
+                    var promise = Promise.resolve();
+                    if (!chat) {
                         promise = promise.then(function () {
-                            return _this.gOptions.users.insertChannel(chatId, service, channelId).then(function () {
-                                var url = base.getChannelUrl(service, channelId);
-                                var displayName = base.htmlSanitize('a', title, url);
-
-                                if (service === 'youtube') {
-                                    _this.gOptions.events.emit('subscribe', channelId);
-                                }
-
-                                return _this.gOptions.bot.sendMessage(
-                                    chatId,
-                                    _this.gOptions.language.channelAdded
-                                        .replace('{channelName}', displayName)
-                                        .replace('{serviceName}', base.htmlSanitize(_this.gOptions.serviceToTitle[service])),
-                                    {
-                                        disable_web_page_preview: true,
-                                        parse_mode: 'HTML'
-                                    }
-                                );
-                            });
+                            return _this.gOptions.users.setChat({id: chatId});
                         });
-                        return promise;
+                    }
+                    promise = promise.then(function () {
+                        return _this.gOptions.users.insertChannel(chatId, service, channelId);
                     });
+                    return promise;
+                }).then(function () {
+                    var url = base.getChannelUrl(service, channelId);
+                    var displayName = base.htmlSanitize('a', title, url);
+
+                    if (service === 'youtube') {
+                        _this.gOptions.events.emit('subscribe', channelId);
+                    }
+
+                    return _this.gOptions.bot.sendMessage(
+                        chatId,
+                        _this.gOptions.language.channelAdded
+                            .replace('{channelName}', displayName)
+                            .replace('{serviceName}', base.htmlSanitize(_this.gOptions.serviceToTitle[service])),
+                        {
+                            disable_web_page_preview: true,
+                            parse_mode: 'HTML'
+                        }
+                    );
                 });
             });
         }).catch(function(err) {
