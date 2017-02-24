@@ -71,11 +71,14 @@ MsgStack.prototype.init = function () {
     return promise;
 };
 
-MsgStack.prototype.addChatMessage = function (connection, chatId, messageId) {
+MsgStack.prototype.addChatIdsMessageId = function (connection, chatIds, messageId) {
     return new Promise(function (resolve, reject) {
+        var values = chatIds.map(function (id) {
+            return [id, messageId];
+        });
         connection.query('\
-            INSERT INTO chatIdMessageId SET chatId = ?, messageId = ? ON DUPLICATE KEY UPDATE chatId = chatId \
-        ', [chatId, messageId], function (err, results) {
+            INSERT INTO chatIdMessageId (chatId, messageId) VALUES ? ON DUPLICATE KEY UPDATE chatId = chatId; \
+        ', [values], function (err, results) {
             if (err) {
                 reject(err);
             } else {

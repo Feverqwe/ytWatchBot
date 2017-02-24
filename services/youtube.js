@@ -312,9 +312,7 @@ Youtube.prototype.insertItem = function (channel, chatIdList, id, snippet, conte
                     });
                 });
             }).then(function (messageId) {
-                return Promise.all(chatIdList.map(function (id) {
-                    return _this.gOptions.msgStack.addChatMessage(connection, id, messageId);
-                }));
+                return _this.gOptions.msgStack.addChatIdsMessageId(connection, chatIdList, messageId);
             }).then(function () {
                 return new Promise(function (resolve, reject) {
                     connection.commit(function(err) {
