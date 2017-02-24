@@ -349,7 +349,6 @@ Youtube.prototype.insertItem = function (channel, chatIdList, id, snippet, conte
 
 var requestPool = new base.Pool(10);
 var insertPool = new base.Pool(15);
-var checkPool = new base.Pool(15);
 
 /**
  * @param {String[]} _channelIdList
@@ -522,7 +521,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                 var responseBody = response.body;
                 var items = responseBody.items;
                 var ids = items.map(function (item) {
-                    return item.contentDetails.upload.videoId;
+                    return videoIdToId(item.contentDetails.upload.videoId);
                 });
                 return _this.gOptions.msgStack.messageIdsExists(ids).then(function (exIds) {
                     var newIds = ids.filter(function (id) {
