@@ -71,7 +71,7 @@ MsgStack.prototype.init = function () {
     return promise;
 };
 
-MsgStack.prototype.insertInStack = function (connection, chatId, messageId) {
+MsgStack.prototype.addChatMessage = function (connection, chatId, messageId) {
     return new Promise(function (resolve, reject) {
         connection.query('\
             INSERT INTO chatIdMessageId SET chatId = ?, messageId = ? ON DUPLICATE KEY UPDATE chatId = chatId \
