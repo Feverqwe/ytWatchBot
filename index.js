@@ -15,10 +15,10 @@ const MsgStack = require('./msgStack');
 const MsgSender = require('./msgSender');
 const Users = require('.users');
 const Db = require('./db');
+const Locale = require('./locale');
 
 var options = {
     config: {},
-    language: {},
     serviceList: ['youtube'],
     serviceToTitle: {
         youtube: 'Youtube'
@@ -47,6 +47,11 @@ var options = {
             options.language = language;
         })
     ]).then(function() {
+        options.locale = new Locale(options);
+        return options.locale.onReady.then(function () {
+            options.language = options.locale.language;
+        });
+    }).then(function() {
         options.db = new Db(options);
         return options.db.onReady;
     }).then(function() {
