@@ -907,7 +907,7 @@ var commands = {
         var _this = this;
         var chatId = msg.chat.id;
 
-        return Promise.try(function() {
+        return Promise.resolve().then(function() {
             var liveTime = JSON.parse(require("fs").readFileSync('./liveTime.json', 'utf8'));
 
             var endTime = liveTime.endTime.split(',');
