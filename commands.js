@@ -813,9 +813,9 @@ var commands = {
 
             var serviceObjMap = {};
             items.forEach(function (item) {
-                var userId = item.userId;
-                if (users.indexOf(userId) === -1) {
-                    users.push(userId);
+                var chatId = item.chatId;
+                if (users.indexOf(chatId) === -1) {
+                    users.push(chatId);
                 }
 
                 var service = serviceObjMap[item.service];

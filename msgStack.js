@@ -46,11 +46,15 @@ MsgStack.prototype.init = function () {
     promise = promise.then(function () {
         return new Promise(function (resolve, reject) {
             db.connection.query('\
-                CREATE TABLE IF NOT EXISTS `userIdMessageId` ( \
-                    `userId` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
+                CREATE TABLE IF NOT EXISTS `chatIdMessageId` ( \
+                    `chatId` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
                     `messageId` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
                     `timeout` INT NULL DEFAULT 0, \
-                UNIQUE INDEX `userIdMessageId_UNIQUE` (`userId` ASC, `messageId` ASC), \
+                UNIQUE INDEX `chatIdMessageId_UNIQUE` (`chatId` ASC, `messageId` ASC), \
+                FOREIGN KEY (`chatId`) \
+                    REFERENCES `chats` (`id`) \
+                    ON DELETE CASCADE \
+                    ON UPDATE CASCADE,\
                 FOREIGN KEY (`messageId`) \
                     REFERENCES `messages` (`id`) \
                     ON DELETE CASCADE \
@@ -67,11 +71,11 @@ MsgStack.prototype.init = function () {
     return promise;
 };
 
-MsgStack.prototype.insertInStack = function (connection, userId, messageId) {
+MsgStack.prototype.insertInStack = function (connection, chatId, messageId) {
     return new Promise(function (resolve, reject) {
         connection.query('\
-            INSERT INTO userIdMessageId SET userId = ?, messageId = ? ON DUPLICATE KEY UPDATE userId = userId \
-        ', [userId, messageId], function (err, results) {
+            INSERT INTO chatIdMessageId SET chatId = ?, messageId = ? ON DUPLICATE KEY UPDATE chatId = chatId \
+        ', [chatId, messageId], function (err, results) {
             if (err) {
                 reject(err);
             } else {
@@ -83,7 +87,7 @@ MsgStack.prototype.insertInStack = function (connection, userId, messageId) {
 
 /**
  * @typedef {{}} StackItem
- * @property {String} userId
+ * @property {String} chatId
  * @property {Number} messageId
  * @property {Number} timeout
  * @property {Number} id
@@ -97,9 +101,9 @@ MsgStack.prototype.getStackItems = function () {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
-            SELECT * FROM userIdMessageId \
-            LEFT JOIN messages ON userIdMessageId.messageId = messages.id \
-            WHERE userIdMessageId.timeout < ? \
+            SELECT * FROM chatIdMessageId \
+            LEFT JOIN messages ON chatIdMessageId.messageId = messages.id \
+            WHERE chatIdMessageId.timeout < ? \
             GROUP BY messages.id \
             ORDER BY messages.publishedAt ASC \
             LIMIT 10; \
@@ -120,19 +124,19 @@ MsgStack.prototype.getChatIdList = function (service, channelId) {
     });
 };
 
-MsgStack.prototype.sendLog = function (userId, messageId, data) {
+MsgStack.prototype.sendLog = function (chatId, messageId, data) {
     var debugItem = JSON.parse(JSON.stringify(data));
     delete debugItem.preview;
     delete debugItem._videoId;
-    debugLog('[s] %s %s %j', messageId, userId, debugItem);
+    debugLog('[s] %s %s %j', messageId, chatId, debugItem);
 };
 
-MsgStack.prototype.setTimeout = function (userId, messageId, timeout) {
+MsgStack.prototype.setTimeout = function (chatId, messageId, timeout) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
-            UPDATE userIdMessageId SET timeout = ? WHERE userId = ? AND messageId = ?; \
-        ', [timeout, userId, messageId], function (err, results) {
+            UPDATE chatIdMessageId SET timeout = ? WHERE chatId = ? AND messageId = ?; \
+        ', [timeout, chatId, messageId], function (err, results) {
             if (err) {
                 reject(err);
             } else {
@@ -157,12 +161,12 @@ MsgStack.prototype.setImageFileId = function (messageId, imageFileId) {
     });
 };
 
-MsgStack.prototype.removeItem = function (userId, messageId) {
+MsgStack.prototype.removeItem = function (chatId, messageId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
-            DELETE FROM userIdMessageId WHERE userId = ? AND messageId = ?; \
-        ', [userId, messageId], function (err, results) {
+            DELETE FROM chatIdMessageId WHERE chatId = ? AND messageId = ?; \
+        ', [chatId, messageId], function (err, results) {
             if (err) {
                 reject(err);
             } else {
@@ -174,7 +178,7 @@ MsgStack.prototype.removeItem = function (userId, messageId) {
 
 MsgStack.prototype.sendItem = function (/*StackItem*/item) {
     var _this = this;
-    var userId = item.userId;
+    var chatId = item.chatId;
     var messageId = item.messageId;
     var imageFileId = item.imageFileId;
     return Promise.resolve().then(function () {
@@ -185,9 +189,9 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
             data = JSON.parse(item.data);
         }
 
-        return _this.gOptions.users.getChat(userId).then(function (chat) {
+        return _this.gOptions.users.getChat(chatId).then(function (chat) {
             if (!chat) {
-                debug('Can\'t send message %s, user %s is not found!', messageId, userId);
+                debug('Can\'t send message %s, user %s is not found!', messageId, chatId);
                 return;
             }
 
@@ -214,15 +218,15 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
             });
         });
     }).then(function () {
-        return _this.removeItem(userId, messageId);
+        return _this.removeItem(chatId, messageId);
     }).catch(function (err) {
-        debug('sendItem', userId, messageId, err);
+        debug('sendItem', chatId, messageId, err);
 
         var timeout = 5 * 60;
         if (/PEER_ID_INVALID/.test(err)) {
             timeout = 6 * 60 * 60;
         }
-        return _this.setTimeout(userId, messageId, base.getNow() + timeout);
+        return _this.setTimeout(chatId, messageId, base.getNow() + timeout);
     });
 };
 

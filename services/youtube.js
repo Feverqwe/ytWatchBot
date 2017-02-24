@@ -294,8 +294,8 @@ Youtube.prototype.insertItem = function (info, chatIdList, snippet) {
                     });
                 });
             }).then(function (messageId) {
-                return Promise.all(chatIdList.map(function (userId) {
-                    return _this.gOptions.msgStack.insertInStack(connection, userId, messageId);
+                return Promise.all(chatIdList.map(function (id) {
+                    return _this.gOptions.msgStack.insertInStack(connection, id, messageId);
                 }));
             }).then(function () {
                 return new Promise(function (resolve, reject) {
@@ -530,17 +530,17 @@ Youtube.prototype.requestChannelIdByQuery = function(query) {
 };
 
 /**
- * @param {String} userId
+ * @param {String} username
  * @return {Promise}
  */
-Youtube.prototype.requestChannelIdByUsername = function(userId) {
+Youtube.prototype.requestChannelIdByUsername = function(username) {
     var _this = this;
     return requestPromise({
         method: 'GET',
         url: 'https://www.googleapis.com/youtube/v3/channels',
         qs: {
             part: 'snippet',
-            forUsername: userId,
+            forUsername: username,
             maxResults: 1,
             fields: 'items/id',
             key: _this.config.token
@@ -556,10 +556,10 @@ Youtube.prototype.requestChannelIdByUsername = function(userId) {
             return id = item.id;
         });
         if (!id) {
-            throw new CustomError('Channel ID is not found by userId!');
+            throw new CustomError('Channel ID is not found by username!');
         }
 
-        return {id: id, userId: userId};
+        return {id: id, username: username};
     });
 };
 
@@ -616,7 +616,7 @@ Youtube.prototype.requestChannelIdByVideoUrl = function (url) {
 };
 
 /**
- * Response userId in lowerCase or channelId (case sensitive)
+ * Response username in lowerCase or channelId (case sensitive)
  * @param {String} channelName
  * @return {Promise.<{id, localTitle}>}
  */
@@ -638,18 +638,18 @@ Youtube.prototype.getChannelId = function(channelName) {
             return channelName;
         }
 
-        return _this.requestChannelIdByUsername(channelName).then(function (idUserId) {
-            channel.username = idUserId.userId;
-            return idUserId.id;
+        return _this.requestChannelIdByUsername(channelName).then(function (result) {
+            channel.username = result.username;
+            return result.id;
         }).catch(function(err) {
             if (!err instanceof CustomError) {
                 throw err;
             }
 
             return _this.requestChannelIdByQuery(channelName).then(function(channelId) {
-                return _this.requestChannelIdByUsername(channelId).then(function (idUserId) {
-                    channel.username = idUserId.userId;
-                    return idUserId.id;
+                return _this.requestChannelIdByUsername(channelId).then(function (result) {
+                    channel.username = result.username;
+                    return result.id;
                 });
             });
         });
