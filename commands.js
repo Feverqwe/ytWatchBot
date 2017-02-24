@@ -712,16 +712,14 @@ var commands = {
             var onGetChannelId = function (msg, channelId) {
                 channelId = channelId.trim();
                 return Promise.resolve().then(function () {
-                    var options = chat.options;
-
                     if (channelId === 'remove') {
                         chat.channelId = null;
-                        delete options.mute;
                     } else {
                         if (!/^@\w+$/.test(channelId)) {
                             throw new Error('BAD_FORMAT');
                         }
 
+                        // todo: fix me
                         /*if (exists) {
                             throw new Error('CHANNEL_EXISTS');
                         }*/

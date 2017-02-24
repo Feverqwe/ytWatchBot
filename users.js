@@ -83,7 +83,7 @@ Users.prototype.getChat = function (id) {
 };
 
 /**
- * @param {{id: string, [options]: {}}} chat
+ * @param {{id: string, channelId: string, [options]: {}}} chat
  * @return {Promise}
  */
 Users.prototype.setChat = function (chat) {
