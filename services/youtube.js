@@ -312,9 +312,7 @@ Youtube.prototype.insertItem = function (channel, chatIdList, id, snippet, conte
                     });
                 });
             }).then(function (messageId) {
-                return Promise.all(chatIdList.map(function (id) {
-                    return _this.gOptions.msgStack.addChatMessage(connection, id, messageId);
-                }));
+                return _this.gOptions.msgStack.addChatIdsMessageId(connection, chatIdList, messageId);
             }).then(function () {
                 return new Promise(function (resolve, reject) {
                     connection.commit(function(err) {
@@ -456,7 +454,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
     };
 
     var requestNewVideoIds = function (/*ChannelInfo*/channel) {
-        var videoIds = [];
+        var newVideoIds = [];
 
         var channelId = channel.id;
         var publishedAfter = channel.publishedAfter;
@@ -524,10 +522,15 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                     return videoIdToId(item.contentDetails.upload.videoId);
                 });
                 return _this.gOptions.msgStack.messageIdsExists(ids).then(function (exIds) {
-                    var newIds = ids.filter(function (id) {
-                        return exIds.indexOf(id) === -1;
+                    var exVideoIds = exIds.map(function (item) {
+                        return item.videoId;
                     });
-                    videoIds.push.apply(videoIds, newIds);
+                    items.forEach(function (item) {
+                        var videoId = item.contentDetails.upload.videoId;
+                        if (exVideoIds.indexOf(videoId) === -1) {
+                            newVideoIds.push(videoId);
+                        }
+                    });
                 }).then(function () {
                     if (responseBody.nextPageToken) {
                         if (pageLimit-- < 1) {
@@ -541,7 +544,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
         };
 
         return getPage().then(function () {
-            return videoIds;
+            return newVideoIds;
         }).catch(function(err) {
             debug('requestPages error! %s', channelId, err);
         });
