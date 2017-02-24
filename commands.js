@@ -902,11 +902,19 @@ var commands = {
             debug('Load liveTime.json error!', err);
         }
 
-        var endTime = liveTime.endTime.split(',');
-        endTime = (new Date(endTime[0], endTime[1], endTime[2])).getTime();
-        var count = parseInt((endTime - Date.now()) / 1000 / 60 / 60 / 24 / 30 * 10) / 10;
+        var count = '';
+        var endTime = /\d{4}.\d{2}.\d{2}/.test(liveTime.endTime);
+        if (endTime) {
+            endTime = (new Date(endTime[0], endTime[1], endTime[2])).getTime();
+            count = parseInt((endTime - Date.now()) / 1000 / 60 / 60 / 24 / 30 * 10) / 10;
+        }
 
-        var message = liveTime.message.join('\n').replace('{count}', count);
+        var message = liveTime.message;
+        if (Array.isArray(message)) {
+            message = message.join('\n');
+        }
+
+        message = message.replace('{count}', count);
 
         message += _this.gOptions.language.rateMe;
 
