@@ -719,13 +719,14 @@ var commands = {
                             throw new Error('BAD_FORMAT');
                         }
 
-                        // todo: fix me
-                        /*if (exists) {
-                            throw new Error('CHANNEL_EXISTS');
-                        }*/
+                        return _this.gOptions.users.getChatByChannelId(channelId).then(function (chat) {
+                            if (chat) {
+                                throw new Error('CHANNEL_EXISTS');
+                            }
 
-                        return _this.gOptions.bot.sendChatAction(channelId, 'typing').then(function () {
-                            chat.channelId = channelId;
+                            return _this.gOptions.bot.sendChatAction(channelId, 'typing').then(function () {
+                                chat.channelId = channelId;
+                            });
                         });
                     }
 

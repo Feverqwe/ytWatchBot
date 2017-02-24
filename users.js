@@ -106,6 +106,29 @@ Users.prototype.setChat = function (chat) {
     });
 };
 
+Users.prototype.getChatByChannelId = function (channelId) {
+    var db = this.gOptions.db;
+    return new Promise(function (resolve, reject) {
+        db.connection.query('\
+            SELECT * FROM chats WHERE channelId = ? LIMIT 1; \
+        ', [channelId], function (err, results) {
+            if (err) {
+                return reject(err);
+            }
+
+            var chat = results[0] || null;
+            if (chat) {
+                if (!chat.options) {
+                    chat.options = {};
+                } else {
+                    chat.options = JSON.parse(chat.options);
+                }
+            }
+            resolve(chat);
+        });
+    });
+};
+
 /**
  * @param {string} id
  * @param {string} newId
