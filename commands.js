@@ -925,28 +925,23 @@ var commands = {
         var _this = this;
         var chatId = msg.chat.id;
 
+        var services = _this.gOptions.services;
         return _this.gOptions.checker.getChannelList().then(function (serviceChannelList) {
-            var pool = new base.Pool(100);
-            var promiseList = [];
-
-            var services = _this.gOptions.services;
+            var queue = Promise.resolve();
             Object.keys(serviceChannelList).forEach(function (serviceName) {
                 var service = services[serviceName];
-                if (!service) {
-                    debug('Service %s is not found!', serviceName);
-                    return;
-                }
 
                 serviceChannelList[serviceName].forEach(function (id) {
-                    promiseList.push(pool.push(service.getChannelId(id).catch(function (err) {
-                        debug('refreshChannelInfo %s', id, err);
-                    })));
+                    queue = queue.then(function () {
+                        return service.getChannelId(id).catch(function (err) {
+                            debug('refreshChannelInfo %s', id, err);
+                        });
+                    });
                 });
             });
-
-            return Promise.all(promiseList).then(function() {
-                return _this.gOptions.bot.sendMessage(chatId, 'Done!');
-            });
+            return queue;
+        }).then(function() {
+            return _this.gOptions.bot.sendMessage(chatId, 'Done!');
         });
     },
     checkUserAlive: function(msg) {
