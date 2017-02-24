@@ -11,6 +11,7 @@ var Users = function (options) {
 };
 
 Users.prototype.init = function () {
+    var _this = this;
     var db = this.gOptions.db;
     var promise = Promise.resolve();
     promise = promise.then(function () {
@@ -52,12 +53,57 @@ Users.prototype.init = function () {
             });
         });
     });
+    promise = promise.then(function () {
+        return _this.migrate();
+    });
     return promise;
 };
 
+Users.prototype.migrate = function () {
+    var _this = this;
+    var fs = require('fs');
+    var path = require('fs');
+    var chatList = JSON.parse(fs.readFileSync(path.join(__dirname, 'storage', 'chatList.json')));
+
+    var queue = Promise.resolve();
+    Object.keys(chatList).forEach(function (key) {
+        var chatItem = chatList[key];
+        var serviceList = chatItem.serviceList;
+        var options = chatItem.options || {};
+        var chat = {
+            id: chatItem.chatId,
+            channelId: options.channel || null,
+            options: {
+                mute: options.mute,
+                hidePreview: options.hidePreview
+            }
+        };
+        queue = queue.then(function () {
+            return _this.setChat(chat).then(function () {
+                return Promise.all(Object.keys(serviceList).map(function (service) {
+                    var channelList = serviceList[service];
+                    return Promise.all(channelList.map(function (channelId) {
+                        return _this.addChannel(chat.id, service, channelId);
+                    }));
+                }));
+            });
+        });
+    });
+    return queue;
+};
+
+/**
+ * @typedef {{}} Chat
+ * @property {string} id
+ * @property {string|null} [channelId]
+ * @property {{}} [options]
+ * @property {boolean} [options.mute]
+ * @property {boolean} [options.hidePreview]
+ */
+
 /**
  * @param {string} id
- * @return {Promise.<{id: string, [channelId]: string, options: {[mute]: boolean, [hidePreview]: boolean}}|null>}
+ * @return {Promise.<Chat|null>}
  */
 Users.prototype.getChat = function (id) {
     var db = this.gOptions.db;
@@ -83,7 +129,7 @@ Users.prototype.getChat = function (id) {
 };
 
 /**
- * @param {{id: string, channelId: string, [options]: {}}} chat
+ * @param {Chat} chat
  * @return {Promise}
  */
 Users.prototype.setChat = function (chat) {
@@ -232,7 +278,7 @@ Users.prototype.getChannel = function (chatId, channelId) {
  * @param {string} channelId
  * @return {Promise}
  */
-Users.prototype.insertChannel = function (chatId, service, channelId) {
+Users.prototype.addChannel = function (chatId, service, channelId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         var item = {
@@ -241,8 +287,8 @@ Users.prototype.insertChannel = function (chatId, service, channelId) {
             channelId: channelId
         };
         db.connection.query('\
-            INSERT INTO chatIdChannelId SET ?; \
-        ', item, function (err, result) {
+            INSERT INTO chatIdChannelId SET ? ON DUPLICATE KEY UPDATE ?; \
+        ', [item, item], function (err, result) {
             if (err) {
                 reject(err);
             } else {

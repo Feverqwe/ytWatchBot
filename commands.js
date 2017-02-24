@@ -2,7 +2,6 @@
  * Created by anton on 06.12.15.
  */
 "use strict";
-var Promise = require('bluebird');
 var debug = require('debug')('app:commands');
 var base = require('./base');
 var CustomError = require('./customError').CustomError;
@@ -233,7 +232,7 @@ var commands = {
                         });
                     }
                     promise = promise.then(function () {
-                        return _this.gOptions.users.insertChannel(chatId, service, channelId);
+                        return _this.gOptions.users.addChannel(chatId, service, channelId);
                     });
                     return promise;
                 }).then(function () {
