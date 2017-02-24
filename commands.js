@@ -677,6 +677,10 @@ var commands = {
                 };
             });
         }).then(function (info) {
+            if (!info.services.length) {
+                return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
+            }
+
             var textArr = [];
 
             info.services.forEach(function (service) {
@@ -709,12 +713,12 @@ var commands = {
                 return _this.onMessage(msg);
             };
 
-            var onGetChannelName = function (msg, channelName) {
-                channelName = channelName.trim();
-                return Promise.try(function () {
+            var onGetChannelId = function (msg, channelId) {
+                channelId = channelId.trim();
+                return Promise.resolve().then(function () {
                     var options = base.getObjectItem(chat, 'options', {});
 
-                    if (channelName === 'remove') {
+                    if (channelId === 'remove') {
                         delete options.channel;
                         delete options.mute;
 
@@ -722,7 +726,7 @@ var commands = {
                             delete chat.options;
                         }
                     } else {
-                        if (!/^@\w+$/.test(channelName)) {
+                        if (!/^@\w+$/.test(channelId)) {
                             throw new Error('BAD_FORMAT');
                         }
 
@@ -730,7 +734,7 @@ var commands = {
                             var item = chatList[chatId];
                             var options = item.options;
 
-                            if (options && options.channel === channelName) {
+                            if (options && options.channel === channelId) {
                                 return true;
                             }
                         });
@@ -739,13 +743,13 @@ var commands = {
                             throw new Error('CHANNEL_EXISTS');
                         }
 
-                        return _this.gOptions.bot.sendChatAction(channelName, 'typing').then(function () {
-                            options.channel = channelName;
+                        return _this.gOptions.bot.sendChatAction(channelId, 'typing').then(function () {
+                            options.channel = channelId;
                         });
                     }
                 }).catch(function (err) {
                     var msgText = _this.gOptions.language.telegramChannelError;
-                    msgText = msgText.replace('{channelName}', channelName);
+                    msgText = msgText.replace('{channelName}', channelId);
                     if (err.message === 'BAD_FORMAT') {
                         msgText += ' Channel name is incorrect.';
                     } else
@@ -758,19 +762,17 @@ var commands = {
                     if (/chat not found/.test(err.message)) {
                         msgText += ' Telegram chat is not found!';
                     } else {
-                        debug('Set channel %s error!', channelName, err);
+                        debug('Set channel %s error!', channelId, err);
                     }
 
                     return _this.gOptions.bot.sendMessage(chatId, msgText).then(function () {
                         throw new CustomError('SET_CHANNEL_ERROR');
                     });
                 }).then(function () {
-                    return base.storage.set({chatList: chatList}).then(function () {
-                        return _this.gOptions.bot.sendMessage(chatId, 'Options:', {
-                            reply_markup: JSON.stringify({
-                                inline_keyboard: optionsBtnList(chat)
-                            })
-                        });
+                    return _this.gOptions.bot.sendMessage(chatId, 'Options:', {
+                        reply_markup: JSON.stringify({
+                            inline_keyboard: optionsBtnList(chat)
+                        })
                     });
                 }).catch(function (err) {
                     if (err.message !== 'SET_CHANNEL_ERROR') {
@@ -779,7 +781,7 @@ var commands = {
                 });
             };
 
-            var waitTelegramChannelName = function() {
+            var waitTelegramChannelId = function() {
                 var onMessage = _this.stateList[chatId] = function(msg, text) {
                     msg.text = '/setchannel "' + text + '"';
                     return _this.onMessage(msg);
@@ -809,9 +811,9 @@ var commands = {
             };
 
             if (channelName) {
-                return onGetChannelName(msg, channelName);
+                return onGetChannelId(msg, channelName);
             } else {
-                return waitTelegramChannelName();
+                return waitTelegramChannelId();
             }
         });
     },
