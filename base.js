@@ -72,6 +72,9 @@ utils.getNowStreamPhotoText = function(gOptions, videoItem) {
         if (videoItem.channel.title && title.indexOf(videoItem.channel.title) === -1) {
             descPart.push(videoItem.channel.title);
         }
+        if (videoItem.duration) {
+            descPart.push(videoItem.duration);
+        }
         if (descPart.length) {
             var desc = descPart.join(', ');
             if (stripLen) {
@@ -106,6 +109,9 @@ utils.getNowStreamText = function(gOptions, videoItem) {
     }
     if (videoItem.channel.title && title.indexOf(videoItem.channel.title) === -1) {
         line.push(this.htmlSanitize('i', videoItem.channel.title));
+    }
+    if (videoItem.duration) {
+        line.push(videoItem.duration);
     }
     if (line.length) {
         textArr.push(line.join(', '));

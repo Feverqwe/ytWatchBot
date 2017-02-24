@@ -47,6 +47,10 @@ Youtube.prototype.init = function () {
     return promise;
 };
 
+var videoIdToId = function (videoId) {
+    return 'y_' + videoId;
+};
+
 /**
  * @typedef {{}} ChannelInfo
  * @property {String} id
@@ -171,6 +175,36 @@ Youtube.prototype.videoIdInList = function(channelId, videoId) {
     });
 };
 
+// from momentjs
+var isoRegex = /^PT(?:(-?[0-9,.]*)H)?(?:(-?[0-9,.]*)M)?(?:(-?[0-9,.]*)S)?$/;
+function parseIso (inp) {
+    var res = inp && parseFloat(inp.replace(',', '.'));
+    return (isNaN(res) ? 0 : res);
+}
+var formatDuration = function (str) {
+    var result = '';
+    var match = isoRegex.exec(str);
+    if (!match) {
+        debug('formatDuration error', str);
+    } else {
+        var parts = [
+            parseIso(match[1]),
+            parseIso(match[2]),
+            parseIso(match[3])
+        ];
+        if (parts[0] === 0) {
+            parts.shift();
+        }
+        result = parts.map(function (count) {
+            if (count < 10) {
+                count = '0' + count;
+            }
+            return count;
+        }).join(':');
+    }
+    return result;
+};
+
 /**
  * @typedef {{}} VideoSnippet
  * @property {String} publishedAt // 2017-02-18T01:00:00.000Z
@@ -204,43 +238,26 @@ Youtube.prototype.videoIdInList = function(channelId, videoId) {
  */
 
 /**
- * @private
- * @param {{}} snippet
- * @return {String}
+ * @typedef {{}} VideoDetails
+ * @property {string} duration
+ * @property {string} dimension
+ * @property {string} definition
+ * @property {string} caption
+ * @property {string} licensedContent
+ * @property {string} projection
  */
-Youtube.prototype.getVideoIdFromThumbs = function(snippet) {
-    var id = null;
-
-    var thumbnails = snippet.thumbnails;
-    thumbnails && Object.keys(thumbnails).some(function(quality) {
-        var m = /vi\/([^\/]+)/.exec(thumbnails[quality].url);
-        if (m) {
-            id = m[1];
-            return true;
-        }
-    });
-
-    return id;
-};
 
 /**
- * @param {ChannelInfo} info
+ * @param {ChannelInfo} channel
  * @param {String[]} chatIdList
+ * @param {string} id
  * @param {VideoSnippet} snippet
+ * @param {VideoDetails} contentDetails
  * @returns {Promise}
  */
-Youtube.prototype.insertItem = function (info, chatIdList, snippet) {
+Youtube.prototype.insertItem = function (channel, chatIdList, id, snippet, contentDetails) {
     var _this = this;
     var db = this.gOptions.db;
-    if (snippet.type !== 'upload') {
-        return Promise.resolve();
-    }
-
-    var id = this.getVideoIdFromThumbs(snippet);
-    if (!id) {
-        debug('Video ID is not found! %j', snippet);
-        return Promise.resolve();
-    }
 
     var previewList = Object.keys(snippet.thumbnails).map(function(quality) {
         return snippet.thumbnails[quality];
@@ -259,14 +276,15 @@ Youtube.prototype.insertItem = function (info, chatIdList, snippet) {
         publishedAt: snippet.publishedAt,
         title: snippet.title,
         preview: previewList,
+        duration: formatDuration(contentDetails.duration),
         channel: {
-            title: getChannelLocalTitleFromInfo(info),
+            title: getChannelLocalTitleFromInfo(channel),
             id: snippet.channelId
         }
     };
 
     var item = {
-        id: 'y_' + id,
+        id: videoIdToId(id),
         videoId: id,
         channelId: snippet.channelId,
         publishedAt: snippet.publishedAt,
@@ -340,13 +358,112 @@ var insertPool = new base.Pool(15);
 Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
     var _this = this;
 
-    var requestPages = function (/*ChannelInfo*/info, chatIdList) {
-        var channelId = info.id;
-        var publishedAfter = info.publishedAfter;
+    var getVideoIdsInfo = function (channel, videoIds, chatIdList) {
+        var lastPublishedAt = '';
+
+        var pageLimit = 100;
+        /**
+         * @param {String} [pageToken]
+         * @return {Promise}
+         */
+        var getPage = function (pageToken) {
+            var retryLimit = 5;
+            var requestPage = function () {
+                return requestPromise({
+                    method: 'GET',
+                    url: 'https://www.googleapis.com/youtube/v3/videos',
+                    qs: {
+                        part: 'snippet,contentDetails',
+                        id: videoIds.join(','),
+                        maxResults: 50,
+                        pageToken: pageToken,
+                        fields: 'items/id,items/snippet,items/contentDetails,nextPageToken',
+                        key: _this.config.token
+                    },
+                    json: true,
+                    gzip: true,
+                    forever: true
+                }).then(function(response) {
+                    if (response.statusCode === 503) {
+                        throw new CustomError(response.statusCode);
+                    }
+
+                    if (response.statusCode !== 200) {
+                        debug('Unexpected response %j', response);
+                        throw new CustomError('Unexpected response');
+                    }
+
+                    return response;
+                }).catch(function (err) {
+                    if (retryLimit-- < 1) {
+                        throw err;
+                    }
+
+                    return new Promise(function (resolve) {
+                        setTimeout(resolve, 250);
+                    }).then(function () {
+                        return requestPage();
+                    });
+                });
+            };
+
+            return requestPage().then(function (response) {
+                /**
+                 * @type {{
+                 * [nextPageToken]: String,
+                 * items: []
+                 * }}
+                 */
+                var responseBody = response.body;
+                var items = responseBody.items;
+                return insertPool.do(function () {
+                    var item = items.shift();
+                    if (!item) return;
+
+                    var id = item.id;
+                    var snippet = item.snippet;
+                    var contentDetails = item.contentDetails;
+                    if (lastPublishedAt < snippet.publishedAt) {
+                        lastPublishedAt = snippet.publishedAt;
+                    }
+
+                    return _this.insertItem(channel, chatIdList, id, snippet, contentDetails).then(function (item) {
+                        item && newItems.push({
+                            service: 'youtube',
+                            videoId: item.id,
+                            channelId: item.channelId,
+                            publishedAt: item.id
+                        });
+                    });
+                }).then(function () {
+                    if (responseBody.nextPageToken) {
+                        if (pageLimit-- < 1) {
+                            throw new CustomError('Page limit reached ' + channelId);
+                        }
+
+                        return getPage(responseBody.nextPageToken);
+                    }
+                });
+            });
+        };
+
+        return getPage().then(function () {
+            if (lastPublishedAt) {
+                return _this.setChannelPublishedAfter(channel.id, lastPublishedAt);
+            }
+        }).catch(function(err) {
+            debug('getVideos error! %s', channel.id, err);
+        });
+    };
+
+    var requestNewVideoIds = function (/*ChannelInfo*/channel) {
+        var videoIds = [];
+
+        var channelId = channel.id;
+        var publishedAfter = channel.publishedAfter;
         if (isFullCheck || !publishedAfter) {
             publishedAfter = new Date((parseInt(Date.now() / 1000) - 3 * 24 * 60 * 60) * 1000).toISOString();
         }
-        var lastPublishedAt = '';
 
         var pageLimit = 100;
         /**
@@ -360,11 +477,11 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                     method: 'GET',
                     url: 'https://www.googleapis.com/youtube/v3/activities',
                     qs: {
-                        part: 'snippet',
+                        part: 'contentDetails',
                         channelId: channelId,
                         maxResults: 50,
                         pageToken: pageToken,
-                        fields: 'items/snippet,nextPageToken',
+                        fields: 'items/contentDetails/upload/videoId,nextPageToken',
                         publishedAfter: publishedAfter,
                         key: _this.config.token
                     },
@@ -408,17 +525,11 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                     var item = items.shift();
                     if (!item) return;
 
-                    var snippet = item.snippet;
-                    if (lastPublishedAt < snippet.publishedAt) {
-                        lastPublishedAt = snippet.publishedAt;
-                    }
-                    return _this.insertItem(info, chatIdList, snippet).then(function (item) {
-                        item && newItems.push({
-                            service: 'youtube',
-                            videoId: item.id,
-                            channelId: item.channelId,
-                            publishedAt: item.id
-                        });
+                    var videoId = item.contentDetails.upload.videoId;
+                    return _this.gOptions.msgStack.messageExists(videoId).then(function (exists) {
+                        if (!exists) {
+                            videoIds.push(videoId);
+                        }
                     });
                 }).then(function () {
                     if (responseBody.nextPageToken) {
@@ -432,11 +543,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
             });
         };
 
-        return getPage().then(function () {
-            if (lastPublishedAt) {
-                return _this.setChannelPublishedAfter(info.id, lastPublishedAt);
-            }
-        }).catch(function(err) {
+        return getPage().catch(function(err) {
             debug('requestPages error! %s', channelId, err);
         });
     };
@@ -445,13 +552,16 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
         var channelId = _channelIdList.shift();
         if (!channelId) return;
 
-        return _this.getChannelInfo(channelId).then(function (info) {
+        return _this.getChannelInfo(channelId).then(function (channel) {
             return _this.gOptions.users.getChatIdsByChannel('youtube', channelId).then(function (chatIdList) {
-                if (info.id) {
-                    return requestPages(info, chatIdList);
-                } else {
+                if (!channel.id) {
                     debug('Channel info is not found!', channelId);
+                    return;
                 }
+
+                return requestNewVideoIds(channel).then(function (videoIds) {
+                    return getVideoIdsInfo(info, videoIds, chatIdList);
+                });
             });
         });
     });
