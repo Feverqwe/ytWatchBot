@@ -13,7 +13,7 @@ const Daemon = require('./daemon');
 const Tracker = require('./tracker');
 const MsgStack = require('./msgStack');
 const MsgSender = require('./msgSender');
-const Users = require('.users');
+const Users = require('./users');
 const Db = require('./db');
 const Locale = require('./locale');
 
