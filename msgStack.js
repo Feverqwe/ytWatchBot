@@ -77,7 +77,7 @@ MsgStack.prototype.addChatIdsMessageId = function (connection, chatIds, messageI
             return [id, messageId];
         });
         connection.query('\
-            INSERT INTO chatIdMessageId (chatId, messageId) VALUES ? ON DUPLICATE KEY UPDATE chatId = chatId \
+            INSERT INTO chatIdMessageId (chatId, messageId) VALUES ? ON DUPLICATE KEY UPDATE chatId = chatId; \
         ', [values], function (err, results) {
             if (err) {
                 reject(err);
