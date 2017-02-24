@@ -63,7 +63,7 @@ Users.prototype.migrate = function () {
     var _this = this;
     var fs = require('fs');
     var path = require('path');
-    var chatList = JSON.parse(fs.readFileSync(path.join(__dirname, 'storage', 'chatList.json')));
+    var chatList = JSON.parse(fs.readFileSync(path.join(__dirname, 'storage', 'chatList')));
 
     var queue = Promise.resolve();
     Object.keys(chatList).forEach(function (key) {
