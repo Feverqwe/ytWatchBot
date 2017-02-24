@@ -185,13 +185,13 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
             data = JSON.parse(item.data);
         }
 
-        return _this.gOptions.gOptions.users.getChat(userId).then(function (user) {
-            if (!user) {
+        return _this.gOptions.users.getChat(userId).then(function (chat) {
+            if (!chat) {
                 debug('Can\'t send message %s, user %s is not found!', messageId, userId);
                 return;
             }
 
-            var options = user.data ? JSON.parse(user.data) : {};
+            var options = chat.options;
 
             var text = base.getNowStreamText(_this.gOptions, data);
             var caption = '';
@@ -200,17 +200,17 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
             }
 
             var chatList = [];
-            if (user.channelId) {
+            if (chat.channelId) {
                 if (!options.mute) {
-                    chatList.push(user.id);
+                    chatList.push(chat.id);
                 }
-                chatList.push(user.channelId);
+                chatList.push(chat.channelId);
             } else {
-                chatList.push(user.id);
+                chatList.push(chat.id);
             }
 
             return _this.gOptions.msgSender.sendNotify(messageId, imageFileId, chatList, caption, text, data, true).then(function () {
-                _this.sendLog(user.id, messageId, data);
+                _this.sendLog(chat.id, messageId, data);
             });
         });
     }).then(function () {

@@ -64,7 +64,7 @@ var options = {
             return service.onReady;
         }));
     }).then(function() {
-        throw new Error('working...');
+        // throw new Error('working...');
         options.daemon = new Daemon(options);
 
         (typeof gc === 'function') && options.events.on('tickTack', function() {

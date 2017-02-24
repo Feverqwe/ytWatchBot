@@ -18,8 +18,10 @@ Users.prototype.init = function () {
             db.connection.query('\
             CREATE TABLE IF NOT EXISTS `chats` ( \
                 `id` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
+                `channelId` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
                 `options` TEXT CHARACTER SET utf8mb4 NOT NULL, \
-            UNIQUE INDEX `id_UNIQUE` (`id` ASC)); \
+            UNIQUE INDEX `id_UNIQUE` (`id` ASC), \
+            UNIQUE INDEX `channelId_UNIQUE` (`id` ASC)); \
         ', function (err) {
                 if (err) {
                     reject(err);
@@ -55,7 +57,7 @@ Users.prototype.init = function () {
 
 /**
  * @param {string} id
- * @return {Promise.<{id: string, options: {}}|null>}
+ * @return {Promise.<{id: string, [channelId]: string, options: {[mute]: boolean, [hidePreview]: boolean}}|null>}
  */
 Users.prototype.getChat = function (id) {
     var db = this.gOptions.db;
@@ -125,26 +127,6 @@ Users.prototype.changeChatId = function (id, newId) {
 
 /**
  * @param {string} id
- * @param {{}} options
- * @return {Promise}
- */
-Users.prototype.changeChatOptions = function (id, options) {
-    var db = this.gOptions.db;
-    return new Promise(function (resolve, reject) {
-        db.connection.query('\
-            UPDATE chats SET options = ? WHERE id = ?; \
-        ', [JSON.stringify(options), id], function (err) {
-            if (err) {
-                reject(err);
-            } else {
-                resolve();
-            }
-        });
-    });
-};
-
-/**
- * @param {string} id
  * @return {Promise}
  */
 Users.prototype.removeChat = function (id) {
@@ -153,26 +135,6 @@ Users.prototype.removeChat = function (id) {
         db.connection.query('\
             DELETE FROM chats WHERE id = ?; \
         ', [id], function (err) {
-            if (err) {
-                reject(err);
-            } else {
-                resolve();
-            }
-        });
-    });
-};
-
-/**
- * @param {string} id
- * @param {string} channelId
- * @return {Promise}
- */
-Users.prototype.setChatChannel = function (id, channelId) {
-    var db = this.gOptions.db;
-    return new Promise(function (resolve, reject) {
-        db.connection.query('\
-            UPDATE chats SET channelId = ? WHERE id = ?; \
-        ', [channelId, id], function (err) {
             if (err) {
                 reject(err);
             } else {
@@ -317,7 +279,9 @@ Users.prototype.getChatIdsByChannel = function (service, channelId) {
             if (err) {
                 reject(err);
             } else {
-                resolve(results);
+                resolve(results.map(function (item) {
+                    return item.chatId;
+                }));
             }
         });
     });
@@ -335,7 +299,9 @@ Users.prototype.getAllChatIds = function () {
             if (err) {
                 reject(err);
             } else {
-                resolve(results);
+                resolve(results.map(function (item) {
+                    return item.id;
+                }));
             }
         });
     });

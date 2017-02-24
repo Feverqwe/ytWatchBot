@@ -696,7 +696,7 @@ var commands = {
             });
         });
     },
-    setchannel: function (msg, channelName) {
+    setchannel: function (msg, channelId) {
         var _this = this;
         var chatId = msg.chat.id;
 
@@ -719,33 +719,19 @@ var commands = {
                     var options = base.getObjectItem(chat, 'options', {});
 
                     if (channelId === 'remove') {
-                        delete options.channel;
+                        chat.channelId = null;
                         delete options.mute;
-
-                        if (!Object.keys(options).length) {
-                            delete chat.options;
-                        }
                     } else {
                         if (!/^@\w+$/.test(channelId)) {
                             throw new Error('BAD_FORMAT');
                         }
 
-                        var exists = Object.keys(chatList).some(function (chatId) {
-                            var item = chatList[chatId];
-                            var options = item.options;
-
-                            if (options && options.channel === channelId) {
-                                return true;
-                            }
-                        });
-
-                        if (exists) {
+                        /*if (exists) {
                             throw new Error('CHANNEL_EXISTS');
-                        }
+                        }*/
+                        chat.channelId = channelId;
 
-                        return _this.gOptions.bot.sendChatAction(channelId, 'typing').then(function () {
-                            options.channel = channelId;
-                        });
+                        return _this.gOptions.users.setChat(chat);
                     }
                 }).catch(function (err) {
                     var msgText = _this.gOptions.language.telegramChannelError;
@@ -810,8 +796,8 @@ var commands = {
                 });
             };
 
-            if (channelName) {
-                return onGetChannelId(msg, channelName);
+            if (channelId) {
+                return onGetChannelId(msg, channelId);
             } else {
                 return waitTelegramChannelId();
             }
@@ -894,7 +880,7 @@ var commands = {
 
             info.services.forEach(function (service) {
                 textArr.push('');
-                textArr.push(_this.gOptions.serviceToTitle[service] + ':');
+                textArr.push(_this.gOptions.serviceToTitle[service.name] + ':');
                 service.channels.forEach(function (channel, index) {
                     textArr.push((index + 1) + '. ' + channel.title);
                 });
@@ -909,19 +895,28 @@ var commands = {
         var _this = this;
         var chatId = msg.chat.id;
 
-        return Promise.resolve().then(function() {
-            var liveTime = JSON.parse(require("fs").readFileSync('./liveTime.json', 'utf8'));
+        var liveTime = {
+            endTime: '2017,05,05',
+            message: [
+                '{count}'
+            ]
+        };
 
-            var endTime = liveTime.endTime.split(',');
-            endTime = (new Date(endTime[0], endTime[1], endTime[2])).getTime();
-            var count = parseInt((endTime - Date.now()) / 1000 / 60 / 60 / 24 / 30 * 10) / 10;
+        try {
+            liveTime = JSON.parse(require("fs").readFileSync('./liveTime.json', 'utf8'));
+        } catch (err) {
+            debug('Load liveTime.json error!', err);
+        }
 
-            var message = liveTime.message.join('\n').replace('{count}', count);
+        var endTime = liveTime.endTime.split(',');
+        endTime = (new Date(endTime[0], endTime[1], endTime[2])).getTime();
+        var count = parseInt((endTime - Date.now()) / 1000 / 60 / 60 / 24 / 30 * 10) / 10;
 
-            message += _this.gOptions.language.rateMe;
+        var message = liveTime.message.join('\n').replace('{count}', count);
 
-            return _this.gOptions.bot.sendMessage(chatId, message);
-        });
+        message += _this.gOptions.language.rateMe;
+
+        return _this.gOptions.bot.sendMessage(chatId, message);
     },
     refreshChannelInfo: function(msg) {
         var _this = this;
