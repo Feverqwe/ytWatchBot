@@ -142,16 +142,16 @@ MsgStack.prototype.setTimeout = function (chatId, messageId, timeout) {
     });
 };
 
-MsgStack.prototype.messageIdsExists = function (ids) {
+MsgStack.prototype.messageExists = function (id) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
-            SELECT id, videoId FROM messages WHERE id IN ?; \
-        ', [[ids]], function (err, results) {
+            SELECT id FROM messages WHERE id = ? LIMIT 1; \
+        ', [id], function (err, results) {
             if (err) {
                 reject(err);
             } else {
-                resolve(results);
+                resolve(!!results[0]);
             }
         });
     });

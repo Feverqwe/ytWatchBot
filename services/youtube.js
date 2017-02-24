@@ -518,16 +518,13 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                  */
                 var responseBody = response.body;
                 var items = responseBody.items;
-                var ids = items.map(function (item) {
-                    return videoIdToId(item.contentDetails.upload.videoId);
-                });
-                return _this.gOptions.msgStack.messageIdsExists(ids).then(function (exIds) {
-                    var exVideoIds = exIds.map(function (item) {
-                        return item.videoId;
-                    });
-                    items.forEach(function (item) {
-                        var videoId = item.contentDetails.upload.videoId;
-                        if (exVideoIds.indexOf(videoId) === -1) {
+                return insertPool.do(function () {
+                    var item = items.shift();
+                    if (!item) return;
+
+                    var videoId = item.contentDetails.upload.videoId;
+                    return _this.gOptions.msgStack.messageExists(videoId).then(function (exists) {
+                        if (!exists) {
                             newVideoIds.push(videoId);
                         }
                     });
