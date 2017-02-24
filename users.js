@@ -102,6 +102,21 @@ Users.prototype.migrate = function () {
  */
 
 /**
+ * @param {{}} dbChat
+ * @return {Chat|null}
+ */
+var dbChatToChat = function (dbChat) {
+    if (dbChat) {
+        if (!dbChat.options) {
+            dbChat.options = {};
+        } else {
+            dbChat.options = JSON.parse(dbChat.options);
+        }
+    }
+    return dbChat || null;
+};
+
+/**
  * @param {string} id
  * @return {Promise.<Chat|null>}
  */
@@ -115,15 +130,7 @@ Users.prototype.getChat = function (id) {
                 return reject(err);
             }
 
-            var chat = results[0] || null;
-            if (chat) {
-                if (!chat.options) {
-                    chat.options = {};
-                } else {
-                    chat.options = JSON.parse(chat.options);
-                }
-            }
-            resolve(chat);
+            resolve(dbChatToChat(results[0]));
         });
     });
 };
@@ -162,15 +169,7 @@ Users.prototype.getChatByChannelId = function (channelId) {
                 return reject(err);
             }
 
-            var chat = results[0] || null;
-            if (chat) {
-                if (!chat.options) {
-                    chat.options = {};
-                } else {
-                    chat.options = JSON.parse(chat.options);
-                }
-            }
-            resolve(chat);
+            resolve(dbChatToChat(results[0]));
         });
     });
 };
