@@ -464,7 +464,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
 
 /**
  * @param {String} channelId
- * @return {Promise}
+ * @return {Promise.<string>}
  */
 Youtube.prototype.requestChannelLocalTitle = function(channelId) {
     var _this = this;
@@ -496,7 +496,7 @@ Youtube.prototype.requestChannelLocalTitle = function(channelId) {
 
 /**
  * @param {String} query
- * @return {Promise}
+ * @return {Promise.<string>}
  */
 Youtube.prototype.requestChannelIdByQuery = function(query) {
     var _this = this;
@@ -531,7 +531,7 @@ Youtube.prototype.requestChannelIdByQuery = function(query) {
 
 /**
  * @param {String} username
- * @return {Promise}
+ * @return {Promise.<{id: string, username: username}>}
  */
 Youtube.prototype.requestChannelIdByUsername = function(username) {
     var _this = this;
@@ -565,7 +565,7 @@ Youtube.prototype.requestChannelIdByUsername = function(username) {
 
 /**
  * @param {String} url
- * @return {Promise}
+ * @return {Promise.<string>}
  */
 Youtube.prototype.requestChannelIdByVideoUrl = function (url) {
     var _this = this;
@@ -616,7 +616,6 @@ Youtube.prototype.requestChannelIdByVideoUrl = function (url) {
 };
 
 /**
- * Response username in lowerCase or channelId (case sensitive)
  * @param {String} channelName
  * @return {Promise.<{id, localTitle}>}
  */
