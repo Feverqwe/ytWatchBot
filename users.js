@@ -208,6 +208,26 @@ Users.prototype.getChannels = function (chatId) {
 
 /**
  * @param {string} chatId
+ * @param {string} channelId
+ * @return {Promise.<[{service: string, channelId: string}]>}
+ */
+Users.prototype.getChannel = function (chatId, channelId) {
+    var db = this.gOptions.db;
+    return new Promise(function (resolve, reject) {
+        db.connection.query('\
+            SELECT service, channelId FROM chatIdChannelId WHERE chatId = ? AND channelId = ? LIMIT 1; \
+        ', [chatId, channelId], function (err, results) {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(results[0]);
+            }
+        });
+    });
+};
+
+/**
+ * @param {string} chatId
  * @param {string} service
  * @param {string} channelId
  * @return {Promise}

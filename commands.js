@@ -220,12 +220,8 @@ var commands = {
             var channelId = channel.id;
             var title = channel.localTitle;
 
-            return _this.gOptions.users.getChannels(chatId).then(function (channels) {
-                var found = channels.some(function (item) {
-                    return item.service === service && item.channelId === channelId;
-                });
-
-                if (found) {
+            return _this.gOptions.users.getChannel(chatId, channelId).then(function (existsChannel) {
+                if (existsChannel) {
                     return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.channelExists);
                 }
 
