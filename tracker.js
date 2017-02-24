@@ -9,16 +9,16 @@ var requestPromise = require('request-promise');
 
 var Tracker = function(options) {
     this.gOptions = options;
-    this.cache = {};
-
     this.tid = options.config.gaId;
+    this.idCache = [];
+    this.idUuidMap = {};
 };
 
 Tracker.prototype.getUuid = function(id) {
-
-    var cid = this.cache[id];
-    if (cid) {
-        return cid;
+    var _this = this;
+    var uuid = this.idUuidMap[id];
+    if (uuid) {
+        return uuid;
     }
 
     var arr = [];
@@ -37,48 +37,41 @@ Tracker.prototype.getUuid = function(id) {
     var idArr = vId.toString().split('').reverse().join('').match(/(\d{0,2})/g).reverse();
 
     var index = arr.length;
-    var chank;
-    while (chank = idArr.pop()) {
+    var chunk;
+    while (chunk = idArr.pop()) {
         index--;
-        arr[index] = parseInt(prefix + chank, 10);
+        arr[index] = parseInt(prefix + chunk, 10);
     }
 
-    cid = Uuid.v4({
+    uuid = Uuid.v4({
         random: arr
     });
 
-    this.cache[id] = cid;
+    _this.idCache.unshift(id);
+    _this.idCache.splice(50).forEach(function (id) {
+        delete _this.idUuidMap[id];
+    });
+    _this.idUuidMap[id] = uuid;
 
-    return cid;
+    return uuid;
 };
 
 Tracker.prototype.track = function(msg, action) {
-    return Promise.all([
-        this.trackerSend(msg, action)/*,
-        this.botan.track(msg, action)*/
-    ]).catch(function(err) {
-        debug('Send error!', err);
-    });
+    return this.trackerSend(msg, action);
 };
 
 Tracker.prototype.trackerSend = function(msg, action) {
     var id = msg.chat.id;
 
-    var params = this.sendEvent('bot', action, msg.text);
-    params.cid = this.getUuid(id);
-
-    return this.send(params);
-};
-
-Tracker.prototype.sendEvent = function(category, action, label) {
     var params = {
-        ec: category,
+        ec: 'bot',
         ea: action,
-        el: label,
-        t: 'event'
+        el: msg.text,
+        t: 'event',
+        cid: this.getUuid(id)
     };
 
-    return params;
+    return this.send(params);
 };
 
 Tracker.prototype.send = function(params) {
