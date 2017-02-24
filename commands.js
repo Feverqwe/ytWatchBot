@@ -61,7 +61,7 @@ var menuBtnList = function (page) {
 };
 
 var optionsBtnList = function (chat) {
-    var options = chat.options || {};
+    var options = chat.options;
 
     var btnList = [];
 
