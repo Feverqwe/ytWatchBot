@@ -39,6 +39,9 @@ Users.prototype.init = function () {
                 `chatId` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
                 `service` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
                 `channelId` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
+            INDEX `chatId_idx` (`chatId` ASC), \
+            INDEX `service_idx` (`service` ASC), \
+            INDEX `channelId_idx` (`channelId` ASC), \
             UNIQUE INDEX `chatIdServiceChannelId_UNIQUE` (`chatId` ASC, `service` ASC, `channelId` ASC), \
             FOREIGN KEY (`chatId`) \
                     REFERENCES `chats` (`id`) \
