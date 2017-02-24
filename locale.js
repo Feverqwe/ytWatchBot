@@ -38,7 +38,16 @@ Locale.prototype.default = {
 };
 
 Locale.prototype.init = function () {
-    return Promise.resolve();
+    var _this = this;
+    return Promise.resolve().then(function () {
+        Object.keys(_this.language).forEach(function (key) {
+            var line = _this.language[key];
+            if (Array.isArray(line)) {
+                line = line.join('\n');
+            }
+            _this.language[key] = line;
+        });
+    });
 };
 
 module.exports = Locale;
