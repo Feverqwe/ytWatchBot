@@ -18,7 +18,7 @@ Users.prototype.init = function () {
             db.connection.query('\
             CREATE TABLE IF NOT EXISTS `chats` ( \
                 `id` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
-                `data` TEXT CHARACTER SET utf8mb4 NOT NULL, \
+                `options` TEXT CHARACTER SET utf8mb4 NOT NULL, \
             UNIQUE INDEX `id_UNIQUE` (`id` ASC)); \
         ', function (err) {
                 if (err) {
@@ -53,6 +53,10 @@ Users.prototype.init = function () {
     return promise;
 };
 
+/**
+ * @param {string} id
+ * @return {Promise.<{id: string, options: {}}|null>}
+ */
 Users.prototype.getChat = function (id) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
@@ -60,24 +64,36 @@ Users.prototype.getChat = function (id) {
             SELECT * FROM chats WHERE id = ? LIMIT 1; \
         ', [id], function (err, results) {
             if (err) {
-                reject(err);
-            } else {
-                resolve(results[0]);
+                return reject(err);
             }
+
+            var chat = results[0] || null;
+            if (chat) {
+                if (!chat.options) {
+                    chat.options = {};
+                } else {
+                    chat.options = JSON.parse(chat.options);
+                }
+            }
+            resolve(results[0]);
         });
     });
 };
 
-Users.prototype.setChat = function (id, data) {
+/**
+ * @param {{id: string, options: {}}} chat
+ * @return {Promise}
+ */
+Users.prototype.setChat = function (chat) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         var item = {
-            id: id,
-            data: data
+            id: chat.id,
+            options: JSON.stringify(chat.options || {})
         };
         db.connection.query('\
-            INSERT INTO chats SET ?; \
-        ', item, function (err, results) {
+            INSERT INTO chats SET ? ON DUPLICATE KEY UPDATE ?; \
+        ', [item, item], function (err, results) {
             if (err) {
                 reject(err);
             } else {
@@ -87,6 +103,11 @@ Users.prototype.setChat = function (id, data) {
     });
 };
 
+/**
+ * @param {string} id
+ * @param {string} newId
+ * @return {Promise}
+ */
 Users.prototype.changeChatId = function (id, newId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
@@ -102,12 +123,17 @@ Users.prototype.changeChatId = function (id, newId) {
     });
 };
 
-Users.prototype.changeChatData = function (id, data) {
+/**
+ * @param {string} id
+ * @param {{}} options
+ * @return {Promise}
+ */
+Users.prototype.changeChatOptions = function (id, options) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
-            UPDATE chats SET data = ? WHERE id = ?; \
-        ', [data, id], function (err) {
+            UPDATE chats SET options = ? WHERE id = ?; \
+        ', [JSON.stringify(options), id], function (err) {
             if (err) {
                 reject(err);
             } else {
@@ -117,6 +143,10 @@ Users.prototype.changeChatData = function (id, data) {
     });
 };
 
+/**
+ * @param {string} id
+ * @return {Promise}
+ */
 Users.prototype.removeChat = function (id) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
@@ -132,6 +162,11 @@ Users.prototype.removeChat = function (id) {
     });
 };
 
+/**
+ * @param {string} id
+ * @param {string} channelId
+ * @return {Promise}
+ */
 Users.prototype.setChatChannel = function (id, channelId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
@@ -147,6 +182,10 @@ Users.prototype.setChatChannel = function (id, channelId) {
     });
 };
 
+/**
+ * @param {string} channelId
+ * @return {Promise}
+ */
 Users.prototype.removeChatChannel = function (channelId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
@@ -162,6 +201,10 @@ Users.prototype.removeChatChannel = function (channelId) {
     });
 };
 
+/**
+ * @param {string} chatId
+ * @return {Promise.<[{service: string, channelId: string}]>}
+ */
 Users.prototype.getChannels = function (chatId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
@@ -177,6 +220,12 @@ Users.prototype.getChannels = function (chatId) {
     });
 };
 
+/**
+ * @param {string} chatId
+ * @param {string} service
+ * @param {string} channelId
+ * @return {Promise}
+ */
 Users.prototype.insertChannel = function (chatId, service, channelId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
@@ -197,6 +246,12 @@ Users.prototype.insertChannel = function (chatId, service, channelId) {
     });
 };
 
+/**
+ * @param {string} chatId
+ * @param {string} service
+ * @param {string} channelId
+ * @return {Promise}
+ */
 Users.prototype.removeChannel = function (chatId, service, channelId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
@@ -212,6 +267,9 @@ Users.prototype.removeChannel = function (chatId, service, channelId) {
     });
 };
 
+/**
+ * @return {Promise}
+ */
 Users.prototype.getAllChatChannels = function () {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
@@ -227,6 +285,9 @@ Users.prototype.getAllChatChannels = function () {
     });
 };
 
+/**
+ * @return {Promise}
+ */
 Users.prototype.getAllChannels = function () {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
@@ -242,6 +303,11 @@ Users.prototype.getAllChannels = function () {
     });
 };
 
+/**
+ * @param {string} service
+ * @param {string} channelId
+ * @return {Promise}
+ */
 Users.prototype.getChatIdsByChannel = function (service, channelId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
@@ -257,6 +323,9 @@ Users.prototype.getChatIdsByChannel = function (service, channelId) {
     });
 };
 
+/**
+ * @return {Promise}
+ */
 Users.prototype.getAllChatIds = function () {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {

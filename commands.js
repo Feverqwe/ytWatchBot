@@ -60,8 +60,8 @@ var menuBtnList = function (page) {
     return btnList;
 };
 
-var optionsBtnList = function (chatItem) {
-    var options = chatItem.options || {};
+var optionsBtnList = function (chat) {
+    var options = chat.options || {};
 
     var btnList = [];
 
@@ -107,62 +107,63 @@ var optionsBtnList = function (chatItem) {
 };
 
 /**
- * @param {Object} chatItem
+ * @param {Object} _this
+ * @param {string} chatId
  * @param {number} page
  * @param {Object|Array} mediumBtn
  * @returns {Promise}
  */
-var getDeleteChannelList = function (chatItem, page, mediumBtn) {
-    var _this = this;
+var getDeleteChannelList = function (_this, chatId, page, mediumBtn) {
     var btnList = [];
     var oneServiceMode = _this.gOptions.serviceList.length === 1;
 
-    var promise = Promise.resolve();
-    Object.keys(chatItem.serviceList).forEach(function (service) {
-        var channelList = chatItem.serviceList[service];
-        channelList.forEach(function(channelName) {
+    return _this.gOptions.users.getChannels(chatId).then(function (channels) {
+        var promise = Promise.resolve();
+        channels.forEach(function(item) {
             promise = promise.then(function () {
-                return base.getChannelLocalTitle(_this.gOptions, service, channelName).then(function (title) {
+                return base.getChannelLocalTitle(_this.gOptions, item.service, item.channelId).then(function (title) {
                     var btnItem = {};
 
                     if (!oneServiceMode) {
-                        title += ' (' + _this.gOptions.serviceToTitle[service] + ')';
+                        title += ' (' + _this.gOptions.serviceToTitle[item.service] + ')';
                     }
 
                     btnItem.text = title;
 
-                    btnItem.callback_data = '/d "' + channelName + '" "' + service + '"';
+                    btnItem.callback_data = '/d "' + item.channelId + '" "' + item.service + '"';
 
                     btnList.push([btnItem]);
                 });
             });
         });
-    });
-
-    return promise.then(function () {
+        return promise;
+    }).then(function () {
         return base.pageBtnList(btnList, 'delete_upd', page, mediumBtn);
     });
 };
 
-var setOption = function (chatItem, optionName, state) {
+var setOption = function (_this, chat, optionName, state) {
     if (['hidePreview', 'mute'].indexOf(optionName) === -1) {
         debug('Option is not found! %s', optionName);
         return Promise.reject(new Error('Option is not found!'));
     }
 
-    var options = base.getObjectItem(chatItem, 'options', {});
+    var options = chat.options;
+
     options[optionName] = state === '1';
     if (!options[optionName]) {
         delete options[optionName];
     }
 
     if (!Object.keys(options).length) {
-        delete chatItem.options;
+        delete chat.options;
     }
 
     var msgText = 'Option ' + optionName + ' (' + state + ') changed!';
 
-    return Promise.resolve(msgText);
+    return _this.gOptions.users.setChat(chat).then(function () {
+        return msgText;
+    });
 };
 
 var commands = {
@@ -234,7 +235,7 @@ var commands = {
                         var promise = Promise.resolve();
                         if (!chat) {
                             promise = promise.then(function () {
-                                return _this.gOptions.users.setChat(chatId, JSON.stringify({}));
+                                return _this.gOptions.users.setChat({id: chatId});
                             });
                         }
                         promise = promise.then(function () {
@@ -375,124 +376,114 @@ var commands = {
             return _this.onMessage(msg);
         }
     },
-    d__Cb: function (callbackQuery, channelName, service) {
+    d__Cb: function (callbackQuery, channelId, service) {
         var _this = this;
         var msg = callbackQuery.message;
         var chatId = msg.chat.id;
-        var chatList = _this.gOptions.storage.chatList;
-        var chatItem = chatList[chatId];
 
-        var channelList = chatItem && chatItem.serviceList && chatItem.serviceList[service];
+        return _this.gOptions.users.getChannels(chatId).then(function (channels) {
+            var found = channels.some(function (item) {
+                return service === item.service && item.channelId === channelId;
+            });
 
-        if (!channelList) {
-            return _this.gOptions.bot.editMessageText(
-                chatId,
-                _this.gOptions.language.emptyServiceList,
-                {
-                    message_id: msg.message_id
-                }
-            );
-        }
-
-        var pos = channelList.indexOf(channelName);
-        if (pos === -1) {
-            return _this.gOptions.bot.editMessageText(
-                chatId,
-                _this.gOptions.language.channelDontExist,
-                {
-                    message_id: msg.message_id
-                }
-            );
-        }
-
-        channelList.splice(pos, 1);
-
-        if (channelList.length === 0) {
-            delete chatItem.serviceList[service];
-
-            if (Object.keys(chatItem.serviceList).length === 0) {
-                delete chatList[chatId];
+            if (!found) {
+                return _this.gOptions.bot.editMessageText(
+                    chatId,
+                    _this.gOptions.language.channelDontExist,
+                    {
+                        message_id: msg.message_id
+                    }
+                );
             }
-        }
 
-        return base.storage.set({chatList: chatList}).then(function () {
-            return _this.gOptions.bot.editMessageText(
-                chatId,
-                _this.gOptions.language.channelDeleted
-                    .replace('{channelName}', channelName)
-                    .replace('{serviceName}', _this.gOptions.serviceToTitle[service]),
-                {
-                    message_id: msg.message_id
-                }
-            );
+            return _this.gOptions.users.removeChannel(chatId, service, channelId).then(function () {
+                // todo: fix me
+                /*if (channelList.length === 0) {
+                 delete chatItem.serviceList[service];
+
+                 if (Object.keys(chatItem.serviceList).length === 0) {
+                 delete chatList[chatId];
+                 }
+                 }*/
+
+                return _this.gOptions.bot.editMessageText(
+                    chatId,
+                    _this.gOptions.language.channelDeleted
+                        .replace('{channelName}', channelId)
+                        .replace('{serviceName}', _this.gOptions.serviceToTitle[service]),
+                    {
+                        message_id: msg.message_id
+                    }
+                );
+            });
         });
     },
     delete_upd__Cb: function (callbackQuery, page) {
         var _this = this;
         var msg = callbackQuery.message;
         var chatId = msg.chat.id;
-        var chatItem = _this.gOptions.storage.chatList[chatId];
 
-        if (!chatItem) {
-            return _this.gOptions.bot.editMessageText(
-                chatId,
-                _this.gOptions.language.emptyServiceList,
-                {
-                    message_id: msg.message_id
-                }
-            );
-        }
+        return _this.gOptions.users.getChat(chatId).then(function (chatItem) {
+            if (!chatItem) {
+                return _this.gOptions.bot.editMessageText(
+                    chatId,
+                    _this.gOptions.language.emptyServiceList,
+                    {
+                        message_id: msg.message_id
+                    }
+                );
+            }
 
-        var mediumBtn = {
-            text: 'Cancel',
-            callback_data: '/c "delete"'
-        };
+            var mediumBtn = {
+                text: 'Cancel',
+                callback_data: '/c "delete"'
+            };
 
-        return getDeleteChannelList.call(_this, chatItem, page, mediumBtn).then(function (btnList) {
-            return _this.gOptions.bot.editMessageReplyMarkup(chatId, {
-                message_id: msg.message_id,
-                reply_markup: JSON.stringify({
-                    inline_keyboard: btnList
-                })
+            return getDeleteChannelList(_this, chatId, page, mediumBtn).then(function (btnList) {
+                return _this.gOptions.bot.editMessageReplyMarkup(chatId, {
+                    message_id: msg.message_id,
+                    reply_markup: JSON.stringify({
+                        inline_keyboard: btnList
+                    })
+                });
             });
         });
     },
     delete: function (msg) {
         var _this = this;
         var chatId = msg.chat.id;
-        var chatItem = _this.gOptions.storage.chatList[chatId];
 
-        if (!chatItem) {
-            return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
-        }
+        return _this.gOptions.users.getChat(chatId).then(function (chatItem) {
+            if (!chatItem) {
+                return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
+            }
 
-        var msgText = _this.gOptions.language.selectDelChannel;
+            var msgText = _this.gOptions.language.selectDelChannel;
 
-        var mediumBtn = {
-            text: 'Cancel',
-            callback_data: '/c "delete"'
-        };
+            var mediumBtn = {
+                text: 'Cancel',
+                callback_data: '/c "delete"'
+            };
 
-        return getDeleteChannelList.call(_this, chatItem, 0, mediumBtn).then(function (btnList) {
-            return _this.gOptions.bot.sendMessage(chatId, msgText, {
-                reply_markup: JSON.stringify({
-                    inline_keyboard: btnList
-                })
+            return getDeleteChannelList(_this, chatId, 0, mediumBtn).then(function (btnList) {
+                return _this.gOptions.bot.sendMessage(chatId, msgText, {
+                    reply_markup: JSON.stringify({
+                        inline_keyboard: btnList
+                    })
+                });
             });
         });
     },
     option: function (msg, optionName, state) {
         var _this = this;
         var chatId = msg.chat.id;
-        var chatList = _this.gOptions.storage.chatList;
-        var chatItem = chatList[chatId];
 
-        if (!chatItem) {
-            return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
-        }
+        return _this.gOptions.users.getChat(chatId).then(function (chatItem) {
+            if (!chatItem) {
+                return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
+            }
 
-        return setOption(chatItem, optionName, state).then(function (msgText) {
-            return base.storage.set({chatList: chatList}).then(function () {
+            return setOption(_this, chatItem, optionName, state).then(function (msgText) {
                 return _this.gOptions.bot.sendMessage(chatId, msgText);
             });
         });
@@ -502,21 +493,18 @@ var commands = {
         var msg = callbackQuery.message;
         var chatId = msg.chat.id;
 
-        var chatList = _this.gOptions.storage.chatList;
-        var chatItem = chatList[chatId];
+        return _this.gOptions.users.getChat(chatId).then(function (chatItem) {
+            if (!chatItem) {
+                return _this.gOptions.bot.editMessageText(
+                    chatId,
+                    _this.gOptions.language.emptyServiceList,
+                    {
+                        message_id: msg.message_id
+                    }
+                );
+            }
 
-        if (!chatItem) {
-            return _this.gOptions.bot.editMessageText(
-                chatId,
-                _this.gOptions.language.emptyServiceList,
-                {
-                    message_id: msg.message_id
-                }
-            );
-        }
-
-        return setOption(chatItem, optionName, state).then(function (msgText) {
-            return base.storage.set({chatList: chatList}).then(function () {
+            return setOption(_this, chatItem, optionName, state).then(function (msgText) {
                 return _this.gOptions.bot.editMessageReplyMarkup(chatId, {
                     message_id: msg.message_id,
                     reply_markup: JSON.stringify({
@@ -529,16 +517,17 @@ var commands = {
     options: function (msg) {
         var _this = this;
         var chatId = msg.chat.id;
-        var chatItem = _this.gOptions.storage.chatList[chatId];
 
-        if (!chatItem) {
-            return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
-        }
+        return _this.gOptions.users.getChat(chatId).then(function (chatItem) {
+            if (!chatItem) {
+                return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
+            }
 
-        return _this.gOptions.bot.sendMessage(chatId, 'Options:', {
-            reply_markup: JSON.stringify({
-                inline_keyboard: optionsBtnList(chatItem)
-            })
+            return _this.gOptions.bot.sendMessage(chatId, 'Options:', {
+                reply_markup: JSON.stringify({
+                    inline_keyboard: optionsBtnList(chatItem)
+                })
+            });
         });
     },
     c__Cb: function (callbackQuery, command) {
@@ -702,125 +691,125 @@ var commands = {
     setchannel: function (msg, channelName) {
         var _this = this;
         var chatId = msg.chat.id;
-        var chatList = _this.gOptions.storage.chatList;
-        var chatItem = chatList[chatId];
 
-        if (!chatItem) {
-            return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
-        }
-
-        var onTimeout = function(onMessage) {
-            msg.text = '/cancel setchannel';
-            if (onMessage.messageId) {
-                msg.text += ' ' + onMessage.messageId;
+        return _this.gOptions.users.getChat(chatId).then(function (chatItem) {
+            if (!chatItem) {
+                return _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
             }
-            return _this.onMessage(msg);
-        };
 
-        var onGetChannelName = function (msg, channelName) {
-            channelName = channelName.trim();
-            return Promise.try(function () {
-                var options = base.getObjectItem(chatItem, 'options', {});
-
-                if (channelName === 'remove') {
-                    delete options.channel;
-                    delete options.mute;
-
-                    if (!Object.keys(options).length) {
-                        delete chatItem.options;
-                    }
-                } else {
-                    if (!/^@\w+$/.test(channelName)) {
-                        throw new Error('BAD_FORMAT');
-                    }
-
-                    var exists = Object.keys(chatList).some(function (chatId) {
-                        var item = chatList[chatId];
-                        var options = item.options;
-
-                        if (options && options.channel === channelName) {
-                            return true;
-                        }
-                    });
-
-                    if (exists) {
-                        throw new Error('CHANNEL_EXISTS');
-                    }
-
-                    return _this.gOptions.bot.sendChatAction(channelName, 'typing').then(function () {
-                        options.channel = channelName;
-                    });
+            var onTimeout = function(onMessage) {
+                msg.text = '/cancel setchannel';
+                if (onMessage.messageId) {
+                    msg.text += ' ' + onMessage.messageId;
                 }
-            }).catch(function (err) {
-                var msgText = _this.gOptions.language.telegramChannelError;
-                msgText = msgText.replace('{channelName}', channelName);
-                if (err.message === 'BAD_FORMAT') {
-                    msgText += ' Channel name is incorrect.';
-                } else
-                if (err.message === 'CHANNEL_EXISTS') {
-                    msgText += ' The channel has already been added.';
-                } else
-                if (/bot is not a member of the (?:channel|supergroup) chat/.test(err.message)) {
-                    msgText += ' Bot must be admin in this channel.';
-                } else
-                if (/chat not found/.test(err.message)) {
-                    msgText += ' Telegram chat is not found!';
-                } else {
-                    debug('Set channel %s error!', channelName, err);
-                }
-
-                return _this.gOptions.bot.sendMessage(chatId, msgText).then(function () {
-                    throw new CustomError('SET_CHANNEL_ERROR');
-                });
-            }).then(function () {
-                return base.storage.set({chatList: chatList}).then(function () {
-                    return _this.gOptions.bot.sendMessage(chatId, 'Options:', {
-                        reply_markup: JSON.stringify({
-                            inline_keyboard: optionsBtnList(chatItem)
-                        })
-                    });
-                });
-            }).catch(function (err) {
-                if (err.message !== 'SET_CHANNEL_ERROR') {
-                    throw err;
-                }
-            });
-        };
-
-        var waitTelegramChannelName = function() {
-            var onMessage = _this.stateList[chatId] = function(msg, text) {
-                msg.text = '/setchannel "' + text + '"';
                 return _this.onMessage(msg);
             };
-            onMessage.command = 'setchannel';
-            onMessage.userId = msg.from.id;
-            onMessage.timeout = setTimeout(function() {
-                return onTimeout(onMessage);
-            }, 3 * 60 * 1000);
 
-            var options = null;
-            var msgText = _this.gOptions.language.telegramChannelEnter;
-            if (chatId < 0) {
-                msgText += _this.gOptions.language.groupNote;
-                options = {
-                    reply_markup: JSON.stringify({
-                        force_reply: true
-                    })
+            var onGetChannelName = function (msg, channelName) {
+                channelName = channelName.trim();
+                return Promise.try(function () {
+                    var options = base.getObjectItem(chatItem, 'options', {});
+
+                    if (channelName === 'remove') {
+                        delete options.channel;
+                        delete options.mute;
+
+                        if (!Object.keys(options).length) {
+                            delete chatItem.options;
+                        }
+                    } else {
+                        if (!/^@\w+$/.test(channelName)) {
+                            throw new Error('BAD_FORMAT');
+                        }
+
+                        var exists = Object.keys(chatList).some(function (chatId) {
+                            var item = chatList[chatId];
+                            var options = item.options;
+
+                            if (options && options.channel === channelName) {
+                                return true;
+                            }
+                        });
+
+                        if (exists) {
+                            throw new Error('CHANNEL_EXISTS');
+                        }
+
+                        return _this.gOptions.bot.sendChatAction(channelName, 'typing').then(function () {
+                            options.channel = channelName;
+                        });
+                    }
+                }).catch(function (err) {
+                    var msgText = _this.gOptions.language.telegramChannelError;
+                    msgText = msgText.replace('{channelName}', channelName);
+                    if (err.message === 'BAD_FORMAT') {
+                        msgText += ' Channel name is incorrect.';
+                    } else
+                    if (err.message === 'CHANNEL_EXISTS') {
+                        msgText += ' The channel has already been added.';
+                    } else
+                    if (/bot is not a member of the (?:channel|supergroup) chat/.test(err.message)) {
+                        msgText += ' Bot must be admin in this channel.';
+                    } else
+                    if (/chat not found/.test(err.message)) {
+                        msgText += ' Telegram chat is not found!';
+                    } else {
+                        debug('Set channel %s error!', channelName, err);
+                    }
+
+                    return _this.gOptions.bot.sendMessage(chatId, msgText).then(function () {
+                        throw new CustomError('SET_CHANNEL_ERROR');
+                    });
+                }).then(function () {
+                    return base.storage.set({chatList: chatList}).then(function () {
+                        return _this.gOptions.bot.sendMessage(chatId, 'Options:', {
+                            reply_markup: JSON.stringify({
+                                inline_keyboard: optionsBtnList(chatItem)
+                            })
+                        });
+                    });
+                }).catch(function (err) {
+                    if (err.message !== 'SET_CHANNEL_ERROR') {
+                        throw err;
+                    }
+                });
+            };
+
+            var waitTelegramChannelName = function() {
+                var onMessage = _this.stateList[chatId] = function(msg, text) {
+                    msg.text = '/setchannel "' + text + '"';
+                    return _this.onMessage(msg);
                 };
-            }
+                onMessage.command = 'setchannel';
+                onMessage.userId = msg.from.id;
+                onMessage.timeout = setTimeout(function() {
+                    return onTimeout(onMessage);
+                }, 3 * 60 * 1000);
 
-            return _this.gOptions.bot.sendMessage(chatId, msgText, options).then(function (msg) {
-                if (chatId > 0) {
-                    onMessage.messageId = msg.message_id;
+                var options = null;
+                var msgText = _this.gOptions.language.telegramChannelEnter;
+                if (chatId < 0) {
+                    msgText += _this.gOptions.language.groupNote;
+                    options = {
+                        reply_markup: JSON.stringify({
+                            force_reply: true
+                        })
+                    };
                 }
-            });
-        };
 
-        if (channelName) {
-            return onGetChannelName(msg, channelName);
-        } else {
-            return waitTelegramChannelName();
-        }
+                return _this.gOptions.bot.sendMessage(chatId, msgText, options).then(function (msg) {
+                    if (chatId > 0) {
+                        onMessage.messageId = msg.message_id;
+                    }
+                });
+            };
+
+            if (channelName) {
+                return onGetChannelName(msg, channelName);
+            } else {
+                return waitTelegramChannelName();
+            }
+        });
     },
     top: function (msg) {
         var _this = this;
