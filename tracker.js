@@ -48,10 +48,10 @@ Tracker.prototype.getUuid = function(id) {
     });
 
     _this.idCache.unshift(id);
+    _this.idUuidMap[id] = uuid;
     _this.idCache.splice(50).forEach(function (id) {
         delete _this.idUuidMap[id];
     });
-    _this.idUuidMap[id] = uuid;
 
     return uuid;
 };
