@@ -504,7 +504,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                         idVideoIdMap[id] = videoId;
                     }
                 });
-                return _this.gOptions.msgStack.messageIdsExists(ids).then(function (exIds) {
+                return ids.length && _this.gOptions.msgStack.messageIdsExists(ids).then(function (exIds) {
                     ids.forEach(function (id) {
                         if (exIds.indexOf(id) === -1) {
                             newVideoIds.push(idVideoIdMap[id]);
