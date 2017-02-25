@@ -4,6 +4,7 @@
 "use strict";
 var base = require('./base');
 var debug = require('debug')('app:MsgSender');
+var request = require('request');
 var requestPromise = require('request-promise');
 
 var MsgSender = function (options) {
@@ -129,8 +130,26 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
 
     var sendingPic = function() {
         var sendPic = function(photoUrl) {
-            return _this.gOptions.bot.sendPhotoUrl(chatId, photoUrl, {
+            var options = {
                 caption: text
+            };
+            return _this.gOptions.bot.sendPhoto(chatId, photoUrl, options).catch(function (err) {
+                var errList = [
+                    /failed to get HTTP URL content/,
+                    /HTTP URL specified/
+                ];
+
+                var isManualUpload = errList.some(function (re) {
+                    return re.test(err.message);
+                });
+                if (isManualUpload) {
+                    return _this.gOptions.bot.sendPhoto(chatId, request({
+                        url: photoUrl,
+                        forever: true
+                    }), options);
+                }
+
+                throw err;
             }).catch(function(err) {
                 var isKicked = _this.onSendMsgError(err, chatId);
                 if (isKicked) {
@@ -169,9 +188,7 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
 
 MsgSender.prototype.sendMsg = function(chatId, noPhotoText, stream) {
     var _this = this;
-    var bot = _this.gOptions.bot;
-
-    return bot.sendMessage(chatId, noPhotoText, {
+    return _this.gOptions.bot.sendMessage(chatId, noPhotoText, {
         parse_mode: 'HTML'
     }).then(function() {
         _this.track(chatId, stream, 'sendMsg');
@@ -187,9 +204,7 @@ MsgSender.prototype.sendMsg = function(chatId, noPhotoText, stream) {
 
 MsgSender.prototype.sendPhoto = function(chatId, fileId, text, stream) {
     var _this = this;
-    var bot = _this.gOptions.bot;
-
-    return bot.sendPhotoQuote(chatId, fileId, {
+    return _this.gOptions.bot.sendPhoto(chatId, fileId, {
         caption: text
     }).then(function() {
         _this.track(chatId, stream, 'sendPhoto');

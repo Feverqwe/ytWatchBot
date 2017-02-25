@@ -22,16 +22,6 @@ var Chat = function(options) {
             });
         };
     })(this.onMessage);
-
-    options.events.on('tickTack', function() {
-        var bot = options.bot;
-        var now = Date.now();
-        var nextUpdate = bot._polling.lastUpdate + 60 * 5 * 1000;
-        if (nextUpdate < Date.now()) {
-            debug('Polling restart! %s < %s', nextUpdate, now);
-            bot.initPolling();
-        }
-    });
 };
 
 Chat.prototype.bindBot = function() {
@@ -40,7 +30,7 @@ Chat.prototype.bindBot = function() {
 };
 
 Chat.prototype.checkArgs = function(msg, args, isCallbackQuery) {
-    var bot = this.gOptions.bot;
+    var _this = this;
     var language = this.gOptions.language;
     var serviceList = this.gOptions.serviceList;
 
@@ -54,7 +44,7 @@ Chat.prototype.checkArgs = function(msg, args, isCallbackQuery) {
     var service = args[1];
 
     if (!channelName) {
-        bot.sendMessage(chatId, language.channelNameIsEmpty);
+        _this.gOptions.bot.sendMessage(chatId, language.channelNameIsEmpty);
         return;
     }
 
@@ -66,7 +56,7 @@ Chat.prototype.checkArgs = function(msg, args, isCallbackQuery) {
     }
 
     if (serviceList.indexOf(service) === -1) {
-        bot.sendMessage(
+        _this.gOptions.bot.sendMessage(
             chatId,
             language.serviceIsNotSupported.replace('{serviceName}', service)
         );
@@ -156,7 +146,7 @@ Chat.prototype.onCallbackQuery = function (callbackQuery) {
 
     if (['list', 'add', 'delete', 'top', 'about', 'clear', 'options', 'setchannel'].indexOf(action) !== -1) {
         return this.onMessage(this.callbackQueryToMsg(callbackQuery)).then(function () {
-            return _this.gOptions.bot.answerCallbackQuery(callbackQuery.id, '...');
+            return _this.gOptions.bot.answerCallbackQuery(callbackQuery.id);
         });
     }
 
@@ -179,7 +169,7 @@ Chat.prototype.onCallbackQuery = function (callbackQuery) {
     var origMsg = this.callbackQueryToMsg(callbackQuery);
 
     return commandFunc.apply(this, args).then(function () {
-        return _this.gOptions.bot.answerCallbackQuery(callbackQuery.id, '...');
+        return _this.gOptions.bot.answerCallbackQuery(callbackQuery.id);
     }).catch(function(err) {
         if (!/message is not modified/.test(err.message)) {
             debug('Execute callback query command %s error!', action, err);

@@ -5,10 +5,8 @@
 var Daemon = function(options) {
     this.gOptions = options;
 
-    this.TickTackTimer = null;
     this.CheckerTimer = null;
 
-    this.initTickTack();
     this.initChecker();
 };
 
@@ -25,19 +23,6 @@ Daemon.prototype.getRunTime = function(interval) {
     var waitMs = everyMs - nowMs % everyMs;
 
     return waitMs;
-};
-
-Daemon.prototype.initTickTack = function() {
-    var _this = this;
-    var interval = 1;
-
-    var onTimer = function() {
-        _this.gOptions.events.emit('tickTack');
-    };
-
-    _this.TickTackTimer = setInterval(function() {
-        onTimer();
-    }, interval * 60 * 1000);
 };
 
 Daemon.prototype.initChecker = function() {
@@ -64,7 +49,6 @@ Daemon.prototype.initChecker = function() {
 };
 
 Daemon.prototype.abort = function() {
-    clearInterval(this.TickTackTimer);
     clearInterval(this.CheckerTimer);
 };
 

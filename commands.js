@@ -185,13 +185,12 @@ var commands = {
 
         page = parseInt(page);
 
-        return _this.gOptions.bot.editMessageReplyMarkup(
-            chatId,
+        return _this.gOptions.bot.editMessageReplyMarkup(JSON.stringify({
+                inline_keyboard: menuBtnList(page)
+            }),
             {
-                message_id: msg.message_id,
-                reply_markup: JSON.stringify({
-                    inline_keyboard: menuBtnList(page)
-                })
+                chat_id: chatId,
+                message_id: msg.message_id
             }
         );
     },
@@ -343,15 +342,13 @@ var commands = {
                 return onTimeout(onMessage);
             }, 3 * 60 * 1000);
 
-            var options = null;
+            var options = {};
             var msgText = _this.gOptions.language.enterChannelName;
             if (chatId < 0) {
                 msgText += _this.gOptions.language.groupNote;
-                options = {
-                    reply_markup: JSON.stringify({
-                        force_reply: true
-                    })
-                };
+                options.reply_markup = JSON.stringify({
+                    force_reply: true
+                });
             }
             
             return _this.gOptions.bot.sendMessage(chatId, msgText, options).then(function (msg) {
@@ -379,13 +376,10 @@ var commands = {
             });
 
             if (!found) {
-                return _this.gOptions.bot.editMessageText(
-                    chatId,
-                    _this.gOptions.language.channelDontExist,
-                    {
-                        message_id: msg.message_id
-                    }
-                );
+                return _this.gOptions.bot.editMessageText(_this.gOptions.language.channelDontExist, {
+                    chat_id: chatId,
+                    message_id: msg.message_id
+                });
             }
 
             return _this.gOptions.users.removeChannel(chatId, service, channelId).then(function () {
@@ -397,12 +391,11 @@ var commands = {
                         });
                     }
                     promise = promise.then(function () {
-                        return _this.gOptions.bot.editMessageText(
-                            chatId,
-                            _this.gOptions.language.channelDeleted
+                        return _this.gOptions.bot.editMessageText(_this.gOptions.language.channelDeleted
                                 .replace('{channelName}', channelId)
                                 .replace('{serviceName}', _this.gOptions.serviceToTitle[service]),
                             {
+                                chat_id: chatId,
                                 message_id: msg.message_id
                             }
                         );
@@ -419,13 +412,10 @@ var commands = {
 
         return _this.gOptions.users.getChat(chatId).then(function (chat) {
             if (!chat) {
-                return _this.gOptions.bot.editMessageText(
-                    chatId,
-                    _this.gOptions.language.emptyServiceList,
-                    {
-                        message_id: msg.message_id
-                    }
-                );
+                return _this.gOptions.bot.editMessageText(_this.gOptions.language.emptyServiceList, {
+                    chat_id: chatId,
+                    message_id: msg.message_id
+                });
             }
 
             var mediumBtn = {
@@ -434,11 +424,11 @@ var commands = {
             };
 
             return getDeleteChannelList(_this, chatId, page, mediumBtn).then(function (btnList) {
-                return _this.gOptions.bot.editMessageReplyMarkup(chatId, {
-                    message_id: msg.message_id,
-                    reply_markup: JSON.stringify({
-                        inline_keyboard: btnList
-                    })
+                return _this.gOptions.bot.editMessageReplyMarkup(JSON.stringify({
+                    inline_keyboard: btnList
+                }), {
+                    chat_id: chatId,
+                    message_id: msg.message_id
                 });
             });
         });
@@ -489,21 +479,18 @@ var commands = {
 
         return _this.gOptions.users.getChat(chatId).then(function (chat) {
             if (!chat) {
-                return _this.gOptions.bot.editMessageText(
-                    chatId,
-                    _this.gOptions.language.emptyServiceList,
-                    {
-                        message_id: msg.message_id
-                    }
-                );
+                return _this.gOptions.bot.editMessageText(_this.gOptions.language.emptyServiceList, {
+                    chat_id: chatId,
+                    message_id: msg.message_id
+                });
             }
 
             return setOption(_this, chat, optionName, state).then(function (msgText) {
-                return _this.gOptions.bot.editMessageReplyMarkup(chatId, {
-                    message_id: msg.message_id,
-                    reply_markup: JSON.stringify({
-                        inline_keyboard: optionsBtnList(chat)
-                    })
+                return _this.gOptions.bot.editMessageReplyMarkup(JSON.stringify({
+                    inline_keyboard: optionsBtnList(chat)
+                }), {
+                    chat_id: chatId,
+                    message_id: msg.message_id
                 });
             });
         });
@@ -529,11 +516,10 @@ var commands = {
         var msg = callbackQuery.message;
         var chatId = msg.chat.id;
 
-        return _this.gOptions.bot.editMessageText(
-            chatId,
-            _this.gOptions.language.commandCanceled
+        return _this.gOptions.bot.editMessageText(_this.gOptions.language.commandCanceled
                 .replace('{command}', command || ''),
             {
+                chat_id: chatId,
                 message_id: msg.message_id
             }
         );
@@ -547,13 +533,10 @@ var commands = {
 
         if (messageId) {
             messageId = parseInt(messageId);
-            promise = _this.gOptions.bot.editMessageText(
-                chatId,
-                text,
-                {
-                    message_id: messageId
-                }
-            );
+            promise = _this.gOptions.bot.editMessageText(text, {
+                chat_id: chatId,
+                message_id: messageId
+            });
         } else {
             promise = _this.gOptions.bot.sendMessage(
                 chatId,
@@ -592,23 +575,17 @@ var commands = {
         var chatId = msg.chat.id;
         return _this.gOptions.users.getChat(chatId).then(function (chat) {
             if (!chat) {
-                return _this.gOptions.bot.editMessageText(
-                    chatId,
-                    _this.gOptions.language.emptyServiceList,
-                    {
-                        message_id: msg.message_id
-                    }
-                );
+                return _this.gOptions.bot.editMessageText(_this.gOptions.language.emptyServiceList, {
+                    chat_id: chatId,
+                    message_id: msg.message_id
+                });
             }
 
             return _this.gOptions.users.removeChat(chat.id).then(function () {
-                return _this.gOptions.bot.editMessageText(
-                    chatId,
-                    _this.gOptions.language.cleared,
-                    {
-                        message_id: msg.message_id
-                    }
-                );
+                return _this.gOptions.bot.editMessageText(_this.gOptions.language.cleared, {
+                    chat_id: chatId,
+                    message_id: msg.message_id
+                });
             });
         });
     },
@@ -773,15 +750,13 @@ var commands = {
                     return onTimeout(onMessage);
                 }, 3 * 60 * 1000);
 
-                var options = null;
+                var options = {};
                 var msgText = _this.gOptions.language.telegramChannelEnter;
                 if (chatId < 0) {
                     msgText += _this.gOptions.language.groupNote;
-                    options = {
-                        reply_markup: JSON.stringify({
-                            force_reply: true
-                        })
-                    };
+                    options.reply_markup = JSON.stringify({
+                        force_reply: true
+                    });
                 }
 
                 return _this.gOptions.bot.sendMessage(chatId, msgText, options).then(function (msg) {
