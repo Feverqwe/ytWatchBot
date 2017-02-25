@@ -77,11 +77,11 @@ MsgStack.prototype.addChatIdsMessageId = function (connection, chatIds, messageI
             return resolve();
         }
         var values = chatIds.map(function (id) {
-            return '(' + [connection.escape(id), connection.escape(messageId)].join(',') + ')';
-        }).join(',');
+            return [id, messageId];
+        });
         connection.query('\
-            INSERT INTO chatIdMessageId (chatId, messageId) VALUES ' + values + ' ON DUPLICATE KEY UPDATE chatId = chatId; \
-        ', function (err, results) {
+            INSERT INTO chatIdMessageId (chatId, messageId) VALUES ? ON DUPLICATE KEY UPDATE chatId = chatId; \
+        ', [values], function (err, results) {
             if (err) {
                 reject(err);
             } else {
@@ -151,13 +151,9 @@ MsgStack.prototype.messageIdsExists = function (ids) {
         if (!ids.length) {
             return resolve([]);
         }
-        var inArray = ids.map(function (id) {
-            return db.connection.escape(id);
-        });
-        inArray = '(' + inArray.join(',') + ')';
         db.connection.query('\
-            SELECT id FROM messages WHERE id IN ' + inArray + '; \
-            ', function (err, results) {
+            SELECT id FROM messages WHERE id IN ?; \
+            ', [[ids]], function (err, results) {
             if (err) {
                 reject(err);
             } else {
