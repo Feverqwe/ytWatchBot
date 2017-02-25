@@ -308,7 +308,7 @@ Youtube.prototype.insertItem = function (channel, chatIdList, id, snippet, conte
                     });
                 });
             }).then(function (messageId) {
-                return chatIdList.length && _this.gOptions.msgStack.addChatIdsMessageId(connection, chatIdList, messageId);
+                return _this.gOptions.msgStack.addChatIdsMessageId(connection, chatIdList, messageId);
             }).then(function () {
                 return new Promise(function (resolve, reject) {
                     connection.commit(function(err) {
@@ -504,7 +504,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                         idVideoIdMap[id] = videoId;
                     }
                 });
-                return ids.length && _this.gOptions.msgStack.messageIdsExists(ids).then(function (exIds) {
+                return _this.gOptions.msgStack.messageIdsExists(ids).then(function (exIds) {
                     ids.forEach(function (id) {
                         if (exIds.indexOf(id) === -1) {
                             newVideoIds.push(idVideoIdMap[id]);

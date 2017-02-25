@@ -73,6 +73,9 @@ MsgStack.prototype.init = function () {
 
 MsgStack.prototype.addChatIdsMessageId = function (connection, chatIds, messageId) {
     return new Promise(function (resolve, reject) {
+        if (!chatIds.length) {
+            return resolve();
+        }
         var values = chatIds.map(function (id) {
             return '(' + [connection.escape(id), connection.escape(messageId)].join(',') + ')';
         }).join(',');
@@ -145,6 +148,9 @@ MsgStack.prototype.setTimeout = function (chatId, messageId, timeout) {
 MsgStack.prototype.messageIdsExists = function (ids) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
+        if (!ids.length) {
+            return resolve([]);
+        }
         var inArray = ids.map(function (id) {
             return db.connection.escape(id);
         });
