@@ -136,7 +136,7 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
             return _this.gOptions.bot.sendPhoto(chatId, photoUrl, options).catch(function (err) {
                 var errList = [
                     /failed to get HTTP URL content/,
-                    /HTTP URL specified/
+                    /wrong type of the web page content/
                 ];
 
                 var isManualUpload = errList.some(function (re) {
