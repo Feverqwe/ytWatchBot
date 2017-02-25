@@ -525,8 +525,10 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                 items.forEach(function (item) {
                     var videoId = item.contentDetails.upload.videoId;
                     var id = videoIdToId(videoId);
-                    ids.push(id);
-                    idVideoIdMap[id] = videoId;
+                    if (ids.indexOf(id) === -1) {
+                        ids.push(id);
+                        idVideoIdMap[id] = videoId;
+                    }
                 });
                 return _this.gOptions.msgStack.messageIdsExists(ids).then(function (exIds) {
                     ids.forEach(function (id) {
