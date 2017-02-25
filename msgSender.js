@@ -4,9 +4,7 @@
 "use strict";
 var base = require('./base');
 var debug = require('debug')('app:MsgSender');
-var Promise = require('bluebird');
-var request = require('request');
-var requestPromise = Promise.promisify(request);
+var requestPromise = require('request-promise');
 
 var MsgSender = function (options) {
     var _this = this;
@@ -80,12 +78,9 @@ MsgSender.prototype.downloadImg = function (stream) {
             method: 'HEAD',
             url: previewUrl,
             gzip: true,
-            forever: true
+            forever: true,
+            resolveWithFullResponse: true
         }).then(function (response) {
-            if (response.statusCode !== 200) {
-                throw new Error(response.statusCode);
-            }
-
             return response.request.href;
         }).catch(function(err) {
             // debug('Request photo error! %s %s %s', index, stream._channelName, previewUrl, err);
