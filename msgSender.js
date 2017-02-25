@@ -204,7 +204,7 @@ MsgSender.prototype.sendMsg = function(chatId, noPhotoText, stream) {
 
 MsgSender.prototype.sendPhoto = function(chatId, fileId, text, stream) {
     var _this = this;
-    return _this.gOptions.bot.sendPhoto(chatId, fileId, {
+    return _this.gOptions.bot.sendPhotoQuote(chatId, fileId, {
         caption: text
     }).then(function() {
         _this.track(chatId, stream, 'sendPhoto');

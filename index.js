@@ -72,6 +72,14 @@ var options = {
         options.bot.on('polling_error', function (err) {
             debug('pollingError', err);
         });
+
+        var quote = new base.Quote(30);
+        options.bot.sendMessage = quote.wrapper(options.bot.sendMessage, options.bot);
+        options.bot.sendPhotoQuote = quote.wrapper(options.bot.sendPhoto, options.bot);
+        options.bot.sendChatAction = quote.wrapper(options.bot.sendChatAction, options.bot);
+        options.bot.editMessageText = quote.wrapper(options.bot.editMessageText, options.bot);
+        options.bot.editMessageReplyMarkup = quote.wrapper(options.bot.editMessageReplyMarkup, options.bot);
+        options.bot.answerCallbackQuery = quote.wrapper(options.bot.answerCallbackQuery, options.bot);
     }).then(function() {
         options.tracker = new Tracker(options);
     }).then(function() {
