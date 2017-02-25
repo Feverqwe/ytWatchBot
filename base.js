@@ -229,7 +229,7 @@ utils.Quote = function (limitPerSecond) {
 
     /**
      * @param {Function} callback
-     * @param {Object} thisArg
+     * @param {Object} [thisArg]
      * @returns {Function}
      */
     this.wrapper = function(callback, thisArg) {

@@ -2,15 +2,11 @@
  * Created by Anton on 06.12.2015.
  */
 "use strict";
-var debug = require('debug')('app:youtube');
-var base = require('../base');
-var Promise = require('bluebird');
-var request = require('request');
-var requestPromise = Promise.promisify(request);
-var CustomError = require('../customError').CustomError;
-
+const debug = require('debug')('app:youtube');
+const base = require('../base');
+const CustomError = require('../customError').CustomError;
 var apiQuote = new base.Quote(1000);
-requestPromise = apiQuote.wrapper(requestPromise.bind(requestPromise));
+const requestPromise = apiQuote.wrapper(require('request-promise'));
 
 var Youtube = function(options) {
     var _this = this;
@@ -384,17 +380,6 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                     json: true,
                     gzip: true,
                     forever: true
-                }).then(function(response) {
-                    if (response.statusCode === 503) {
-                        throw new CustomError(response.statusCode);
-                    }
-
-                    if (response.statusCode !== 200) {
-                        debug('Unexpected response %j', response);
-                        throw new CustomError('Unexpected response');
-                    }
-
-                    return response;
                 }).catch(function (err) {
                     if (retryLimit-- < 1) {
                         throw err;
@@ -408,14 +393,13 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                 });
             };
 
-            return requestPage().then(function (response) {
-                /**
-                 * @type {{
-                 * [nextPageToken]: String,
-                 * items: []
-                 * }}
-                 */
-                var responseBody = response.body;
+            /**
+             * @typedef {{}} v3Videos
+             * @property {string} nextPageToken
+             * @property {[{id: string,snippet:{},contentDetails:{}}]} items
+             */
+
+            return requestPage().then(function (/*v3Videos*/responseBody) {
                 var items = responseBody.items;
                 return insertPool.do(function () {
                     var item = items.shift();
@@ -489,17 +473,6 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                     json: true,
                     gzip: true,
                     forever: true
-                }).then(function(response) {
-                    if (response.statusCode === 503) {
-                        throw new CustomError(response.statusCode);
-                    }
-
-                    if (response.statusCode !== 200) {
-                        debug('Unexpected response %j', response);
-                        throw new CustomError('Unexpected response');
-                    }
-
-                    return response;
                 }).catch(function (err) {
                     if (retryLimit-- < 1) {
                         throw err;
@@ -513,14 +486,13 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                 });
             };
 
-            return requestPage().then(function (response) {
-                /**
-                 * @type {{
-                 * [nextPageToken]: String,
-                 * items: []
-                 * }}
-                 */
-                var responseBody = response.body;
+            /**
+             * @typedef {{}} v3Activities
+             * @property {string} nextPageToken
+             * @property {[{contentDetails:{upload:{videoId:string}}}]} items
+             */
+
+            return requestPage().then(function (/*v3Activities*/responseBody) {
                 var items = responseBody.items;
                 var idVideoIdMap = {};
                 var ids = [];
@@ -607,8 +579,7 @@ Youtube.prototype.requestChannelLocalTitle = function(channelId) {
         json: true,
         gzip: true,
         forever: true
-    }).then(function(response) {
-        var responseBody = response.body;
+    }).then(function(responseBody) {
         var localTitle = '';
         responseBody.items.some(function (item) {
             return localTitle = item.snippet.title;
@@ -639,9 +610,7 @@ Youtube.prototype.requestChannelIdByQuery = function(query) {
         json: true,
         gzip: true,
         forever: true
-    }).then(function(response) {
-        var responseBody = response.body;
-
+    }).then(function(responseBody) {
         var channelId = '';
         responseBody.items.some(function (item) {
             return channelId = item.id.channelId;
@@ -673,9 +642,7 @@ Youtube.prototype.requestChannelIdByUsername = function(username) {
         json: true,
         gzip: true,
         forever: true
-    }).then(function(response) {
-        var responseBody = response.body;
-
+    }).then(function(responseBody) {
         var id = '';
         responseBody.items.some(function (item) {
             return id = item.id;
@@ -725,9 +692,7 @@ Youtube.prototype.requestChannelIdByVideoUrl = function (url) {
         json: true,
         gzip: true,
         forever: true
-    }).then(function(response) {
-        var responseBody = response.body;
-
+    }).then(function(responseBody) {
         var channelId = '';
         responseBody.items.some(function (item) {
             return channelId = item.snippet.channelId;
@@ -791,9 +756,7 @@ Youtube.prototype.getChannelId = function(channelName) {
             json: true,
             gzip: true,
             forever: true
-        }).then(function(response) {
-            var responseBody = response.body;
-
+        }).then(function(responseBody) {
             var snippet = null;
             responseBody.items.some(function (item) {
                 return snippet = item.snippet;
