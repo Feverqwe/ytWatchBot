@@ -329,8 +329,12 @@ Youtube.prototype.insertItem = function (channel, chatIdList, id, snippet, conte
                 }).then(function () {
                     throw err;
                 });
-            }).finally(function () {
+            }).then(function (result) {
                 connection.end();
+                return result;
+            }, function (err) {
+                connection.end();
+                throw err;
             });
         });
     };
