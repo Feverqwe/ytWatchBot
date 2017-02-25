@@ -137,7 +137,7 @@ Checker.prototype.updateList = function(filterServiceChannelList) {
             });
         });
 
-        queue.then(function () {
+        queue = queue.then(function () {
             _this.gOptions.events.emit('checkStack');
         });
 
