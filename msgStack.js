@@ -279,12 +279,12 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
                 promise = promise.then(function () {
                     return _this.gOptions.msgSender.sendMessage(chatId, messageId, message, data, true).then(function () {
                         _this.sendLog(chatId, messageId, data);
-                    }, function (err) {
-                        return _this.onSendMessageError(chatId, err);
                     });
                 });
             });
-            return promise;
+            return promise.catch(function (err) {
+                return _this.onSendMessageError(chatId, err);
+            });
         });
     }).then(function () {
         return _this.removeItem(chatId, messageId);
