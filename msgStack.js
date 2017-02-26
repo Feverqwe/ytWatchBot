@@ -222,14 +222,12 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
                 caption = base.getNowStreamPhotoText(_this.gOptions, data);
             }
 
-            var chatList = [];
+            var chatList = [chat.id];
             if (chat.channelId) {
-                if (!options.mute) {
-                    chatList.push(chat.id);
-                }
                 chatList.push(chat.channelId);
-            } else {
-                chatList.push(chat.id);
+                if (options.mute) {
+                    chatList.shift();
+                }
             }
 
             return _this.gOptions.msgSender.sendNotify(messageId, imageFileId, chatList, caption, text, data, true).then(function () {
