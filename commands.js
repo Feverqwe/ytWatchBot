@@ -926,8 +926,9 @@ var commands = {
             chatList.forEach(function (chatId) {
                 queue = queue.then(function () {
                     return _this.gOptions.bot.sendChatAction(chatId, 'typing').catch(function (err) {
+                        return base.onSendMsgError(_this.gOptions, chatId, err);
+                    }).catch(function (err) {
                         debug('checkUserAlive %s', chatId, err);
-                        _this.gOptions.msgSender.onSendMsgError(err, chatId);
                     });
                 });
             });

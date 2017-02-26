@@ -12,50 +12,7 @@ var MsgSender = function (options) {
     _this.gOptions = options;
 };
 
-MsgSender.prototype.onSendMsgError = function(err, chatId) {
-    var _this = this;
-    var errMsg = err.message;
-    var needKick = /^403\s+/.test(errMsg);
-
-    if (!needKick) {
-        needKick = [
-            /group chat is deactivated/,
-            /chat not found"/,
-            /channel not found"/,
-            /USER_DEACTIVATED/
-        ].some(function (re) {
-            return re.test(errMsg);
-        });
-    }
-
-    var errorJson = /^\d+\s+(\{.+})$/.exec(errMsg);
-    errorJson = errorJson && errorJson[1];
-    if (errorJson) {
-        var msg = null;
-        try {
-            msg = JSON.parse(errorJson);
-        } catch (e) {}
-
-        if (msg && msg.parameters) {
-            var parameters = msg.parameters;
-            if (parameters.migrate_to_chat_id) {
-                _this.gOptions.users.changeChatId(chatId, parameters.migrate_to_chat_id);
-            }
-        }
-    }
-
-    if (needKick) {
-        if (/^@\w+$/.test(chatId)) {
-            _this.gOptions.users.removeChatChannel(chatId);
-        } else {
-            _this.gOptions.users.removeChat(chatId);
-        }
-    }
-
-    return needKick;
-};
-
-MsgSender.prototype.downloadImg = function (stream) {
+MsgSender.prototype.getValidPhotoUrl = function (stream) {
     var _this = this;
 
     var requestLimit = 10;
@@ -115,71 +72,38 @@ MsgSender.prototype.downloadImg = function (stream) {
 MsgSender.prototype.getPicId = function(chatId, text, stream) {
     var _this = this;
 
-    var sendPicLimit = 0;
-    var _retryLimit = _this.gOptions.config.sendPhotoMaxRetry;
-    if (_retryLimit) {
-        sendPicLimit = _retryLimit;
-    }
-
-    var sendPicTimeoutSec = 5;
-    var _retryTimeoutSec = _this.gOptions.config.sendPhotoRetryTimeoutSec;
-    if (_retryTimeoutSec) {
-        sendPicTimeoutSec = _retryTimeoutSec;
-    }
-    sendPicTimeoutSec *= 1000;
-
-    var sendingPic = function() {
-        var sendPic = function(photoUrl) {
-            var options = {
+    var sendingPic = function () {
+        var uploadPhoto = function (photoUrl) {
+            return _this.gOptions.bot.sendPhoto(chatId, request({
+                url: photoUrl,
+                forever: true
+            }), {
                 caption: text
-            };
-            return _this.gOptions.bot.sendPhoto(chatId, photoUrl, options).catch(function (err) {
+            });
+        };
+
+        var sendPhotoUrl = function (photoUrl) {
+            return _this.gOptions.bot.sendPhoto(chatId, photoUrl, {
+                caption: text
+            });
+        };
+
+        return _this.getValidPhotoUrl(stream).then(function (photoUrl) {
+            return sendPhotoUrl(photoUrl).catch(function (err) {
                 var errList = [
                     /failed to get HTTP URL content/,
                     /wrong type of the web page content/
                 ];
-
-                var isManualUpload = errList.some(function (re) {
+                var isLoadUrlError = errList.some(function (re) {
                     return re.test(err.message);
                 });
-                if (isManualUpload) {
-                    return _this.gOptions.bot.sendPhoto(chatId, request({
-                        url: photoUrl,
-                        forever: true
-                    }), options);
+
+                if (!isLoadUrlError) {
+                    throw err;
                 }
 
-                throw err;
-            }).catch(function(err) {
-                var isKicked = _this.onSendMsgError(err, chatId);
-                if (isKicked) {
-                    throw new Error('Send photo file error! Bot was kicked!');
-                }
-
-                var imgProcessError = [
-                    /Failed to get HTTP URL content/
-                ].some(function(re) {
-                    return re.test(err);
-                });
-
-                sendPicLimit--;
-                if (imgProcessError && sendPicLimit > 0) {
-                    return new Promise(function(resolve) {
-                        setTimeout(resolve, sendPicTimeoutSec);
-                    }).then(function() {
-                        debug("Retry %s send photo file %s %s!", sendPicLimit, chatId, stream._channelName, err);
-                        return sendingPic();
-                    });
-                }
-
-                debug('sendPic error %s %s %s', chatId, stream._channelName, photoUrl, err);
-
-                throw err;
+                return uploadPhoto(photoUrl);
             });
-        };
-
-        return _this.downloadImg(stream).then(function (photoUrl) {
-            return sendPic(photoUrl);
         });
     };
 
@@ -192,13 +116,6 @@ MsgSender.prototype.sendMsg = function(chatId, noPhotoText, stream) {
         parse_mode: 'HTML'
     }).then(function() {
         _this.track(chatId, stream, 'sendMsg');
-    }).catch(function(err) {
-        debug('Send text msg error! %s %s', chatId, stream._channelName, err);
-
-        var isKicked = _this.onSendMsgError(err, chatId);
-        if (!isKicked) {
-            throw err;
-        }
     });
 };
 
@@ -208,13 +125,6 @@ MsgSender.prototype.sendPhoto = function(chatId, fileId, text, stream) {
         caption: text
     }).then(function() {
         _this.track(chatId, stream, 'sendPhoto');
-    }).catch(function(err) {
-        debug('Send photo msg error! %s %s', chatId, stream._channelName, err);
-
-        var isKicked = _this.onSendMsgError(err, chatId);
-        if (!isKicked) {
-            throw err;
-        }
     });
 };
 
@@ -222,13 +132,15 @@ MsgSender.prototype.send = function(chatIdList, imageFileId, text, noPhotoText, 
     var _this = this;
     var promiseList = [];
 
-    var chatId;
+    var chatId, promise;
     while (chatId = chatIdList.shift()) {
         if (!imageFileId || !text) {
-            promiseList.push(_this.sendMsg(chatId, noPhotoText, stream));
+            promise = _this.sendMsg(chatId, noPhotoText, stream);
         } else {
-            promiseList.push(_this.sendPhoto(chatId, imageFileId, text, stream));
+            promise = _this.sendPhoto(chatId, imageFileId, text, stream);
         }
+        promise = promise.catch(base.onSendMsgError.bind(_this.gOptions, chatId));
+        promiseList.push(promise);
     }
 
     return Promise.all(promiseList);
@@ -252,12 +164,12 @@ MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
         });
         return imageFileId;
     }).catch(function (err) {
-        if (err.message === 'Send photo file error! Bot was kicked!') {
+        return base.onSendMsgError(_this.gOptions, chatId, err).then(function () {
             return _this.requestPicId(chatIdList, text, stream);
-        }
-
-        chatIdList.unshift(chatId);
-        // debug('Function getPicId throw error!', err);
+        }).catch(function (err) {
+            debug('requestPicId error!', err);
+            chatIdList.unshift(chatId);
+        });
     });
 };
 
