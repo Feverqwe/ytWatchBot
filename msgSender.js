@@ -169,10 +169,10 @@ MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
     }).catch(function (err) {
         return base.onSendMsgError(_this.gOptions, chatId, err).then(function () {
             return _this.requestPicId(chatIdList, text, stream);
-        }).catch(function (err) {
-            debug('requestPicId error!', err);
-            chatIdList.unshift(chatId);
         });
+    }).catch(function (err) {
+        debug('requestPicId error!', err);
+        chatIdList.unshift(chatId);
     });
 };
 
