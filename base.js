@@ -460,38 +460,4 @@ utils.Pool = function (limit) {
     };
 };
 
-utils.onSendMsgError = function (gOptions, chatId, err) {
-    if (err.code === 'ETELEGRAM') {
-        var body = err.response.body;
-
-        var parameters = body.parameters;
-        if (parameters && parameters.migrate_to_chat_id) {
-            return gOptions.users.changeChatId(chatId, parameters.migrate_to_chat_id);
-        }
-
-        var needKick = body.error_code === 403;
-
-        if (!needKick) {
-            needKick = [
-                /group chat is deactivated/,
-                /chat not found/,
-                /channel not found/,
-                /USER_DEACTIVATED/
-            ].some(function (re) {
-                return re.test(body.description);
-            });
-        }
-
-        if (needKick) {
-            if (/^@\w+$/.test(chatId)) {
-                return gOptions.users.removeChatChannel(chatId);
-            } else {
-                return gOptions.users.removeChat(chatId);
-            }
-        }
-    }
-
-    return Promise.reject(err);
-};
-
 module.exports = utils;

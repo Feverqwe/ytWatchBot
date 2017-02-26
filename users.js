@@ -2,7 +2,9 @@
  * Created by Anton on 23.02.2017.
  */
 "use strict";
-var debug = require('debug')('app:Users');
+var debug = require('debug')('app:users');
+var debugLog = require('debug')('app:users:log');
+debugLog.log = console.log.bind(console);
 
 var Users = function (options) {
     this.gOptions = options;
@@ -156,6 +158,7 @@ Users.prototype.changeChatId = function (id, newId) {
             if (err) {
                 reject(err);
             } else {
+                debugLog('[migrate] %s > %s', id, newId);
                 resolve();
             }
         });
@@ -175,6 +178,7 @@ Users.prototype.removeChat = function (id) {
             if (err) {
                 reject(err);
             } else {
+                debugLog('[remove] %s', id);
                 resolve();
             }
         });
@@ -194,6 +198,7 @@ Users.prototype.removeChatChannel = function (channelId) {
             if (err) {
                 reject(err);
             } else {
+                debugLog('[remove] %s', channelId);
                 resolve();
             }
         });

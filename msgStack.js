@@ -3,8 +3,8 @@
  */
 "use strict";
 var base = require('./base');
-var debug = require('debug')('app:MsgStack');
-var debugLog = require('debug')('app:MsgStack:log');
+var debug = require('debug')('app:msgStack');
+var debugLog = require('debug')('app:msgStack:log');
 debugLog.log = console.log.bind(console);
 
 var MsgStack = function (options) {
@@ -127,7 +127,8 @@ MsgStack.prototype.sendLog = function (chatId, messageId, data) {
     var debugItem = JSON.parse(JSON.stringify(data));
     delete debugItem.preview;
     delete debugItem._videoId;
-    debugLog('[s] %s %s %j', messageId, chatId, debugItem);
+    delete debugItem._service;
+    debugLog('[send] %s %s %j', messageId, chatId, debugItem);
 };
 
 MsgStack.prototype.setTimeout = function (chatId, messageId, timeout) {
@@ -195,6 +196,43 @@ MsgStack.prototype.removeItem = function (chatId, messageId) {
     });
 };
 
+MsgStack.prototype.onSendMessageError = function (chatId, err) {
+    var _this = this;
+    var result = null;
+    if (err.code === 'ETELEGRAM') {
+        var body = err.response.body;
+
+        var isBlocked = body.error_code === 403;
+        if (!isBlocked) {
+            isBlocked = [
+                /group chat is deactivated/,
+                /chat not found/,
+                /channel not found/,
+                /USER_DEACTIVATED/
+            ].some(function (re) {
+                return re.test(body.description);
+            });
+        }
+
+        if (isBlocked) {
+            if (/^@\w+$/.test(chatId)) {
+                result = _this.gOptions.users.removeChatChannel(chatId);
+            } else {
+                result = _this.gOptions.users.removeChat(chatId);
+            }
+        } else
+        if (body.parameters && body.parameters.migrate_to_chat_id) {
+            result = _this.gOptions.users.changeChatId(chatId, parameters.migrate_to_chat_id);
+        }
+    }
+
+    if (!result) {
+        throw err;
+    }
+
+    return result;
+};
+
 MsgStack.prototype.sendItem = function (/*StackItem*/item) {
     var _this = this;
     var chatId = item.chatId;
@@ -230,9 +268,23 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
                 }
             }
 
-            return _this.gOptions.msgSender.sendNotify(messageId, imageFileId, chatList, caption, text, data, true).then(function () {
-                _this.sendLog(chat.id, messageId, data);
+            var shared = {
+                imageFileId: imageFileId,
+                caption: caption,
+                text: text
+            };
+
+            var promise = Promise.resolve();
+            chatList.forEach(function (chatId) {
+                promise = promise.then(function () {
+                    return _this.gOptions.msgSender.sendMessage(chatId, messageId, shared, data, true).then(function () {
+                        _this.sendLog(chatId, messageId, data);
+                    }, function (err) {
+                        return _this.onSendMessageError(chatId, err);
+                    });
+                });
             });
+            return promise;
         });
     }).then(function () {
         return _this.removeItem(chatId, messageId);

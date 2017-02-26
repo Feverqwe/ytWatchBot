@@ -3,7 +3,7 @@
  */
 "use strict";
 var base = require('./base');
-var debug = require('debug')('app:MsgSender');
+var debug = require('debug')('app:msgSender');
 var request = require('request');
 var requestPromise = require('request-promise');
 
@@ -101,6 +101,20 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
     return sendingPic();
 };
 
+MsgSender.prototype.requestPicId = function(chatId, text, stream) {
+    var _this = this;
+
+    return _this.getPicId(chatId, text, stream).then(function (msg) {
+        _this.track(chatId, stream, 'sendPhoto');
+
+        var imageFileId = null;
+        msg.photo.some(function (item) {
+            return imageFileId = item.file_id;
+        });
+        return imageFileId;
+    });
+};
+
 MsgSender.prototype.sendMsg = function(chatId, noPhotoText, stream) {
     var _this = this;
     return _this.gOptions.bot.sendMessage(chatId, noPhotoText, {
@@ -119,77 +133,43 @@ MsgSender.prototype.sendPhoto = function(chatId, fileId, text, stream) {
     });
 };
 
-MsgSender.prototype.send = function(chatIdList, imageFileId, text, noPhotoText, stream) {
+MsgSender.prototype.send = function(chatId, imageFileId, caption, text, stream) {
     var _this = this;
 
-    var getPromise = function (chatId) {
-        var promise;
-        if (!imageFileId || !text) {
-            promise = _this.sendMsg(chatId, noPhotoText, stream);
-        } else {
-            promise = _this.sendPhoto(chatId, imageFileId, text, stream);
-        }
-        return promise.catch(function (err) {
-            return base.onSendMsgError(_this.gOptions, chatId, err);
-        });
-    };
-
-    var chatId, promise = Promise.resolve();
-    while (chatId = chatIdList.shift()) {
-        promise = promise.then(getPromise.bind(null, chatId));
+    var promise;
+    if (!imageFileId || !caption) {
+        promise = _this.sendMsg(chatId, text, stream);
+    } else {
+        promise = _this.sendPhoto(chatId, imageFileId, caption, stream);
     }
 
     return promise;
 };
 
-MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
+MsgSender.prototype.sendMessage = function (chatId, messageId, shared, message, useCache) {
     var _this = this;
 
-    if (!chatIdList.length) {
-        return Promise.resolve();
+    var imageFileId = shared.imageFileId;
+    var caption = shared.caption;
+    var text = shared.text;
+
+    if (!message.preview.length) {
+        return _this.send(chatId, imageFileId, caption, text, message);
     }
 
-    var chatId = chatIdList.shift();
-
-    return _this.getPicId(chatId, text, stream).then(function (msg) {
-        _this.track(chatId, stream, 'sendPhoto');
-
-        var imageFileId = null;
-        msg.photo.some(function (item) {
-            return imageFileId = item.file_id;
-        });
-        return imageFileId;
-    }).catch(function (err) {
-        return base.onSendMsgError(_this.gOptions, chatId, err).then(function () {
-            return _this.requestPicId(chatIdList, text, stream);
-        }, function (err) {
-            debug('requestPicId error!', err);
-            chatIdList.unshift(chatId);
-        });
-    });
-};
-
-MsgSender.prototype.sendNotify = function(messageId, imageFileId, chatIdList, text, noPhotoText, stream, useCache) {
-    var _this = this;
-
-    if (!stream.preview.length) {
-        return _this.send(chatIdList, imageFileId, text, noPhotoText, stream);
-    }
-
-    if (!text) {
-        return _this.send(chatIdList, imageFileId, text, noPhotoText, stream);
+    if (!caption) {
+        return _this.send(chatId, imageFileId, caption, text, message);
     }
 
     if (useCache && imageFileId) {
-        return _this.send(chatIdList, imageFileId, text, noPhotoText, stream);
+        return _this.send(chatId, imageFileId, caption, text, message);
     }
 
-    return _this.requestPicId(chatIdList, text, stream).then(function(imageFileId) {
-        return imageFileId && _this.gOptions.msgStack.setImageFileId(messageId, imageFileId).then(function () {
-            return imageFileId;
-        });
-    }).then(function (imageFileId) {
-        return _this.send(chatIdList, imageFileId, text, noPhotoText, stream);
+    return _this.requestPicId(chatId, caption, message).then(function(imageFileId) {
+        if (imageFileId) {
+            shared.imageFileId = imageFileId;
+            return _this.gOptions.msgStack.setImageFileId(messageId, imageFileId);
+        }
     });
 };
 
