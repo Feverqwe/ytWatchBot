@@ -323,11 +323,19 @@ MsgStack.prototype.checkStack = function () {
             activeMessageIds.push(messageId);
             activePromises.push(promise);
 
-            promise.then(function () {
+            var any = function () {
                 base.removeItemFromArray(activeChatIds, chatId);
                 base.removeItemFromArray(activeMessageIds, messageId);
                 base.removeItemFromArray(activePromises, promise);
                 _this.checkStack();
+            };
+
+            promise.then(function (result) {
+                any();
+                return result;
+            }, function (err) {
+                any();
+                throw err;
             });
         });
     });
