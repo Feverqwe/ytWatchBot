@@ -110,7 +110,6 @@ MsgStack.prototype.getStackItems = function () {
             SELECT * FROM chatIdMessageId \
             LEFT JOIN messages ON chatIdMessageId.messageId = messages.id \
             WHERE chatIdMessageId.timeout < ? \
-            GROUP BY messages.id \
             ORDER BY messages.publishedAt ASC \
             LIMIT 10; \
         ', [base.getNow()], function (err, results) {
@@ -238,7 +237,9 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
     var chatId = item.chatId;
     var messageId = item.messageId;
     var imageFileId = item.imageFileId;
-    return Promise.resolve().then(function () {
+
+    var timeout = 5 * 60;
+    return _this.setTimeout(chatId, messageId, base.getNow() + timeout).then(function () {
         var data = null;
         if (/^%/.test(item.data)) {
             data = JSON.parse(decodeURIComponent(item.data));
@@ -291,7 +292,6 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
     }).catch(function (err) {
         debug('sendItem', chatId, messageId, err);
 
-        var timeout = 5 * 60;
         if (/PEER_ID_INVALID/.test(err)) {
             timeout = 6 * 60 * 60;
         }
@@ -299,35 +299,38 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
     });
 };
 
-var lock = false;
+var activeChatIds = [];
+var activeMessageIds = [];
+var activePromises = [];
 
 MsgStack.prototype.checkStack = function () {
-    if (lock) return;
-    lock = true;
-
     var _this = this;
+    var limit = 10;
+    if (activePromises.length >= limit) return;
 
-    // 300 by 10 = 3000 msg per checkStack
-    var limit = 300;
-    (function nextPart() {
-        return _this.getStackItems().then(function (/*[StackItem]*/items) {
-            if (!items.length) {
-                lock = false;
-                return;
-            }
+    _this.getStackItems().then(function (/*[StackItem]*/items) {
+        items.some(function (item) {
+            var chatId = item.chatId;
+            var messageId = item.messageId;
+            var imageFileId = item.imageFileId;
 
-            return Promise.all(items.map(function (item) {
-                return _this.sendItem(item);
-            })).then(function () {
-                if (limit-- < 1) {
-                    debug('checkStack part limit!');
-                    lock = false;
-                } else {
-                    return nextPart();
-                }
+            if (activePromises.length >= limit) return true;
+            if (activeChatIds.indexOf(chatId) !== -1) return;
+            if (!imageFileId && activeMessageIds.indexOf(messageId) !== -1) return;
+
+            var promise = _this.sendItem(item);
+            activeChatIds.push(messageId);
+            activeMessageIds.push(messageId);
+            activePromises.push(promise);
+
+            promise.then(function () {
+                base.removeItemFromArray(activeChatIds, chatId);
+                base.removeItemFromArray(activeMessageIds, messageId);
+                base.removeItemFromArray(activePromises, promise);
+                _this.checkStack();
             });
         });
-    })();
+    });
 };
 
 module.exports = MsgStack;
