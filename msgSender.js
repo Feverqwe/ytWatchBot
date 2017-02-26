@@ -167,6 +167,10 @@ MsgSender.prototype.sendMessage = function (chatId, messageId, message, data, us
             message.imageFileId = imageFileId;
             return _this.gOptions.msgStack.setImageFileId(messageId, imageFileId);
         }
+    }, function (err) {
+        return _this.send(chatId, imageFileId, caption, text, data).then(function () {
+            debug('requestPicId error', err);
+        });
     });
 };
 
