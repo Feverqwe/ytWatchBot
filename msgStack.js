@@ -301,6 +301,7 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
 
 var activeChatIds = [];
 var activeMessageIds = [];
+var activeChannelIdMessageId = {};
 var activePromises = [];
 
 MsgStack.prototype.checkStack = function () {
@@ -312,18 +313,23 @@ MsgStack.prototype.checkStack = function () {
         items.some(function (item) {
             var chatId = item.chatId;
             var messageId = item.messageId;
+            var channelId = item.channelId;
             var imageFileId = item.imageFileId;
+            var activeMessageId = activeChannelIdMessageId[channelId];
 
             if (activePromises.length >= limit) return true;
             if (activeChatIds.indexOf(chatId) !== -1) return;
+            if (activeMessageId && activeMessageId !== messageId) return;
             if (!imageFileId && activeMessageIds.indexOf(messageId) !== -1) return;
 
             var promise = _this.sendItem(item);
             activeChatIds.push(chatId);
+            activeChannelIdMessageId[channelId] = messageId;
             activeMessageIds.push(messageId);
             activePromises.push(promise);
 
             var any = function () {
+                delete activeChannelIdMessageId[channelId];
                 base.removeItemFromArray(activeChatIds, chatId);
                 base.removeItemFromArray(activeMessageIds, messageId);
                 base.removeItemFromArray(activePromises, promise);
