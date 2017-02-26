@@ -94,9 +94,9 @@ MsgStack.prototype.addChatIdsMessageId = function (connection, chatIds, messageI
 /**
  * @typedef {{}} StackItem
  * @property {String} chatId
- * @property {Number} messageId
+ * @property {String} messageId
  * @property {Number} timeout
- * @property {Number} id
+ * @property {String} id
  * @property {String} videoId
  * @property {String} channelId
  * @property {String} publishedAt
