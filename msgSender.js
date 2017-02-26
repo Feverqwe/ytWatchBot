@@ -79,7 +79,8 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
             return sendPhotoUrl(photoUrl).catch(function (err) {
                 var errList = [
                     /failed to get HTTP URL content/,
-                    /wrong type of the web page content/
+                    /wrong type of the web page content/,
+                    /wrong file identifier\/HTTP URL specified/
                 ];
                 var isLoadUrlError = errList.some(function (re) {
                     return re.test(err.message);
