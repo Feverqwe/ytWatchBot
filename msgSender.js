@@ -15,22 +15,14 @@ var MsgSender = function (options) {
 MsgSender.prototype.getValidPhotoUrl = function (stream) {
     var _this = this;
 
-    var requestLimit = 10;
-    var _requestLimit = _this.gOptions.config.sendPhotoRequestLimit;
-    if (_requestLimit) {
-        requestLimit = _requestLimit;
-    }
+    var requestLimit = _this.gOptions.config.sendPhotoRequestLimit || 10;
 
-    var requestTimeoutSec = 30;
-    var _requestTimeoutSec = _this.gOptions.config.sendPhotoRequestTimeoutSec;
-    if (_requestTimeoutSec) {
-        requestTimeoutSec = _requestTimeoutSec;
-    }
+    var requestTimeoutSec = _this.gOptions.config.sendPhotoRequestTimeoutSec || 30;
     requestTimeoutSec *= 1000;
 
     var previewList = stream.preview;
 
-    var requestPic = function (index) {
+    var getHead = function (index) {
         var previewUrl = previewList[index];
         return requestPromise({
             method: 'HEAD',
@@ -45,7 +37,7 @@ MsgSender.prototype.getValidPhotoUrl = function (stream) {
 
             index++;
             if (index < previewList.length) {
-                return requestPic(index);
+                return getHead(index);
             }
 
             if (requestLimit-- < 1) {
@@ -56,13 +48,13 @@ MsgSender.prototype.getValidPhotoUrl = function (stream) {
                 setTimeout(resolve, requestTimeoutSec);
             }).then(function() {
                 // debug("Retry %s request photo %s %s!", requestLimit, chatId, stream._channelName, err);
-                return requestPic(0);
+                return getHead(0);
             });
         });
     };
 
-    return requestPic(0).catch(function (err) {
-        debug('requestPic error %s', stream._channelName, err);
+    return getHead(0).catch(function (err) {
+        debug('getValidPhotoUrl error %s!', stream._channelName, err);
 
         throw err;
     });
