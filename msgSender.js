@@ -48,17 +48,16 @@ MsgSender.prototype.getValidPhotoUrl = function (stream) {
                 return requestPic(index);
             }
 
-            requestLimit--;
-            if (requestLimit > 0) {
-                return new Promise(function(resolve) {
-                    setTimeout(resolve, requestTimeoutSec);
-                }).then(function() {
-                    // debug("Retry %s request photo %s %s!", requestLimit, chatId, stream._channelName, err);
-                    return requestPic(0);
-                });
+            if (requestLimit-- < 1) {
+                throw err;
             }
 
-            throw err;
+            return new Promise(function(resolve) {
+                setTimeout(resolve, requestTimeoutSec);
+            }).then(function() {
+                // debug("Retry %s request photo %s %s!", requestLimit, chatId, stream._channelName, err);
+                return requestPic(0);
+            });
         });
     };
 
