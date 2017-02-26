@@ -33,10 +33,7 @@ MsgSender.prototype.getValidPhotoUrl = function (stream) {
         }).then(function (response) {
             return response.request.href;
         }).catch(function(err) {
-            // debug('Request photo error! %s %s %s', index, stream._channelName, previewUrl, err);
-
-            index++;
-            if (index < previewList.length) {
+            if (++index < previewList.length) {
                 return getHead(index);
             }
 
@@ -47,7 +44,6 @@ MsgSender.prototype.getValidPhotoUrl = function (stream) {
             return new Promise(function(resolve) {
                 setTimeout(resolve, requestTimeoutSec);
             }).then(function() {
-                // debug("Retry %s request photo %s %s!", requestLimit, chatId, stream._channelName, err);
                 return getHead(0);
             });
         });
