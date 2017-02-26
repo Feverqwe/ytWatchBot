@@ -162,6 +162,8 @@ MsgSender.prototype.sendMessage = function (chatId, messageId, message, data, us
         return _this.send(chatId, imageFileId, caption, text, data);
     }
 
+    debug('requestPicId', chatId, messageId);
+
     return _this.requestPicId(chatId, caption, data).then(function(imageFileId) {
         if (imageFileId) {
             message.imageFileId = imageFileId;
