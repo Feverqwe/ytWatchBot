@@ -130,20 +130,23 @@ MsgSender.prototype.sendPhoto = function(chatId, fileId, text, stream) {
 
 MsgSender.prototype.send = function(chatIdList, imageFileId, text, noPhotoText, stream) {
     var _this = this;
-    var promiseList = [];
 
-    var chatId, promise;
-    while (chatId = chatIdList.shift()) {
+    var getPromise = function (chatId) {
+        var promise;
         if (!imageFileId || !text) {
             promise = _this.sendMsg(chatId, noPhotoText, stream);
         } else {
             promise = _this.sendPhoto(chatId, imageFileId, text, stream);
         }
-        promise = promise.catch(base.onSendMsgError.bind(_this.gOptions, chatId));
-        promiseList.push(promise);
+        return promise.catch(base.onSendMsgError.bind(null, _this.gOptions, chatId));
+    };
+
+    var chatId, promise = Promise.resolve();
+    while (chatId = chatIdList.shift()) {
+        promise = promise.then(getPromise.bind(null, chatId));
     }
 
-    return Promise.all(promiseList);
+    return promise;
 };
 
 MsgSender.prototype.requestPicId = function(chatIdList, text, stream) {
