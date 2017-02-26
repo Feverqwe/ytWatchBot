@@ -309,13 +309,20 @@ MsgStack.prototype.checkStack = function () {
     if (activePromises.length >= limit) return;
 
     _this.getStackItems().then(function (/*[StackItem]*/items) {
+        var channelFirstMessageId = {};
         items.some(function (item) {
             var chatId = item.chatId;
             var messageId = item.messageId;
+            var channelId = item.channelId;
             var imageFileId = item.imageFileId;
+
+            if (!channelFirstMessageId[channelId]) {
+                channelFirstMessageId[channelId] = messageId;
+            }
 
             if (activePromises.length >= limit) return true;
             if (activeChatIds.indexOf(chatId) !== -1) return;
+            if (channelFirstMessageId[channelId] !== messageId) return;
             if (!imageFileId && activeMessageIds.indexOf(messageId) !== -1) return;
 
             var promise = _this.sendItem(item);
