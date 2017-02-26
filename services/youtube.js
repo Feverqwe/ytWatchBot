@@ -334,14 +334,12 @@ Youtube.prototype.insertItem = function (channel, chatIdList, id, snippet, conte
             });
         });
     };
-    return _this.videoIdInList(item.channelId, item.videoId).then(function (exists) {
-        if (exists) return;
-
-        return insert(item).then(function () {
-            return item;
-        });
-    }).catch(function (err) {
-        debug('insertItem', err);
+    return insert(item).then(function () {
+        return item;
+    }, function (err) {
+        if (err.code !== 'ER_DUP_ENTRY') {
+            debug('insertItem', err);
+        }
     });
 };
 
