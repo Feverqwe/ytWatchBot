@@ -268,7 +268,7 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
                 }
             }
 
-            var shared = {
+            var message = {
                 imageFileId: imageFileId,
                 caption: caption,
                 text: text
@@ -277,7 +277,7 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
             var promise = Promise.resolve();
             chatList.forEach(function (chatId) {
                 promise = promise.then(function () {
-                    return _this.gOptions.msgSender.sendMessage(chatId, messageId, shared, data, true).then(function () {
+                    return _this.gOptions.msgSender.sendMessage(chatId, messageId, message, data, true).then(function () {
                         _this.sendLog(chatId, messageId, data);
                     }, function (err) {
                         return _this.onSendMessageError(chatId, err);

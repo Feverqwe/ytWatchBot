@@ -146,28 +146,28 @@ MsgSender.prototype.send = function(chatId, imageFileId, caption, text, stream) 
     return promise;
 };
 
-MsgSender.prototype.sendMessage = function (chatId, messageId, shared, message, useCache) {
+MsgSender.prototype.sendMessage = function (chatId, messageId, message, data, useCache) {
     var _this = this;
 
-    var imageFileId = shared.imageFileId;
-    var caption = shared.caption;
-    var text = shared.text;
+    var imageFileId = message.imageFileId;
+    var caption = message.caption;
+    var text = message.text;
 
-    if (!message.preview.length) {
-        return _this.send(chatId, imageFileId, caption, text, message);
+    if (!data.preview.length) {
+        return _this.send(chatId, imageFileId, caption, text, data);
     }
 
     if (!caption) {
-        return _this.send(chatId, imageFileId, caption, text, message);
+        return _this.send(chatId, imageFileId, caption, text, data);
     }
 
     if (useCache && imageFileId) {
-        return _this.send(chatId, imageFileId, caption, text, message);
+        return _this.send(chatId, imageFileId, caption, text, data);
     }
 
-    return _this.requestPicId(chatId, caption, message).then(function(imageFileId) {
+    return _this.requestPicId(chatId, caption, data).then(function(imageFileId) {
         if (imageFileId) {
-            shared.imageFileId = imageFileId;
+            message.imageFileId = imageFileId;
             return _this.gOptions.msgStack.setImageFileId(messageId, imageFileId);
         }
     });
