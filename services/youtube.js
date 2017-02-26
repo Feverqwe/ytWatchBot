@@ -523,7 +523,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
         return getPage().catch(function(err) {
             debug('requestPages error! %s', channelId, err);
         }).then(function () {
-            return newVideoIds;
+            return newVideoIds.reverse();
         });
     };
 
