@@ -138,7 +138,9 @@ MsgSender.prototype.send = function(chatIdList, imageFileId, text, noPhotoText, 
         } else {
             promise = _this.sendPhoto(chatId, imageFileId, text, stream);
         }
-        return promise.catch(base.onSendMsgError.bind(null, _this.gOptions, chatId));
+        return promise.catch(function (err) {
+            return base.onSendMsgError(_this.gOptions, chatId, err);
+        });
     };
 
     var chatId, promise = Promise.resolve();
