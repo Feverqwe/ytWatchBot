@@ -319,7 +319,7 @@ MsgStack.prototype.checkStack = function () {
             if (!imageFileId && activeMessageIds.indexOf(messageId) !== -1) return;
 
             var promise = _this.sendItem(item);
-            activeChatIds.push(messageId);
+            activeChatIds.push(chatId);
             activeMessageIds.push(messageId);
             activePromises.push(promise);
 
