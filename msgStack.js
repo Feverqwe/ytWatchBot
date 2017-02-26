@@ -111,7 +111,7 @@ MsgStack.prototype.getStackItems = function () {
             LEFT JOIN messages ON chatIdMessageId.messageId = messages.id \
             WHERE chatIdMessageId.timeout < ? \
             ORDER BY messages.publishedAt ASC \
-            LIMIT 50; \
+            LIMIT 10; \
         ', [base.getNow()], function (err, results) {
             if (err) {
                 reject(err);

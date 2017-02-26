@@ -505,7 +505,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                 return _this.gOptions.msgStack.messageIdsExists(ids).then(function (exIds) {
                     ids.forEach(function (id) {
                         if (exIds.indexOf(id) === -1) {
-                            newVideoIds.push(idVideoIdMap[id]);
+                            newVideoIds.unshift(idVideoIdMap[id]);
                         }
                     });
                 }).then(function () {
@@ -523,7 +523,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
         return getPage().catch(function(err) {
             debug('requestPages error! %s', channelId, err);
         }).then(function () {
-            return newVideoIds.reverse();
+            return newVideoIds;
         });
     };
 
