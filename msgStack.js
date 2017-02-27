@@ -300,7 +300,6 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
 };
 
 var activeChatIds = [];
-var activeMessageIds = [];
 var activePromises = [];
 
 MsgStack.prototype.checkStack = function () {
@@ -314,7 +313,6 @@ MsgStack.prototype.checkStack = function () {
             var chatId = item.chatId;
             var messageId = item.messageId;
             var channelId = item.channelId;
-            var imageFileId = item.imageFileId;
 
             var key = [chatId, channelId].join('_');
             if (!chatChannelFirstMessageId[key]) {
@@ -324,16 +322,13 @@ MsgStack.prototype.checkStack = function () {
             if (activePromises.length >= limit) return true;
             if (activeChatIds.indexOf(chatId) !== -1) return;
             if (chatChannelFirstMessageId[key] !== messageId) return;
-            if (!imageFileId && activeMessageIds.indexOf(messageId) !== -1) return;
 
             var promise = _this.sendItem(item);
             activeChatIds.push(chatId);
-            activeMessageIds.push(messageId);
             activePromises.push(promise);
 
             var any = function () {
                 base.removeItemFromArray(activeChatIds, chatId);
-                base.removeItemFromArray(activeMessageIds, messageId);
                 base.removeItemFromArray(activePromises, promise);
                 _this.checkStack();
             };
