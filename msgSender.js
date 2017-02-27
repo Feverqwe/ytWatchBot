@@ -127,7 +127,7 @@ MsgSender.prototype.requestPicId = function(chatId, messageId, caption, text, da
                 return imageFileId;
             });
         }, function () {
-            return _this.requestPicId(chatId, messageId, caption, data);
+            return _this.requestPicId(chatId, messageId, caption, text, data);
         });
     }
     return promise;
