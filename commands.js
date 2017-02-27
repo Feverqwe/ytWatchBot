@@ -696,14 +696,14 @@ var commands = {
                             if (channelChat) {
                                 throw new Error('CHANNEL_EXISTS');
                             }
-
+                        }).then(function () {
                             return _this.gOptions.bot.sendChatAction(channelId, 'typing').then(function () {
                                 chat.options.mute = false;
                                 chat.channelId = channelId;
                             });
                         });
                     }
-
+                }).then(function () {
                     return _this.gOptions.users.setChat(chat);
                 }).catch(function (err) {
                     var msgText = _this.gOptions.language.telegramChannelError;
