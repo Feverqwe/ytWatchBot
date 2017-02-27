@@ -692,8 +692,8 @@ var commands = {
                             throw new Error('BAD_FORMAT');
                         }
 
-                        return _this.gOptions.users.getChatByChannelId(channelId).then(function (chat) {
-                            if (chat) {
+                        return _this.gOptions.users.getChatByChannelId(channelId).then(function (channelChat) {
+                            if (channelChat) {
                                 throw new Error('CHANNEL_EXISTS');
                             }
 
