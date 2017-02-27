@@ -308,20 +308,11 @@ MsgStack.prototype.checkStack = function () {
     if (activePromises.length >= limit) return;
 
     _this.getStackItems().then(function (/*[StackItem]*/items) {
-        var chatChannelFirstMessageId = {};
         items.some(function (item) {
             var chatId = item.chatId;
-            var messageId = item.messageId;
-            var channelId = item.channelId;
-
-            var key = [chatId, channelId].join('_');
-            if (!chatChannelFirstMessageId[key]) {
-                chatChannelFirstMessageId[key] = messageId;
-            }
 
             if (activePromises.length >= limit) return true;
             if (activeChatIds.indexOf(chatId) !== -1) return;
-            if (chatChannelFirstMessageId[key] !== messageId) return;
 
             var promise = _this.sendItem(item);
             activeChatIds.push(chatId);
