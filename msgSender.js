@@ -121,6 +121,11 @@ MsgSender.prototype.requestPicId = function(chatId, messageId, caption, text, da
             any();
             throw err;
         });
+        promise = promise.catch(function (err) {
+            return _this.send(chatId, null, caption, text, data).then(function () {
+                debug('getPicId error', err);
+            });
+        });
     } else {
         promise = promise.then(function (imageFileId) {
             return _this.send(chatId, imageFileId, caption, text, data).then(function () {
@@ -188,10 +193,6 @@ MsgSender.prototype.sendMessage = function (chatId, messageId, message, data, us
             message.imageFileId = imageFileId;
             return _this.gOptions.msgStack.setImageFileId(messageId, imageFileId);
         }
-    }, function (err) {
-        return _this.send(chatId, imageFileId, caption, text, data).then(function () {
-            debug('requestPicId error', err);
-        });
     });
 };
 
