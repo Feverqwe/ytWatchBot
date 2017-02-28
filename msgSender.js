@@ -86,6 +86,9 @@ MsgSender.prototype.getPicId = function(chatId, text, stream) {
                 var isLoadUrlError = errList.some(function (re) {
                     return re.test(err.message);
                 });
+                if (!isLoadUrlError) {
+                    isLoadUrlError = err.response && err.response.statusCode === 504;
+                }
 
                 if (!isLoadUrlError) {
                     throw err;
