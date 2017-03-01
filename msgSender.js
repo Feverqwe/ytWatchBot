@@ -50,11 +50,7 @@ MsgSender.prototype.getValidPhotoUrl = function (stream) {
         });
     };
 
-    return getHead(0).catch(function (err) {
-        debug('getValidPhotoUrl error %s!', stream._channelName, err);
-
-        throw err;
-    });
+    return getHead(0);
 };
 
 MsgSender.prototype.getPicId = function(chatId, text, stream) {
