@@ -186,19 +186,20 @@ Users.prototype.removeChat = function (id) {
 };
 
 /**
+ * @param {string} chatId
  * @param {string} channelId
  * @return {Promise}
  */
-Users.prototype.removeChatChannel = function (channelId) {
+Users.prototype.removeChatChannel = function (chatId, channelId) {
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
-            UPDATE chats SET channelId = ? WHERE channelId = ?; \
-        ', [null, channelId], function (err) {
+            UPDATE chats SET channelId = ? WHERE id = ?; \
+        ', [null, chatId], function (err) {
             if (err) {
                 reject(err);
             } else {
-                debugLog('[remove] %s', channelId);
+                debugLog('[remove] %s %s', chatId, channelId);
                 resolve();
             }
         });

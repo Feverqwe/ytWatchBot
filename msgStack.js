@@ -195,8 +195,15 @@ MsgStack.prototype.removeItem = function (chatId, messageId) {
     });
 };
 
-MsgStack.prototype.onSendMessageError = function (chatId, err) {
+MsgStack.prototype.onSendMessageError = function (err) {
     var _this = this;
+    /**
+     * @type {Object}
+     * @property {string} type
+     * @property {string} id
+     * @property {string} chatId
+     */
+    var itemObj = err.itemObj;
     var result = null;
     if (err.code === 'ETELEGRAM') {
         var body = err.response.body;
@@ -214,14 +221,14 @@ MsgStack.prototype.onSendMessageError = function (chatId, err) {
         }
 
         if (isBlocked) {
-            if (/^@\w+$/.test(chatId)) {
-                result = _this.gOptions.users.removeChatChannel(chatId);
+            if (itemObj.type === 'chat') {
+                result = _this.gOptions.users.removeChat(itemObj.chatId);
             } else {
-                result = _this.gOptions.users.removeChat(chatId);
+                result = _this.gOptions.users.removeChatChannel(itemObj.chatId, itemObj.id);
             }
         } else
-        if (body.parameters && body.parameters.migrate_to_chat_id) {
-            result = _this.gOptions.users.changeChatId(chatId, parameters.migrate_to_chat_id);
+        if (itemObj.type === 'chat' && body.parameters && body.parameters.migrate_to_chat_id) {
+            result = _this.gOptions.users.changeChatId(itemObj.chatId, parameters.migrate_to_chat_id);
         }
     }
 
@@ -261,9 +268,17 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
                 caption = base.getNowStreamPhotoText(_this.gOptions, data);
             }
 
-            var chatList = [chat.id];
+            var chatList = [{
+                type: 'chat',
+                id: chat.id,
+                chatId: chat.id
+            }];
             if (chat.channelId) {
-                chatList.push(chat.channelId);
+                chatList.push({
+                    type: 'channel',
+                    id: chat.channelId,
+                    chatId: chat.id
+                });
                 if (options.mute) {
                     chatList.shift();
                 }
@@ -276,15 +291,19 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
             };
 
             var promise = Promise.resolve();
-            chatList.forEach(function (chatId) {
+            chatList.forEach(function (itemObj) {
+                var id = itemObj.id;
                 promise = promise.then(function () {
-                    return _this.gOptions.msgSender.sendMessage(chatId, messageId, message, data, true).then(function () {
-                        _this.sendLog(chatId, messageId, data);
+                    return _this.gOptions.msgSender.sendMessage(id, messageId, message, data, true).then(function () {
+                        _this.sendLog(id, messageId, data);
                     });
+                }).catch(function (err) {
+                    err.itemObj = itemObj;
+                    throw err;
                 });
             });
             return promise.catch(function (err) {
-                return _this.onSendMessageError(chatId, err);
+                return _this.onSendMessageError(err);
             });
         });
     }).then(function () {
