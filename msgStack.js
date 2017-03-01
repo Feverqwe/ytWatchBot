@@ -228,7 +228,7 @@ MsgStack.prototype.onSendMessageError = function (err) {
             }
         } else
         if (itemObj.type === 'chat' && body.parameters && body.parameters.migrate_to_chat_id) {
-            result = _this.gOptions.users.changeChatId(itemObj.chatId, parameters.migrate_to_chat_id);
+            result = _this.gOptions.users.changeChatId(itemObj.chatId, body.parameters.migrate_to_chat_id);
         }
     }
 
