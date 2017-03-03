@@ -73,7 +73,11 @@ var Route = function (details, re, callback) {
     this.event = details.event;
     this.type = details.type;
     this.dispatch = function (req, next) {
-        callback(req, next);
+        try {
+            callback(req, next);
+        } catch (err) {
+            debug('Dispatch error', err);
+        }
     };
 };
 
