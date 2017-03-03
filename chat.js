@@ -177,7 +177,14 @@ var Chat = function(options) {
         });
     });
 
-    
+    router.all(function (req, next) {
+        var chatId = req.getChatId();
+        if (!req.chat) {
+            _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
+        } else {
+            next();
+        }
+    });
 };
 
 Chat.prototype.checkArgs = function(msg, args, isCallbackQuery) {
