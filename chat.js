@@ -171,7 +171,8 @@ var Chat = function(options) {
     });
 
     router.all(function (req, next) {
-        _this.gOptions.users.getChat(req.getChatId()).then(function (chat) {
+        var chatId = req.getChatId();
+        _this.gOptions.users.getChat(chatId).then(function (chat) {
             req.chat = chat;
             next();
         });
@@ -180,6 +181,23 @@ var Chat = function(options) {
     router.all(function (req, next) {
         var chatId = req.getChatId();
         if (!req.chat) {
+            _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
+        } else {
+            next();
+        }
+    });
+
+    router.all(function (req, next) {
+        var chatId = req.getChatId();
+        _this.gOptions.users.getChannels(chatId).then(function (channels) {
+            req.channels = channels;
+            next();
+        });
+    });
+
+    router.all(function (req, next) {
+        var chatId = req.getChatId();
+        if (!req.channels.length) {
             _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
         } else {
             next();
