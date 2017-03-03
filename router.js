@@ -148,7 +148,7 @@ Router.prototype.message = function (re, callback) {
     args.callbackList.forEach(function (callback) {
         _this.stack.push(new Route({
             event: 'message'
-        }, re, callback));
+        }, args.re, callback));
     });
 };
 
@@ -165,7 +165,7 @@ messageTypes.forEach(function (type) {
             _this.stack.push(new Route({
                 event: 'message',
                 type: type
-            }, re, callback));
+            }, args.re, callback));
         });
     };
 });
@@ -181,7 +181,7 @@ Router.prototype.callback_query = function (re, callback) {
     args.callbackList.forEach(function (callback) {
         _this.stack.push(new Route({
             event: 'callback_query'
-        }, re, callback));
+        }, args.re, callback));
     });
 };
 
