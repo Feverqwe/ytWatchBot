@@ -1,7 +1,7 @@
 /**
  * Created by anton on 02.03.17.
  */
-var debug = require('debug')('app:router');
+const debug = require('debug')('app:router');
 
 const messageTypes = [
     'text', 'audio', 'document', 'photo', 'sticker', 'video', 'voice', 'contact',
@@ -9,11 +9,9 @@ const messageTypes = [
     'new_chat_photo', 'delete_chat_photo', 'group_chat_created'
 ];
 
-var Router = function (options) {
-    this.gOptions = options;
-    this.stack = [];
-    options.bot.on('message', this.handle.bind(this, 'message'));
-    options.bot.on('callback_query', this.handle.bind(this, 'callback_query'));
+var Router = function (bot) {
+    bot.on('message', this.handle.bind(this, 'message'));
+    bot.on('callback_query', this.handle.bind(this, 'callback_query'));
 };
 
 /**
@@ -186,3 +184,5 @@ Router.prototype.callback_query = function (re, callback) {
         }, re, callback));
     });
 };
+
+module.exports = Router;
