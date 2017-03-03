@@ -16,8 +16,8 @@ var Router = function (bot) {
 
 /**
  * @param {string} event
- * @param {{}} message
- * @return {{event: string, message: {}}}
+ * @param {Object} message
+ * @return {{event: string, message: Object}}
  */
 Router.prototype.getRequest = function (event, message) {
     return {
@@ -28,7 +28,7 @@ Router.prototype.getRequest = function (event, message) {
 
 /**
  * @param {string} event
- * @param {{}} message
+ * @param {Object} message
  */
 Router.prototype.handle = function (event, message) {
     var _this = this;
@@ -80,7 +80,7 @@ var Route = function (details, re, callback) {
 };
 
 /**
- * @param {{}} message
+ * @param {Object} message
  * @return {[]|null}
  */
 Route.prototype.match = function (message) {
