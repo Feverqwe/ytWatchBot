@@ -75,33 +75,70 @@ Router.prototype.getRequest = function (event, message) {
 };
 
 /**
+ * @param {String} event
+ * @param {Object} message
+ * @return {String[]|null}
+ */
+Router.prototype.getCommands = function (event, message) {
+    var commands = [];
+    if (event === 'message') {
+        var text = message.text;
+        var entities = (text && message.entities || []).slice(0).reverse();
+        var end = text.length;
+        entities.forEach(function (entity) {
+            if (entity.type === 'bot_command') {
+                var command = text.substr(entity.offset, entity.length);
+                var m = /([^@]+)/.exec(command);
+                if (m) {
+                    command = m[1];
+                }
+                var start = entity.offset + entity.length;
+                var args = text.substr(start, end - start);
+                if (args) {
+                    command += args;
+                }
+                commands.unshift(command);
+                end = entity.offset;
+            }
+        });
+    } else
+    if (event === 'callback_query') {
+        commands = [message.data];
+    }
+    return commands;
+};
+
+/**
  * @param {string} event
  * @param {Object} message
  */
 Router.prototype.handle = function (event, message) {
     var _this = this;
-    var index = 0;
     var req = _this.getRequest(event, message);
-    var next = function () {
-        var route = _this.stack[index++];
-        if (!route) return;
+    var commands = _this.getCommands(event, message);
+    commands.forEach(function (command) {
+        var index = 0;
+        var next = function () {
+            var route = _this.stack[index++];
+            if (!route) return;
 
-        req.params = route.match(event, message);
-        if (req.params) {
-            if (!route.event) {
-                return route.dispatch(req, next);
-            } else if (route.event === event) {
-                if (!route.type) {
+            req.params = route.match(command);
+            if (req.params) {
+                if (!route.event) {
                     return route.dispatch(req, next);
-                } else if (message[route.type]) {
-                    return route.dispatch(req, next);
+                } else if (route.event === event) {
+                    if (!route.type) {
+                        return route.dispatch(req, next);
+                    } else if (message[route.type]) {
+                        return route.dispatch(req, next);
+                    }
                 }
             }
-        }
 
+            next();
+        };
         next();
-    };
-    next();
+    });
 };
 
 /**
@@ -126,29 +163,17 @@ var Route = function (details, re, callback) {
 };
 
 /**
- * @param {Object} message
+ * @param {string} command
  * @return {[]|null}
  */
-Route.prototype.match = function (event, message) {
+Route.prototype.match = function (command) {
     if (!this.re) {
         return [];
     }
 
-    var text = null;
-    if (event === 'message') {
-        text = message.text;
-    } else
-    if (event === 'callback_query') {
-        text = message.data;
-    }
-
-    if (!text) {
-        debug('Text is empty!');
-    }
-
-    var params = this.re.exec(text);
+    var params = this.re.exec(command);
     if (params) {
-        params = params.shift();
+        params = params.slice(1);
     }
     return params;
 };

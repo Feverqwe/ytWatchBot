@@ -12,24 +12,28 @@ var Chat = function(options) {
     var bot = options.bot;
     this.gOptions = options;
     this.stateList = {};
-    var router = this.router = new Router(_this.gOptions.bot);
+
+    var language = options.language;
+    var serviceToTitle = options.serviceToTitle;
+    var users = options.users;
+    var router = new Router(bot);
 
     router.text(/\/ping/, function (req) {
         var chatId = req.getChatId();
-        _this.gOptions.bot.sendMessage(chatId, "pong");
+        bot.sendMessage(chatId, "pong");
     });
 
     router.all(/\/(start|menu|help)/, function (req) {
         var chatId = req.getChatId();
 
         if (req.event === 'message') {
-            var help = _this.gOptions.language.help;
+            var help = language.help;
             if (req.params[0] === 'help') {
                 if (base.getRandomInt(0, 100) < 30) {
-                    help += _this.gOptions.language.rateMe;
+                    help += language.rateMe;
                 }
             }
-            _this.gOptions.bot.sendMessage(chatId, help, {
+            bot.sendMessage(chatId, help, {
                 disable_web_page_preview: true,
                 reply_markup: JSON.stringify({
                     inline_keyboard: menuBtnList(0)
@@ -38,7 +42,7 @@ var Chat = function(options) {
         } else
         if (req.event === 'callback_query') {
             var messageId = req.getMessageId();
-            _this.gOptions.bot.editMessageReplyMarkup(JSON.stringify({
+            bot.editMessageReplyMarkup(JSON.stringify({
                 inline_keyboard: menuBtnList(req.query.page)
             }), {
                 chat_id: chatId,
@@ -50,7 +54,7 @@ var Chat = function(options) {
     router.all(/\/top/, function (req) {
         var chatId = req.getChatId();
 
-        return _this.gOptions.users.getAllChatChannels().then(function (items) {
+        return users.getAllChatChannels().then(function (items) {
             var users = [];
             var channels = [];
             var services = [];
@@ -104,7 +108,7 @@ var Chat = function(options) {
 
             return Promise.all(services.map(function (service) {
                 return Promise.all(service.channels.map(function (channel) {
-                    return base.getChannelTitle(_this.gOptions, service.name, channel.id).then(function (title) {
+                    return base.getChannelTitle(options, service.name, channel.id).then(function (title) {
                         channel.title = title;
                     })
                 }));
@@ -118,18 +122,18 @@ var Chat = function(options) {
         }).then(function (info) {
             var textArr = [];
 
-            textArr.push(_this.gOptions.language.users.replace('{count}', info.users.length));
-            textArr.push(_this.gOptions.language.channels.replace('{count}', info.channels.length));
+            textArr.push(language.users.replace('{count}', info.users.length));
+            textArr.push(language.channels.replace('{count}', info.channels.length));
 
             info.services.forEach(function (service) {
                 textArr.push('');
-                textArr.push(_this.gOptions.serviceToTitle[service.name] + ':');
+                textArr.push(serviceToTitle[service.name] + ':');
                 service.channels.forEach(function (channel, index) {
                     textArr.push((index + 1) + '. ' + channel.title);
                 });
             });
 
-            return _this.gOptions.bot.sendMessage(chatId, textArr.join('\n'), {
+            return bot.sendMessage(chatId, textArr.join('\n'), {
                 disable_web_page_preview: true
             });
         });
@@ -165,44 +169,166 @@ var Chat = function(options) {
 
         message = message.replace('{count}', count);
 
-        message += _this.gOptions.language.rateMe;
+        message += language.rateMe;
 
-        return _this.gOptions.bot.sendMessage(chatId, message);
+        return bot.sendMessage(chatId, message);
     });
 
     router.all(function (req, next) {
         var chatId = req.getChatId();
-        _this.gOptions.users.getChat(chatId).then(function (chat) {
-            req.chat = chat;
-            next();
+        Promise.all([
+            users.getChat(chatId).then(function (chat) {
+                req.chat = chat;
+            }),
+            users.getChannels(chatId).then(function (channels) {
+                req.channels = channels;
+            })
+        ]).then(next);
+    });
+
+    router.all(/\/add(?:\s([^\s]+$))?/, function (req) {
+        var chatId = req.getChatId();
+        var channel = req.params[0];
+        if (channel) {
+            return addChannel(req, channel);
+        }
+
+        var options = {};
+        var msgText = language.enterChannelName;
+        if (chatId < 0) {
+            msgText += language.groupNote;
+            options.reply_markup = JSON.stringify({
+                force_reply: true
+            });
+        }
+
+        return _this.gOptions.bot.sendMessage(chatId, msgText, options).then(function (msg) {
+            if (chatId > 0) {
+
+            }
         });
     });
 
     router.all(function (req, next) {
         var chatId = req.getChatId();
         if (!req.chat) {
-            _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
+            bot.sendMessage(chatId, language.emptyServiceList);
         } else {
             next();
         }
-    });
-
-    router.all(function (req, next) {
-        var chatId = req.getChatId();
-        _this.gOptions.users.getChannels(chatId).then(function (channels) {
-            req.channels = channels;
-            next();
-        });
     });
 
     router.all(function (req, next) {
         var chatId = req.getChatId();
         if (!req.channels.length) {
-            _this.gOptions.bot.sendMessage(chatId, _this.gOptions.language.emptyServiceList);
+            bot.sendMessage(chatId, language.emptyServiceList);
         } else {
             next();
         }
     });
+
+    var addChannel = function (req, channel) {
+
+    };
+
+    var menuBtnList = function (page) {
+        var btnList = null;
+        if (page > 0) {
+            btnList = [
+                [
+                    {
+                        text: 'Options',
+                        callback_data: '/options'
+                    }
+                ],
+                [
+                    {
+                        text: '<',
+                        callback_data: '/menu?page=0'
+                    },
+                    {
+                        text: 'Top 10',
+                        callback_data: '/top'
+                    },
+                    {
+                        text: 'About',
+                        callback_data: '/about'
+                    }
+                ]
+            ];
+        } else {
+            btnList = [
+                [
+                    {
+                        text: 'Show the channel list',
+                        callback_data: '/list'
+                    }
+                ],
+                [
+                    {
+                        text: 'Add channel',
+                        callback_data: '/add'
+                    },
+                    {
+                        text: 'Delete channel',
+                        callback_data: '/delete'
+                    },
+                    {
+                        text: '>',
+                        callback_data: '/menu?page=1'
+                    }
+                ]
+            ];
+        }
+
+        return btnList;
+    };
+
+    var optionsBtnList = function (chat) {
+        var options = chat.options;
+
+        var btnList = [];
+
+        if (options.hidePreview) {
+            btnList.push([{
+                text: 'Show preview',
+                callback_data: '/option hidePreview 0'
+            }]);
+        } else {
+            btnList.push([{
+                text: 'Hide preview',
+                callback_data: '/option hidePreview 1'
+            }]);
+        }
+
+        if (chat.channelId) {
+            btnList.push([{
+                text: 'Remove channel (' + chat.channelId + ')',
+                callback_data: '/setchannel remove'
+            }]);
+        } else {
+            btnList.push([{
+                text: 'Set channel',
+                callback_data: '/setchannel'
+            }]);
+        }
+
+        if (chat.channelId) {
+            if (options.mute) {
+                btnList.push([{
+                    text: 'Unmute',
+                    callback_data: '/option mute 0'
+                }]);
+            } else {
+                btnList.push([{
+                    text: 'Mute',
+                    callback_data: '/option mute 1'
+                }]);
+            }
+        }
+
+        return btnList;
+    };
 };
 
 Chat.prototype.checkArgs = function(msg, args, isCallbackQuery) {
@@ -443,58 +569,5 @@ Chat.prototype.track = function(msg, title) {
     }, title);
 };
 
-
-var menuBtnList = function (page) {
-    var btnList = null;
-    if (page > 0) {
-        btnList = [
-            [
-                {
-                    text: 'Options',
-                    callback_data: '/options'
-                }
-            ],
-            [
-                {
-                    text: '<',
-                    callback_data: '/menu?page=0'
-                },
-                {
-                    text: 'Top 10',
-                    callback_data: '/top'
-                },
-                {
-                    text: 'About',
-                    callback_data: '/about'
-                }
-            ]
-        ];
-    } else {
-        btnList = [
-            [
-                {
-                    text: 'Show the channel list',
-                    callback_data: '/list'
-                }
-            ],
-            [
-                {
-                    text: 'Add channel',
-                    callback_data: '/add'
-                },
-                {
-                    text: 'Delete channel',
-                    callback_data: '/delete'
-                },
-                {
-                    text: '>',
-                    callback_data: '/menu?page=1'
-                }
-            ]
-        ];
-    }
-
-    return btnList;
-};
 
 module.exports = Chat;
