@@ -12,33 +12,162 @@ var Chat = function(options) {
     var bot = options.bot;
     this.gOptions = options;
     this.stateList = {};
-    var router = this.router = new Router(bot);
+    var router = this.router = new Router(_this.gOptions.bot);
 
-    router.text(/\/ping/, function (req, next) {
+    router.text(/\/ping/, function (req) {
         var chatId = req.getChatId();
-        bot.sendMessage(chatId, "pong");
+        _this.gOptions.bot.sendMessage(chatId, "pong");
     });
 
-    router.all(/\/(?:start|menu)/, function (req, next) {
-        var chat_id = req.getChatId();
+    router.all(/\/(start|menu|help)/, function (req) {
+        var chatId = req.getChatId();
 
         if (req.event === 'message') {
             var help = _this.gOptions.language.help;
-            bot.sendMessage(chat_id, help, {
+            if (req.params[0] === 'help') {
+                if (base.getRandomInt(0, 100) < 30) {
+                    help += _this.gOptions.language.rateMe;
+                }
+            }
+            _this.gOptions.bot.sendMessage(chatId, help, {
+                disable_web_page_preview: true,
                 reply_markup: JSON.stringify({
                     inline_keyboard: menuBtnList(0)
                 })
             });
         } else
         if (req.event === 'callback_query') {
-            var message_id = req.getMessageId();
-            bot.editMessageReplyMarkup(JSON.stringify({
+            var messageId = req.getMessageId();
+            _this.gOptions.bot.editMessageReplyMarkup(JSON.stringify({
                 inline_keyboard: menuBtnList(req.query.page)
             }), {
-                chat_id: chat_id,
-                message_id: message_id
+                chat_id: chatId,
+                message_id: messageId
             });
         }
+    });
+
+    router.all(/\/top/, function (req) {
+        var chatId = req.getChatId();
+
+        return _this.gOptions.users.getAllChatChannels().then(function (items) {
+            var users = [];
+            var channels = [];
+            var services = [];
+
+            var serviceObjMap = {};
+            items.forEach(function (item) {
+                var chatId = item.chatId;
+                if (users.indexOf(chatId) === -1) {
+                    users.push(chatId);
+                }
+
+                var service = serviceObjMap[item.service];
+                if (!service) {
+                    service = serviceObjMap[item.service] = {
+                        name: item.service,
+                        count: 0,
+                        channels: [],
+                        channelObjMap: {}
+                    };
+                    services.push(service);
+                }
+
+                var channelId = item.channelId;
+                var channel = service.channelObjMap[channelId];
+                if (!channel) {
+                    channel = service.channelObjMap[channelId] = {
+                        id: channelId,
+                        count: 0
+                    };
+                    service.count++;
+                    service.channels.push(channel);
+                    channels.push(channel);
+                }
+                channel.count++;
+            });
+            serviceObjMap = null;
+
+            var sortFn = function (aa, bb) {
+                var a = aa.count;
+                var b = bb.count;
+                return a === b ? 0 : a > b ? -1 : 1;
+            };
+
+            services.sort(sortFn);
+
+            services.forEach(function (service) {
+                delete service.channelObjMap;
+
+                service.channels.sort(sortFn).splice(10);
+            });
+
+            return Promise.all(services.map(function (service) {
+                return Promise.all(service.channels.map(function (channel) {
+                    return base.getChannelTitle(_this.gOptions, service.name, channel.id).then(function (title) {
+                        channel.title = title;
+                    })
+                }));
+            })).then(function () {
+                return {
+                    users: users,
+                    channels: channels,
+                    services: services
+                };
+            });
+        }).then(function (info) {
+            var textArr = [];
+
+            textArr.push(_this.gOptions.language.users.replace('{count}', info.users.length));
+            textArr.push(_this.gOptions.language.channels.replace('{count}', info.channels.length));
+
+            info.services.forEach(function (service) {
+                textArr.push('');
+                textArr.push(_this.gOptions.serviceToTitle[service.name] + ':');
+                service.channels.forEach(function (channel, index) {
+                    textArr.push((index + 1) + '. ' + channel.title);
+                });
+            });
+
+            return _this.gOptions.bot.sendMessage(chatId, textArr.join('\n'), {
+                disable_web_page_preview: true
+            });
+        });
+    });
+
+    router.all(/\/about/, function (req) {
+        var chatId = req.getChatId();
+
+        var liveTime = {
+            endTime: '1970-01-01',
+            message: [
+                '{count}'
+            ]
+        };
+
+        try {
+            liveTime = JSON.parse(require("fs").readFileSync('./liveTime.json', 'utf8'));
+        } catch (err) {
+            debug('Load liveTime.json error!', err);
+        }
+
+        var count = '';
+        var endTime = /(\d{4}).(\d{2}).(\d{2})/.exec(liveTime.endTime);
+        if (endTime) {
+            endTime = (new Date(endTime[1], endTime[2], endTime[3])).getTime();
+            count = parseInt((endTime - Date.now()) / 1000 / 60 / 60 / 24 / 30 * 10) / 10;
+        }
+
+        var message = liveTime.message;
+        if (Array.isArray(message)) {
+            message = message.join('\n');
+        }
+
+        message = message.replace('{count}', count);
+
+        message += _this.gOptions.language.rateMe;
+
+        return _this.gOptions.bot.sendMessage(chatId, message);
     });
 
     router.all(function (req, next) {
@@ -47,6 +176,8 @@ var Chat = function(options) {
             next();
         });
     });
+
+    
 };
 
 Chat.prototype.checkArgs = function(msg, args, isCallbackQuery) {

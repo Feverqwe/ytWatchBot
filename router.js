@@ -47,9 +47,20 @@ var getQuery = function (callback_query) {
 };
 
 /**
+ * @typedef {{}} Req
+ * @property {string} event
+ * @property {Object} [message]
+ * @property {Object} [callback_query]
+ * @property {Object} [query]
+ * @property {[]} params
+ * @property {function():number} getChatId
+ * @property {function():number} getMessageId
+ */
+
+/**
  * @param {string} event
  * @param {Object} message
- * @return {Object}
+ * @return {Req}
  */
 Router.prototype.getRequest = function (event, message) {
     var obj = {};
@@ -161,7 +172,7 @@ Router.prototype.prepareArgs = function (args) {
 
 /**
  * @param {RegExp} [re]
- * @param {function} callback
+ * @param {function(Req, function())} callback
  */
 Router.prototype.all = function (re, callback) {
     var _this = this;
@@ -174,7 +185,7 @@ Router.prototype.all = function (re, callback) {
 
 /**
  * @param {RegExp} [re]
- * @param {function} callback
+ * @param {function(Req, function())} callback
  */
 Router.prototype.message = function (re, callback) {
     var _this = this;
@@ -190,7 +201,7 @@ Router.prototype.message = function (re, callback) {
 messageTypes.forEach(function (type) {
     /**
      * @param {RegExp} [re]
-     * @param {function} callback
+     * @param {function(Req, function())} callback
      */
     Router.prototype[type] = function (re, callback) {
         var _this = this;
@@ -207,7 +218,7 @@ messageTypes.forEach(function (type) {
 
 /**
  * @param {RegExp} [re]
- * @param {function} callback
+ * @param {function(Req, function())} callback
  */
 Router.prototype.callback_query = function (re, callback) {
     var _this = this;
