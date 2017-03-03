@@ -2,6 +2,7 @@
  * Created by anton on 02.03.17.
  */
 const debug = require('debug')('app:router');
+const querystring = require('querystring');
 
 const messageTypes = [
     'text', 'audio', 'document', 'photo', 'sticker', 'video', 'voice', 'contact',
@@ -10,20 +11,56 @@ const messageTypes = [
 ];
 
 var Router = function (bot) {
+    this.stack = [];
     bot.on('message', this.handle.bind(this, 'message'));
     bot.on('callback_query', this.handle.bind(this, 'callback_query'));
+};
+
+var getMessage = function (req) {
+    var message = null;
+    if (req.event === 'message') {
+        message = req.message;
+    } else
+    if (req.event === 'callback_query') {
+        message = req.callback_query.message;
+    }
+    return message;
+};
+
+var getChatId = function () {
+    return getMessage(this).chat.id;
+};
+
+var getMessageId = function () {
+    return getMessage(this).message_id;
+};
+
+var getQuery = function (callback_query) {
+    var text = callback_query.data;
+    var re = /\?([^\s]+)/;
+    var query = {};
+    var m = re.exec(text);
+    if (m) {
+        query = querystring.parse(m[1]);
+    }
+    return query;
 };
 
 /**
  * @param {string} event
  * @param {Object} message
- * @return {{event: string, message: Object}}
+ * @return {Object}
  */
 Router.prototype.getRequest = function (event, message) {
-    return {
-        event: event,
-        message: message
+    var obj = {};
+    obj.getChatId = getChatId;
+    obj.getMessageId = getMessageId;
+    if (event === 'callback_query') {
+        obj.query = getQuery(message);
     }
+    obj.event = event;
+    obj[event] = message;
+    return obj;
 };
 
 /**
@@ -35,25 +72,23 @@ Router.prototype.handle = function (event, message) {
     var index = 0;
     var req = _this.getRequest(event, message);
     var next = function () {
-        var route = _this.stack[index];
+        var route = _this.stack[index++];
         if (!route) return;
 
-        req.params = route.match(message);
-        if (!req.params) {
-            return next();
-        }
-
-        if (!route.event) {
-            route.dispatch(req, next);
-        } else
-        if (route.event === event) {
-            if (!route.type) {
-                route.dispatch(req, next);
-            } else
-            if (message[route.type]) {
-                route.dispatch(req, next);
+        req.params = route.match(event, message);
+        if (req.params) {
+            if (!route.event) {
+                return route.dispatch(req, next);
+            } else if (route.event === event) {
+                if (!route.type) {
+                    return route.dispatch(req, next);
+                } else if (message[route.type]) {
+                    return route.dispatch(req, next);
+                }
             }
         }
+
+        next();
     };
     next();
 };
@@ -83,16 +118,16 @@ var Route = function (details, re, callback) {
  * @param {Object} message
  * @return {[]|null}
  */
-Route.prototype.match = function (message) {
+Route.prototype.match = function (event, message) {
     if (!this.re) {
         return [];
     }
 
     var text = null;
-    if (this.event === 'message') {
+    if (event === 'message') {
         text = message.text;
     } else
-    if (this.event === 'callback_query') {
+    if (event === 'callback_query') {
         text = message.data;
     }
 

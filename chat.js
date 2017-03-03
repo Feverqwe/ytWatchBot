@@ -5,28 +5,48 @@
 var debug = require('debug')('app:chat');
 var commands = require('./commands');
 var base = require('./base');
+var Router = require('./router');
 
 var Chat = function(options) {
     var _this = this;
+    var bot = options.bot;
     this.gOptions = options;
-
     this.stateList = {};
+    var router = this.router = new Router(bot);
 
-    this.bindBot();
+    router.text(/\/ping/, function (req, next) {
+        var chatId = req.getChatId();
+        bot.sendMessage(chatId, "pong");
+    });
 
-    this.onMessage = (function (orig) {
-        return function () {
-            var args = arguments;
-            return Promise.resolve().then(function() {
-                return orig.apply(_this, args);
+    router.all(/\/(?:start|menu)/, function (req, next) {
+        var chat_id = req.getChatId();
+
+        if (req.event === 'message') {
+            var help = _this.gOptions.language.help;
+            bot.sendMessage(chat_id, help, {
+                reply_markup: JSON.stringify({
+                    inline_keyboard: menuBtnList(0)
+                })
             });
-        };
-    })(this.onMessage);
-};
+        } else
+        if (req.event === 'callback_query') {
+            var message_id = req.getMessageId();
+            bot.editMessageReplyMarkup(JSON.stringify({
+                inline_keyboard: menuBtnList(req.query.page)
+            }), {
+                chat_id: chat_id,
+                message_id: message_id
+            });
+        }
+    });
 
-Chat.prototype.bindBot = function() {
-    this.gOptions.bot.on('message', this.onMessage.bind(this));
-    this.gOptions.bot.on('callback_query', this.onCallbackQuery.bind(this));
+    router.all(function (req, next) {
+        _this.gOptions.users.getChat(req.getChatId()).then(function (chat) {
+            req.chat = chat;
+            next();
+        });
+    });
 };
 
 Chat.prototype.checkArgs = function(msg, args, isCallbackQuery) {
@@ -265,6 +285,60 @@ Chat.prototype.track = function(msg, title) {
         },
         date: msg.date
     }, title);
+};
+
+
+var menuBtnList = function (page) {
+    var btnList = null;
+    if (page > 0) {
+        btnList = [
+            [
+                {
+                    text: 'Options',
+                    callback_data: '/options'
+                }
+            ],
+            [
+                {
+                    text: '<',
+                    callback_data: '/menu?page=0'
+                },
+                {
+                    text: 'Top 10',
+                    callback_data: '/top'
+                },
+                {
+                    text: 'About',
+                    callback_data: '/about'
+                }
+            ]
+        ];
+    } else {
+        btnList = [
+            [
+                {
+                    text: 'Show the channel list',
+                    callback_data: '/list'
+                }
+            ],
+            [
+                {
+                    text: 'Add channel',
+                    callback_data: '/add'
+                },
+                {
+                    text: 'Delete channel',
+                    callback_data: '/delete'
+                },
+                {
+                    text: '>',
+                    callback_data: '/menu?page=1'
+                }
+            ]
+        ];
+    }
+
+    return btnList;
 };
 
 module.exports = Chat;
