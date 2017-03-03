@@ -114,9 +114,9 @@ Router.prototype.getCommands = function (event, message) {
  */
 Router.prototype.handle = function (event, message) {
     var _this = this;
-    var req = _this.getRequest(event, message);
     var commands = _this.getCommands(event, message);
     commands.forEach(function (command) {
+        var req = _this.getRequest(event, message);
         var index = 0;
         var next = function () {
             var route = _this.stack[index++];
