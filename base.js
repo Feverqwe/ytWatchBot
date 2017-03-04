@@ -328,7 +328,7 @@ utils.dDblUpdates = function (updates) {
     return dDblUpdates;
 };
 
-utils.pageBtnList = function (btnList, updCommand, page, mediumBtn) {
+utils.pageBtnList = function (btnList, command, page, mediumBtn) {
     page = parseInt(page || 0);
     if (mediumBtn && !Array.isArray(mediumBtn)) {
         mediumBtn = [mediumBtn];
@@ -343,7 +343,7 @@ utils.pageBtnList = function (btnList, updCommand, page, mediumBtn) {
         if (page > 0) {
             pageControls.push({
                 text: '<',
-                callback_data: '/' + updCommand + ' ' + (page - 1)
+                callback_data: command + '?page=' + (page - 1)
             });
         }
         if (mediumBtn) {
@@ -352,7 +352,7 @@ utils.pageBtnList = function (btnList, updCommand, page, mediumBtn) {
         if (countItem - offsetEnd > 0) {
             pageControls.push({
                 text: '>',
-                callback_data: '/' + updCommand + ' ' + (page + 1)
+                callback_data: command + '?page=' + (page + 1)
             });
         }
         pageList.push(pageControls);

@@ -7,6 +7,7 @@ var commands = require('./commands');
 var base = require('./base');
 var Router = require('./router');
 var CustomError = require('./customError').CustomError;
+var querystring = require('querystring');
 
 var Chat = function(options) {
     var _this = this;
@@ -21,7 +22,9 @@ var Chat = function(options) {
 
     router.text(/\/ping/, function (req) {
         var chatId = req.getChatId();
-        bot.sendMessage(chatId, "pong");
+        bot.sendMessage(chatId, "pong").catch(function (err) {
+            debug('Command ping error!', err);
+        });
     });
 
     router.all(/\/(start|menu|help)/, function (req) {
@@ -39,6 +42,8 @@ var Chat = function(options) {
                 reply_markup: JSON.stringify({
                     inline_keyboard: menuBtnList(0)
                 })
+            }).catch(function (err) {
+                debug('Command start error!', err);
             });
         } else
         if (req.callback_query) {
@@ -49,6 +54,8 @@ var Chat = function(options) {
             }), {
                 chat_id: chatId,
                 message_id: messageId
+            }).catch(function (err) {
+                debug('CallbackQuery start error!', err);
             });
         }
     });
@@ -138,6 +145,8 @@ var Chat = function(options) {
             return bot.sendMessage(chatId, textArr.join('\n'), {
                 disable_web_page_preview: true
             });
+        }).catch(function (err) {
+            debug('Command top error!', err);
         });
     });
 
@@ -173,7 +182,9 @@ var Chat = function(options) {
 
         message += language.rateMe;
 
-        return bot.sendMessage(chatId, message);
+        return bot.sendMessage(chatId, message).catch(function (err) {
+            debug('Command about error!', err);
+        });
     });
 
     router.all(function (req, next) {
@@ -193,20 +204,22 @@ var Chat = function(options) {
         var channel = req.params[0];
 
         var onResponse = function (channel, messageId) {
-            addChannel(req, channel).then(function (responseText) {
+            addChannel(req, channel).then(function (result) {
                 if (messageId) {
-                    return bot.editMessageText(responseText, {
+                    return bot.editMessageText(result, {
                         chat_id: chatId,
                         message_id: messageId,
                         disable_web_page_preview: true,
                         parse_mode: 'HTML'
                     });
                 } else {
-                    return bot.sendMessage(chatId, responseText, {
+                    return bot.sendMessage(chatId, result, {
                         disable_web_page_preview: true,
                         parse_mode: 'HTML'
                     });
                 }
+            }).catch(function (err) {
+                debug('addChannel error!', err);
             });
         };
 
@@ -230,7 +243,7 @@ var Chat = function(options) {
                 type: 'text',
                 chatId: chatId,
                 fromId: req.getFromId()
-            }, 5).then(function (req) {
+            }, 3 * 60).then(function (req) {
                 onResponse(req.message.text, msg.message_id);
             }).catch(function (err) {
                 if (err.message !== 'ETIMEDOUT') {
@@ -243,6 +256,8 @@ var Chat = function(options) {
                     message_id: msg.message_id
                 });
             })
+        }).catch(function (err) {
+            debug('Command add error!', err);
         });
     });
 
@@ -263,6 +278,275 @@ var Chat = function(options) {
             next();
         }
     });
+
+    router.all(/\/delete/, function (req) {
+        var chatId = req.getChatId();
+        var query = req.getQuery();
+        var messageId = req.getMessageId();
+
+        if (query.cancel) {
+            var cancelText = language.commandCanceled.replace('{command}', 'delete');
+            bot.editMessageText(cancelText, {
+                chat_id: chatId,
+                message_id: messageId
+            }).catch(function (err) {
+                debug('Command delete error!', err);
+            });
+            return;
+        }
+
+        if (query.channelId) {
+            deleteChannel(req, query.channelId).then(function (result) {
+                if (req.callback_query) {
+                    return bot.editMessageText(result, {
+                        chat_id: chatId,
+                        message_id: messageId
+                    });
+                } else {
+                    return bot.sendMessage(chatId, result);
+                }
+            }).catch(function (err) {
+                debug('deleteChannel error!', err);
+            });
+            return;
+        }
+
+        var page = query.page || 0;
+        var mediumBtn = {
+            text: 'Cancel',
+            callback_data: '/delete?cancel=true'
+        };
+
+        return getDeleteChannelList(_this, req, page, mediumBtn).then(function (btnList) {
+            if (req.callback_query && !query.rel) {
+                return bot.editMessageReplyMarkup(JSON.stringify({
+                    inline_keyboard: btnList
+                }), {
+                    chat_id: chatId,
+                    message_id: messageId
+                });
+            } else {
+                return bot.sendMessage(chatId, language.selectDelChannel, {
+                    reply_markup: JSON.stringify({
+                        inline_keyboard: btnList
+                    })
+                });
+            }
+        }).catch(function (err) {
+            debug('Command delete error!', err);
+        });
+    });
+
+    router.all(/\/options/, function (req) {
+        var chatId = req.chat.id;
+        var messageId = req.getMessageId();
+        var query = req.getQuery();
+
+        var promise = Promise.resolve();
+        if (query.key) {
+            promise = promise.then(function () {
+                return setOption(req.chat, query.key, query.value);
+            });
+        }
+
+        promise.then(function () {
+            if (req.callback_query && !query.rel) {
+                return bot.editMessageReplyMarkup(JSON.stringify({
+                    inline_keyboard: optionsBtnList(req.chat)
+                }), {
+                    chat_id: chatId,
+                    message_id: messageId
+                });
+            } else {
+                return bot.sendMessage(chatId, 'Options:', {
+                    reply_markup: JSON.stringify({
+                        inline_keyboard: optionsBtnList(req.chat)
+                    })
+                });
+            }
+        }).catch(function (err) {
+            debug('Command options error!', err);
+        });
+    });
+
+    router.all(/\/setChannel/, function (req) {
+        var chatId = req.chat.id;
+        var messageId = req.getMessageId();
+        var query = req.getQuery();
+
+        var updateOptionsMessage = function () {
+            return req.callback_query && bot.editMessageReplyMarkup(JSON.stringify({
+                inline_keyboard: optionsBtnList(req.chat)
+            }), {
+                chat_id: chatId,
+                message_id: messageId
+            });
+        };
+
+        if (query.remove) {
+            delete req.chat.channelId;
+            return _this.gOptions.users.setChat(req.chat).then(function () {
+                return updateOptionsMessage();
+            }).catch(function (err) {
+                debug('Command setChannel error!', err);
+            });
+        }
+
+        var options = {};
+        var msgText = language.telegramChannelEnter;
+        if (chatId < 0) {
+            msgText += language.groupNote;
+            options.reply_markup = JSON.stringify({
+                force_reply: true
+            });
+        }
+
+        return bot.sendMessage(chatId, msgText, options).then(function (msg) {
+            return router.waitResponse({
+                event: 'message',
+                type: 'text',
+                chatId: chatId,
+                fromId: req.getFromId()
+            }, 3 * 60).then(function (_req) {
+                return setChannel(req, _req.message.text).then(function (result) {
+                    return bot.editMessageText(result, {
+                        chat_id: chatId,
+                        message_id: msg.message_id
+                    }).then(function () {
+                        return updateOptionsMessage();
+                    });
+                }).catch(function (err) {
+                    debug('setChannel error', err);
+                });
+            }).catch(function (err) {
+                if (err.message !== 'ETIMEDOUT') {
+                    throw err;
+                }
+
+                var cancelText = language.commandCanceled.replace('{command}', 'setChannel');
+                return bot.editMessageText(cancelText, {
+                    chat_id: chatId,
+                    message_id: msg.message_id
+                });
+            });
+        });
+    });
+
+    var setChannel = function (req, channelId) {
+        var chat = req.chat;
+        return Promise.resolve().then(function () {
+            channelId = channelId.trim();
+
+            if (!/^@\w+$/.test(channelId)) {
+                throw new Error('BAD_FORMAT');
+            }
+
+            return users.getChatByChannelId(channelId).then(function (channelChat) {
+                if (channelChat) {
+                    throw new Error('CHANNEL_EXISTS');
+                }
+
+                return bot.sendChatAction(channelId, 'typing').then(function () {
+                    chat.options.mute = false;
+                    chat.channelId = channelId;
+                });
+            }).then(function () {
+                return _this.gOptions.users.setChat(chat);
+            }).then(function () {
+                return language.telegramChannelSet.replace('{channelName}', channelId);
+            });
+        }).catch(function (err) {
+            var msgText = language.telegramChannelError.replace('{channelName}', channelId);
+            if (err.message === 'BAD_FORMAT') {
+                msgText += ' Channel name is incorrect.';
+            } else
+            if (err.message === 'CHANNEL_EXISTS') {
+                msgText += ' The channel has already been added.';
+            } else
+            if (/bot is not a member of the (?:channel|supergroup) chat/.test(err.message)) {
+                msgText += ' Bot must be admin in this channel.';
+            } else
+            if (/chat not found/.test(err.message)) {
+                msgText += ' Telegram chat is not found!';
+            } else {
+                debug('setChannel %s error!', channelId, err);
+            }
+            return msgText;
+        });
+    };
+
+    var setOption = function (chat, key, value) {
+        ['hidePreview', 'mute'].forEach(function (option) {
+            if (option === 'hidePreview') {
+                chat.options[option] = value === 'true';
+                if (!chat.options[option]) {
+                    delete chat.options[option];
+                }
+            }
+        });
+
+        if (key === 'channelId' && value === 'null') {
+            delete chat.channelId;
+        }
+
+        return _this.gOptions.users.setChat(chat);
+    };
+
+    var deleteChannel = function (req, channelId) {
+        var found = req.channels.some(function (item) {
+            return item.service === 'youtube' && item.channelId === channelId;
+        });
+
+        if (!found) {
+            return language.channelDontExist;
+        }
+
+        return _this.gOptions.users.removeChannel(req.chat.id, 'youtube', channelId).then(function () {
+            return _this.gOptions.users.getChannels(req.chat.id).then(function (channels) {
+                if (channels.length === 0) {
+                    return _this.gOptions.users.removeChat(req.chat.id);
+                }
+            });
+        }).then(function () {
+            return _this.gOptions.language.channelDeleted.replace('{channelName}', channelId);
+        });
+    };
+
+    /**
+     * @param {Object} _this
+     * @param {Req} req
+     * @param {number} page
+     * @param {Object|Array} mediumBtn
+     * @returns {Promise}
+     */
+    var getDeleteChannelList = function (_this, req, page, mediumBtn) {
+        var chatId = req.chat.id;
+        return _this.gOptions.users.getChannels(chatId).then(function (channels) {
+            var btnList = [];
+            var promise = Promise.resolve();
+            channels.forEach(function(item) {
+                promise = promise.then(function () {
+                    return base.getChannelLocalTitle(_this.gOptions, item.service, item.channelId).then(function (title) {
+                        var btnItem = {};
+
+                        btnItem.text = title;
+
+                        btnItem.callback_data = '/delete?' + querystring.stringify({
+                            channelId: item.channelId,
+                            service: item.service
+                        });
+
+                        btnList.push([btnItem]);
+                    });
+                });
+            });
+            return promise.then(function () {
+                return btnList;
+            });
+        }).then(function (btnList) {
+            return base.pageBtnList(btnList, '/delete', page, mediumBtn);
+        });
+    };
 
     var addChannel = function (req, channelName) {
         var chatId = req.getChatId();
@@ -312,7 +596,7 @@ var Chat = function(options) {
                 [
                     {
                         text: 'Options',
-                        callback_data: '/options'
+                        callback_data: '/options?rel=menu'
                     }
                 ],
                 [
@@ -345,7 +629,7 @@ var Chat = function(options) {
                     },
                     {
                         text: 'Delete channel',
-                        callback_data: '/delete'
+                        callback_data: '/delete?rel=menu'
                     },
                     {
                         text: '>',
@@ -366,24 +650,32 @@ var Chat = function(options) {
         if (options.hidePreview) {
             btnList.push([{
                 text: 'Show preview',
-                callback_data: '/option hidePreview 0'
+                callback_data: '/options?' + querystring.stringify({
+                    key: 'hidePreview',
+                    value: false
+                })
             }]);
         } else {
             btnList.push([{
                 text: 'Hide preview',
-                callback_data: '/option hidePreview 1'
+                callback_data: '/options?' + querystring.stringify({
+                    key: 'hidePreview',
+                    value: true
+                })
             }]);
         }
 
         if (chat.channelId) {
             btnList.push([{
                 text: 'Remove channel (' + chat.channelId + ')',
-                callback_data: '/setchannel remove'
+                callback_data: '/setChannel?' +  querystring.stringify({
+                    remove: true
+                })
             }]);
         } else {
             btnList.push([{
                 text: 'Set channel',
-                callback_data: '/setchannel'
+                callback_data: '/setChannel'
             }]);
         }
 
@@ -391,12 +683,18 @@ var Chat = function(options) {
             if (options.mute) {
                 btnList.push([{
                     text: 'Unmute',
-                    callback_data: '/option mute 0'
+                    callback_data: '/options?' + querystring.stringify({
+                        key: 'mute',
+                        value: false
+                    })
                 }]);
             } else {
                 btnList.push([{
                     text: 'Mute',
-                    callback_data: '/option mute 1'
+                    callback_data: '/options?' + querystring.stringify({
+                        key: 'mute',
+                        value: true
+                    })
                 }]);
             }
         }
