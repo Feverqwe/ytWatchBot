@@ -20,6 +20,25 @@ var Chat = function(options) {
     var users = options.users;
     var router = new Router(bot);
 
+    router.all(/(.+)/, function (req) {
+        if (req.message) {
+            var entities = req.getEntities();
+            var commands = entities.bot_command || [];
+            commands.forEach(function (entity) {
+                _this.track(req.message, entity.value);
+            });
+        } else
+        if (req.callback_query) {
+            var message = req.callback_query.data;
+            var commnad = '';
+            var m = /\/([^?\s]+)/;
+            if (m) {
+                commnad = m[1];
+            }
+            _this.track(message, commnad);
+        }
+    });
+
     router.text(/\/ping/, function (req) {
         var chatId = req.getChatId();
         bot.sendMessage(chatId, "pong").catch(function (err) {
@@ -552,6 +571,10 @@ var Chat = function(options) {
         }).catch(function (err) {
             debug('Command list error!', err);
         });
+    });
+
+    router.all(/.+/, function (req) {
+        debug("Unknown command %j", req.message);
     });
 
     var setChannel = function (req, channelId) {
