@@ -39,11 +39,13 @@ var getFromId = function () {
 };
 
 var getChatId = function () {
-    return getMessage(this).chat.id;
+    var message = getMessage(this);
+    return message && message.chat.id;
 };
 
 var getMessageId = function () {
-    return getMessage(this).message_id;
+    var message = getMessage(this);
+    return message && message.message_id;
 };
 
 var getQuery = function () {
