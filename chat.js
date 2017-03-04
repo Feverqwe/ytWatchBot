@@ -184,6 +184,8 @@ var Chat = function(options) {
 
         return bot.sendMessage(chatId, message).catch(function (err) {
             debug('Command about error!', err);
+        }).catch(function (err) {
+            debug('Command about error!', err);
         });
     });
 
@@ -196,7 +198,9 @@ var Chat = function(options) {
             users.getChannels(chatId).then(function (channels) {
                 req.channels = channels;
             })
-        ]).then(next);
+        ]).then(next).catch(function (err) {
+            debug('Get chat, channels error!', err);
+        });
     });
 
     router.all(/\/add(?:\s+(.+$))?/, function (req) {
@@ -260,7 +264,9 @@ var Chat = function(options) {
     router.all(/\/.+/, function (req, next) {
         var chatId = req.getChatId();
         if (!req.chat) {
-            bot.sendMessage(chatId, language.emptyServiceList);
+            bot.sendMessage(chatId, language.emptyServiceList).catch(function (err) {
+                debug('Check chat error!', err);
+            });
         } else {
             next();
         }
@@ -277,6 +283,8 @@ var Chat = function(options) {
                     chat_id: chatId,
                     message_id: messageId
                 });
+            }).catch(function (err) {
+                debug('Command clear error!', err);
             });
             return;
         }
@@ -285,6 +293,8 @@ var Chat = function(options) {
             bot.editMessageText(language.commandCanceled.replace('{command}', 'clear'), {
                 chat_id: chatId,
                 message_id: messageId
+            }).catch(function (err) {
+                debug('Command clear error!', err);
             });
             return;
         }
@@ -301,13 +311,17 @@ var Chat = function(options) {
             reply_markup: JSON.stringify({
                 inline_keyboard: btnList
             })
+        }).catch(function (err) {
+            debug('Command clear error!', err);
         });
     });
 
     router.all(/\/.+/, function (req, next) {
         var chatId = req.getChatId();
         if (!req.channels.length) {
-            bot.sendMessage(chatId, language.emptyServiceList);
+            bot.sendMessage(chatId, language.emptyServiceList).catch(function (err) {
+                debug('Check channel list error!', err);
+            });
         } else {
             next();
         }
@@ -419,11 +433,12 @@ var Chat = function(options) {
 
         if (query.remove) {
             delete req.chat.channelId;
-            return users.setChat(req.chat).then(function () {
+            users.setChat(req.chat).then(function () {
                 return updateOptionsMessage();
             }).catch(function (err) {
                 debug('Command setChannel error!', err);
             });
+            return;
         }
 
         var options = {};
@@ -456,9 +471,9 @@ var Chat = function(options) {
                     chat_id: chatId,
                     message_id: msg.message_id
                 });
-            }).catch(function (err) {
-                debug('setChannel error', err);
             });
+        }).catch(function (err) {
+            debug('setChannel error', err);
         });
     });
 
@@ -534,6 +549,8 @@ var Chat = function(options) {
                 disable_web_page_preview: true,
                 parse_mode: 'HTML'
             });
+        }).catch(function (err) {
+            debug('Command list error!', err);
         });
     });
 
