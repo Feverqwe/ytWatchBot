@@ -212,7 +212,7 @@ Route.prototype.getParams = function (command) {
  * @return {boolean}
  */
 Route.prototype.match = function (req) {
-    if (!this.params) {
+    if (!req.params) {
         return false;
     }
     if (this.event && !req[this.event]) {
