@@ -115,7 +115,7 @@ Router.prototype.getRequest = function (event, message) {
  */
 var getCommands = function (event, message) {
     var commands = [];
-    if (event === 'message' && message.text) {
+    if (event === 'message' && message.text && message.entities) {
         var text = message.text;
         var entities = message.entities.slice(0).reverse();
         var end = text.length;
@@ -218,7 +218,7 @@ Route.prototype.match = function (req) {
     if (this.event && !req[this.event]) {
         return false;
     }
-    if (this.type && !req[this.type]) {
+    if (this.type && !req[this.event][this.type]) {
         return false;
     }
     if (this.chatId && req.getChatId() !== this.chatId) {
@@ -318,8 +318,8 @@ Router.prototype.callback_query = function (re, callback) {
  * @return {Promise.<Req>}
  */
 Router.prototype.waitResponse = function (details, timeoutSec) {
+    var _this = this;
     return new Promise(function (resolve, reject) {
-        var _this = this;
         var callback = function (err, req) {
             var pos = _this.stack.indexOf(route);
             if (pos !== -1) {
@@ -340,7 +340,7 @@ Router.prototype.waitResponse = function (details, timeoutSec) {
         var route = new Route(details, null, function (req) {
             callback(null, req);
         });
-        this.stack.unshift(route);
+        _this.stack.unshift(route);
     });
 };
 

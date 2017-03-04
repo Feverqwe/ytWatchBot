@@ -6,6 +6,7 @@ var debug = require('debug')('app:chat');
 var commands = require('./commands');
 var base = require('./base');
 var Router = require('./router');
+var CustomError = require('./customError').CustomError;
 
 var Chat = function(options) {
     var _this = this;
@@ -187,11 +188,31 @@ var Chat = function(options) {
         ]).then(next);
     });
 
-    router.all(/\/add(?:\s([^\s]+$))?/, function (req) {
+    router.all(/\/add(?:\s+(.+$))?/, function (req) {
         var chatId = req.getChatId();
         var channel = req.params[0];
+
+        var onResponse = function (channel, messageId) {
+            addChannel(req, channel).then(function (responseText) {
+                if (messageId) {
+                    return bot.editMessageText(responseText, {
+                        chat_id: chatId,
+                        message_id: messageId,
+                        disable_web_page_preview: true,
+                        parse_mode: 'HTML'
+                    });
+                } else {
+                    return bot.sendMessage(chatId, responseText, {
+                        disable_web_page_preview: true,
+                        parse_mode: 'HTML'
+                    });
+                }
+            });
+        };
+
         if (channel) {
-            return addChannel(req, channel);
+            onResponse(channel);
+            return;
         }
 
         var options = {};
@@ -203,10 +224,25 @@ var Chat = function(options) {
             });
         }
 
-        return _this.gOptions.bot.sendMessage(chatId, msgText, options).then(function (msg) {
-            if (chatId > 0) {
+        _this.gOptions.bot.sendMessage(chatId, msgText, options).then(function (msg) {
+            return router.waitResponse({
+                event: 'message',
+                type: 'text',
+                chatId: chatId,
+                fromId: req.getFromId()
+            }, 5).then(function (req) {
+                onResponse(req.message.text, msg.message_id);
+            }).catch(function (err) {
+                if (err.message !== 'ETIMEDOUT') {
+                    throw err;
+                }
 
-            }
+                var cancelText = language.commandCanceled.replace('{command}', 'add');
+                return bot.editMessageText(cancelText, {
+                    chat_id: chatId,
+                    message_id: msg.message_id
+                });
+            })
         });
     });
 
@@ -228,8 +264,45 @@ var Chat = function(options) {
         }
     });
 
-    var addChannel = function (req, channel) {
+    var addChannel = function (req, channelName) {
+        var chatId = req.getChatId();
+        return _this.gOptions.services.youtube.getChannelId(channelName).then(function (channel) {
+            var channelId = channel.id;
+            var title = channel.localTitle;
 
+            var found = req.channels.some(function (item) {
+                return item.service === 'youtube' && item.channelId === channelId;
+            });
+
+            if (found) {
+                return language.channelExists;
+            }
+
+            var promise = Promise.resolve();
+            if (!req.chat) {
+                promise = promise.then(function () {
+                    return _this.gOptions.users.setChat({id: chatId});
+                });
+            }
+            return promise.then(function () {
+                return _this.gOptions.users.addChannel(chatId, 'youtube', channelId);
+            }).then(function () {
+                var url = base.getChannelUrl('youtube', channelId);
+                var displayName = base.htmlSanitize('a', title, url);
+
+                _this.gOptions.events.emit('subscribe', channelId);
+
+                return _this.gOptions.language.channelAdded
+                    .replace('{channelName}', displayName)
+                    .replace('{serviceName}', base.htmlSanitize(_this.gOptions.serviceToTitle.youtube));
+            });
+        }).catch(function(err) {
+            if (!err instanceof CustomError) {
+                debug('addChannel %s is not found!', channelName, err);
+            }
+
+            return language.channelIsNotFound.replace('{channelName}', channelName);
+        });
     };
 
     var menuBtnList = function (page) {
