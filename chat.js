@@ -640,10 +640,6 @@ var Chat = function(options) {
             }
         });
 
-        if (key === 'channelId' && value === 'null') {
-            delete chat.channelId;
-        }
-
         return users.setChat(chat);
     };
 
