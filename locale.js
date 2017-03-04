@@ -10,21 +10,19 @@ var Locale = function (options) {
 
 Locale.prototype.default = {
     "help": "Hi! I will notify you about new videos on Youtube channels!",
-    "emptyServiceList": "You don't have channels in watch list, yet.",
+    "emptyServiceList": "You don't have channels in watchlist, yet.",
     "enterChannelName": "Enter the channel URL or name (example: blacksilverufa):",
-    "enterService": "Enter a video platform",
-    "channelExists": "This channel already exists!",
-    "channelAdded": "Success! Channel {channelName} added!",
+    "channelExists": "This channel has been added!",
+    "channelAdded": "Success! The channel {channelName} has been added!",
     "telegramChannelEnter": "Enter the channel name (example: @telegram):",
-    "telegramChannelSet": "Success! Channel {channelName} assigned!",
-    "telegramChannelError": "Oops! I can't add channel {channelName}!",
-    "commandCanceled": "The command {command} has been cancelled.",
-    "channelDontExist": "Oops! Can't find channel in watch list!",
-    "channelDeleted": "Success! Channel {channelName} deleted!",
-    "cleared": "Success! The channel list has been cleared.",
-    "channelNameIsEmpty": "Oops! Channel name is empty!",
-    "selectDelChannel": "Select the channel that you want to delete",
-    "channelIsNotFound": "Oops! Channel {channelName} is not found!",
+    "telegramChannelSet": "Success! The channel {channelName} has been assigned!",
+    "telegramChannelError": "Oops! I can't add a {channelName} channel!",
+    "commandCanceled": "Command {command} was canceled.",
+    "channelDontExist": "Oops! Can't find a channel in the watchlist!",
+    "channelDeleted": "Success! The channel {channelName} has been deleted!",
+    "cleared": "Success! Watchlist has been cleared!",
+    "selectDelChannel": "Select the channel you want to delete",
+    "channelIsNotFound": "Oops! Channel {channelName} can not be found!",
     "clearSure": "Are you sure?",
     "users": "Users: {count}",
     "channels": "Channels: {count}",
@@ -34,7 +32,7 @@ Locale.prototype.default = {
         "⭐️ If you like this bot, please rate us 5 stars in store:",
         "https://telegram.me/storebot?start=ytwatchbot"
     ],
-    "groupNote": ["", "Note for groups: Use \"Reply\" to send a answer."]
+    "groupNote": ["", "Note for groups: Use \"Reply\" to answer."]
 };
 
 Locale.prototype.init = function () {
