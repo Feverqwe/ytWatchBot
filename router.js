@@ -221,10 +221,10 @@ Route.prototype.match = function (req) {
     if (this.type && !req[this.event][this.type]) {
         return false;
     }
-    if (this.chatId && req.getChatId() !== this.chatId) {
+    if (this.chatId && req.getChatId() != this.chatId) {
         return false;
     }
-    if (this.fromId && req.getFromId() !== this.fromId) {
+    if (this.fromId && req.getFromId() != this.fromId) {
         return false;
     }
     return true;

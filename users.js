@@ -77,7 +77,6 @@ Users.prototype.init = function () {
  */
 var dbChatToChat = function (dbChat) {
     if (dbChat) {
-        dbChat.id = parseInt(dbChat.id);
         if (!dbChat.options) {
             dbChat.options = {};
         } else {
