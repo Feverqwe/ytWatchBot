@@ -84,7 +84,7 @@ var Chat = function(options) {
                 chat_id: chatId,
                 message_id: messageId
             }).catch(function (err) {
-                if (/message is not modified/.test(err.message) {
+                if (/message is not modified/.test(err.message)) {
                     return;
                 }
                 debug('CallbackQuery start error!', err);
