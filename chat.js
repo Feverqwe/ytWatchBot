@@ -26,7 +26,7 @@ var Chat = function(options) {
     router.all(/\/(start|menu|help)/, function (req) {
         var chatId = req.getChatId();
 
-        if (req.event === 'message') {
+        if (req.message) {
             var help = language.help;
             if (req.params[0] === 'help') {
                 if (base.getRandomInt(0, 100) < 30) {
@@ -40,10 +40,11 @@ var Chat = function(options) {
                 })
             });
         } else
-        if (req.event === 'callback_query') {
+        if (req.callback_query) {
             var messageId = req.getMessageId();
+            var query = req.getQuery();
             bot.editMessageReplyMarkup(JSON.stringify({
-                inline_keyboard: menuBtnList(req.query.page)
+                inline_keyboard: menuBtnList(query.page)
             }), {
                 chat_id: chatId,
                 message_id: messageId

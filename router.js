@@ -18,10 +18,10 @@ var Router = function (bot) {
 
 var getMessage = function (req) {
     var message = null;
-    if (req.event === 'message') {
+    if (req.message) {
         message = req.message;
     } else
-    if (req.event === 'callback_query') {
+    if (req.callback_query) {
         message = req.callback_query.message;
     }
     return message;
@@ -35,15 +35,36 @@ var getMessageId = function () {
     return getMessage(this).message_id;
 };
 
-var getQuery = function (callback_query) {
-    var text = callback_query.data;
-    var re = /\?([^\s]+)/;
+var getQuery = function () {
     var query = {};
+    if (!this.callback_query) return query;
+
+    var text = this.callback_query.data;
+    var re = /\?([^\s]+)/;
     var m = re.exec(text);
     if (m) {
         query = querystring.parse(m[1]);
     }
     return query;
+};
+
+var getEntities = function () {
+    var entities = {};
+    if (!this.message || !this.message.entities) return entities;
+
+    this.message.entities.forEach(function (entity) {
+        var array = entities[entity.type];
+        if (!array) {
+            array = entities[entity.type] = [];
+        }
+        array.push({
+            type: entity.type,
+            value: message.text.substr(entity.offset, entity.length),
+            url: entity.url,
+            user: entity.user
+        });
+    });
+    return entities;
 };
 
 /**
@@ -55,6 +76,8 @@ var getQuery = function (callback_query) {
  * @property {[]} params
  * @property {function():number} getChatId
  * @property {function():number} getMessageId
+ * @property {function():Object} getQuery
+ * @property {function():Object} getEntities
  */
 
 /**
@@ -63,15 +86,47 @@ var getQuery = function (callback_query) {
  * @return {Req}
  */
 Router.prototype.getRequest = function (event, message) {
-    var obj = {};
-    obj.getChatId = getChatId;
-    obj.getMessageId = getMessageId;
+    var req = {};
+    req.getChatId = getChatId;
+    req.getMessageId = getMessageId;
+    req.getQuery = getQuery;
+    req[event] = message;
+    req.getEntities = getEntities;
+    return req;
+};
+
+/**
+ * @param {String} event
+ * @param {Object} message
+ * @return {String[]|null}
+ */
+var getCommands = function (event, message) {
+    var commands = [];
+    if (event === 'message' && message.text) {
+        var text = message.text;
+        var entities = message.entities.slice(0).reverse();
+        var end = text.length;
+        entities.forEach(function (entity) {
+            if (entity.type === 'bot_command') {
+                var command = text.substr(entity.offset, entity.length);
+                var m = /([^@]+)/.exec(command);
+                if (m) {
+                    command = m[1];
+                }
+                var start = entity.offset + entity.length;
+                var args = text.substr(start, end - start);
+                if (args) {
+                    command += args;
+                }
+                commands.unshift(command);
+                end = entity.offset;
+            }
+        });
+    } else
     if (event === 'callback_query') {
-        obj.query = getQuery(message);
+        commands = [message.data];
     }
-    obj.event = event;
-    obj[event] = message;
-    return obj;
+    return commands;
 };
 
 /**
@@ -82,18 +137,21 @@ Router.prototype.handle = function (event, message) {
     var _this = this;
     var index = 0;
     var req = _this.getRequest(event, message);
+    var command = getCommands(event, message)[0];
     var next = function () {
         var route = _this.stack[index++];
         if (!route) return;
 
-        req.params = route.match(event, message);
+        req.params = route.match(command);
         if (req.params) {
             if (!route.event) {
                 return route.dispatch(req, next);
-            } else if (route.event === event) {
+            } else
+            if (message[route.event]) {
                 if (!route.type) {
                     return route.dispatch(req, next);
-                } else if (message[route.type]) {
+                } else
+                if (message[route.type]) {
                     return route.dispatch(req, next);
                 }
             }
@@ -126,36 +184,12 @@ var Route = function (details, re, callback) {
 };
 
 /**
- * @param {String} event
- * @param {Object} message
+ * @param {String} command
  * @return {[]|null}
  */
-Route.prototype.match = function (event, message) {
+Route.prototype.match = function (command) {
     if (!this.re) {
         return [];
-    }
-
-    var command = '';
-    if (event === 'message') {
-        var text = message.text;
-        var entities = (text && message.entities || []).slice(0);
-        entities.some(function (entity) {
-            if (entity.type === 'bot_command') {
-                var botCommand = text.substr(entity.offset, entity.length);
-                var m = /([^@]+)/.exec(botCommand);
-                if (m) {
-                    botCommand = m[1];
-                }
-                var args = text.substr(entity.offset + entity.length);
-                if (args) {
-                    botCommand += args;
-                }
-                return command = botCommand;
-            }
-        });
-    } else
-    if (event === 'callback_query') {
-        command = message.data;
     }
 
     var params = this.re.exec(command);
