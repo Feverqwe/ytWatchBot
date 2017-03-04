@@ -84,6 +84,9 @@ var Chat = function(options) {
                 chat_id: chatId,
                 message_id: messageId
             }).catch(function (err) {
+                if (/message is not modified/.test(err.message) {
+                    return;
+                }
                 debug('CallbackQuery start error!', err);
             });
         }
@@ -581,10 +584,6 @@ var Chat = function(options) {
         }).catch(function (err) {
             debug('Command list error!', err);
         });
-    });
-
-    router.all(function (req) {
-        debug("Unknown command %j", req);
     });
 
     var setChannel = function (req, channelId) {
