@@ -63,16 +63,17 @@ var getQuery = function () {
 
 var getEntities = function () {
     var entities = {};
-    if (!this.message || !this.message.entities) return entities;
+    var _this = this;
+    if (!_this.message || !_this.message.entities) return entities;
 
-    this.message.entities.forEach(function (entity) {
+    _this.message.entities.forEach(function (entity) {
         var array = entities[entity.type];
         if (!array) {
             array = entities[entity.type] = [];
         }
         array.push({
             type: entity.type,
-            value: message.text.substr(entity.offset, entity.length),
+            value: _this.message.text.substr(entity.offset, entity.length),
             url: entity.url,
             user: entity.user
         });

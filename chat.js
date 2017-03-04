@@ -20,7 +20,8 @@ var Chat = function(options) {
     var users = options.users;
     var router = new Router(bot);
 
-    router.all(/(.+)/, function (req) {
+    router.all(/(.+)/, function (req, next) {
+        next();
         if (req.message) {
             var entities = req.getEntities();
             var commands = entities.bot_command || [];
@@ -31,11 +32,14 @@ var Chat = function(options) {
         if (req.callback_query) {
             var message = req.callback_query.data;
             var commnad = '';
-            var m = /\/([^?\s]+)/;
+            var m = /\/([^?\s]+)/.exec(message);
             if (m) {
                 commnad = m[1];
             }
-            _this.track(message, commnad);
+            var msg = JSON.parse(JSON.stringify(req.callback_query.message));
+            msg.text = message;
+            msg.from = req.callback_query.from;
+            _this.track(msg, commnad);
         }
     });
 
@@ -573,8 +577,8 @@ var Chat = function(options) {
         });
     });
 
-    router.all(/.+/, function (req) {
-        debug("Unknown command %j", req.message);
+    router.all(function (req) {
+        debug("Unknown command %j", req);
     });
 
     var setChannel = function (req, channelId) {
