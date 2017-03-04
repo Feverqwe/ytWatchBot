@@ -21,9 +21,8 @@ var Chat = function(options) {
     var router = new Router(bot);
 
     router.callback_query(function (req, next) {
-        next();
         var id = req.callback_query.id;
-        bot.answerCallbackQuery(id).catch(function (err) {
+        bot.answerCallbackQuery(id).then(next).catch(function (err) {
             debug('answerCallbackQuery error!', err);
         });
     });
