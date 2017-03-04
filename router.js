@@ -27,6 +27,17 @@ var getMessage = function (req) {
     return message;
 };
 
+var getFromId = function () {
+    var from = null;
+    if (this.message) {
+        from = this.message.from;
+    } else
+    if (this.callback_query) {
+        from = this.callback_query.from;
+    }
+    return from && from.id;
+};
+
 var getChatId = function () {
     return getMessage(this).chat.id;
 };
@@ -74,6 +85,7 @@ var getEntities = function () {
  * @property {Object} [callback_query]
  * @property {Object} [query]
  * @property {[]} params
+ * @property {function():number} getFromId
  * @property {function():number} getChatId
  * @property {function():number} getMessageId
  * @property {function():Object} getQuery
@@ -87,6 +99,7 @@ var getEntities = function () {
  */
 Router.prototype.getRequest = function (event, message) {
     var req = {};
+    req.getFromId = getFromId;
     req.getChatId = getChatId;
     req.getMessageId = getMessageId;
     req.getQuery = getQuery;
@@ -142,19 +155,10 @@ Router.prototype.handle = function (event, message) {
         var route = _this.stack[index++];
         if (!route) return;
 
-        req.params = route.match(command);
-        if (req.params) {
-            if (!route.event) {
-                return route.dispatch(req, next);
-            } else
-            if (message[route.event]) {
-                if (!route.type) {
-                    return route.dispatch(req, next);
-                } else
-                if (message[route.type]) {
-                    return route.dispatch(req, next);
-                }
-            }
+        req.params = route.getParams(command);
+
+        if (route.match(req)) {
+            return route.dispatch(req, next);
         }
 
         next();
@@ -166,6 +170,8 @@ Router.prototype.handle = function (event, message) {
  * @param {{}} details
  * @param {string} details.event
  * @param {string} details.type
+ * @param {String} details.fromId
+ * @param {String} details.chatId
  * @param {RegExp} re
  * @param {function(Object, function())} callback
  * @constructor
@@ -174,6 +180,8 @@ var Route = function (details, re, callback) {
     this.re = re;
     this.event = details.event;
     this.type = details.type;
+    this.fromId = details.fromId;
+    this.chatId = details.chatId;
     this.dispatch = function (req, next) {
         try {
             callback(req, next);
@@ -187,7 +195,7 @@ var Route = function (details, re, callback) {
  * @param {String} command
  * @return {[]|null}
  */
-Route.prototype.match = function (command) {
+Route.prototype.getParams = function (command) {
     if (!this.re) {
         return [];
     }
@@ -197,6 +205,29 @@ Route.prototype.match = function (command) {
         params = params.slice(1);
     }
     return params;
+};
+
+/**
+ * @param {Req} req
+ * @return {boolean}
+ */
+Route.prototype.match = function (req) {
+    if (!this.params) {
+        return false;
+    }
+    if (this.event && !req[this.event]) {
+        return false;
+    }
+    if (this.type && !req[this.type]) {
+        return false;
+    }
+    if (this.chatId && req.getChatId() !== this.chatId) {
+        return false;
+    }
+    if (this.fromId && req.getFromId() !== this.fromId) {
+        return false;
+    }
+    return true;
 };
 
 /**
@@ -274,6 +305,42 @@ Router.prototype.callback_query = function (re, callback) {
         _this.stack.push(new Route({
             event: 'callback_query'
         }, args.re, callback));
+    });
+};
+
+/**
+ * @param {{}} details
+ * @param {String} details.event
+ * @param {String} details.type
+ * @param {String} details.fromId
+ * @param {String} details.chatId
+ * @param {number} timeoutSec
+ * @return {Promise.<Req>}
+ */
+Router.prototype.waitResponse = function (details, timeoutSec) {
+    return new Promise(function (resolve, reject) {
+        var _this = this;
+        var callback = function (err, req) {
+            var pos = _this.stack.indexOf(route);
+            if (pos !== -1) {
+                _this.stack.splice(pos, 1);
+            }
+
+            clearTimeout(timeoutTimer);
+
+            if (err) {
+                reject(err);
+            } else {
+                resolve(req);
+            }
+        };
+        var timeoutTimer = setTimeout(function () {
+            callback(new Error('ETIMEDOUT'));
+        }, timeoutSec * 1000);
+        var route = new Route(details, null, function (req) {
+            callback(null, req);
+        });
+        this.stack.unshift(route);
     });
 };
 
