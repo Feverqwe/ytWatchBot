@@ -20,6 +20,12 @@ var Chat = function(options) {
     var users = options.users;
     var router = new Router(bot);
 
+    router.callback_query(function (req, next) {
+        next();
+        var id = req.callback_query.id;
+        bot.answerCallbackQuery(id);
+    });
+
     router.all(/(.+)/, function (req, next) {
         next();
         if (req.message) {
