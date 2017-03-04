@@ -187,7 +187,7 @@ var Chat = function(options) {
         });
     });
 
-    router.all(function (req, next) {
+    router.all(/\/.+/, function (req, next) {
         var chatId = req.getChatId();
         Promise.all([
             users.getChat(chatId).then(function (chat) {
@@ -204,7 +204,7 @@ var Chat = function(options) {
         var channel = req.params[0];
 
         var onResponse = function (channel, messageId) {
-            addChannel(req, channel).then(function (result) {
+            return addChannel(req, channel).then(function (result) {
                 if (messageId) {
                     return bot.editMessageText(result, {
                         chat_id: chatId,
@@ -218,13 +218,13 @@ var Chat = function(options) {
                         parse_mode: 'HTML'
                     });
                 }
-            }).catch(function (err) {
-                debug('addChannel error!', err);
             });
         };
 
         if (channel) {
-            onResponse(channel);
+            onResponse(channel).catch(function (err) {
+                debug('Command add error!', err);
+            });
             return;
         }
 
@@ -244,22 +244,20 @@ var Chat = function(options) {
                 chatId: chatId,
                 fromId: req.getFromId()
             }, 3 * 60).then(function (req) {
-                onResponse(req.message.text, msg.message_id);
+                return onResponse(req.message.text, msg.message_id);
             }, function () {
                 var cancelText = language.commandCanceled.replace('{command}', 'add');
                 return bot.editMessageText(cancelText, {
                     chat_id: chatId,
                     message_id: msg.message_id
                 });
-            }).catch(function (err) {
-                debug('add error', err);
             });
         }).catch(function (err) {
             debug('Command add error!', err);
         });
     });
 
-    router.all(function (req, next) {
+    router.all(/\/.+/, function (req, next) {
         var chatId = req.getChatId();
         if (!req.chat) {
             bot.sendMessage(chatId, language.emptyServiceList);
@@ -306,7 +304,7 @@ var Chat = function(options) {
         });
     });
 
-    router.all(function (req, next) {
+    router.all(/\/.+/, function (req, next) {
         var chatId = req.getChatId();
         if (!req.channels.length) {
             bot.sendMessage(chatId, language.emptyServiceList);
