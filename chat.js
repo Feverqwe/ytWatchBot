@@ -245,17 +245,15 @@ var Chat = function(options) {
                 fromId: req.getFromId()
             }, 3 * 60).then(function (req) {
                 onResponse(req.message.text, msg.message_id);
-            }).catch(function (err) {
-                if (err.message !== 'ETIMEDOUT') {
-                    throw err;
-                }
-
+            }, function () {
                 var cancelText = language.commandCanceled.replace('{command}', 'add');
                 return bot.editMessageText(cancelText, {
                     chat_id: chatId,
                     message_id: msg.message_id
                 });
-            })
+            }).catch(function (err) {
+                debug('add error', err);
+            });
         }).catch(function (err) {
             debug('Command add error!', err);
         });
@@ -453,19 +451,15 @@ var Chat = function(options) {
                     }).then(function () {
                         return updateOptionsMessage();
                     });
-                }).catch(function (err) {
-                    debug('setChannel error', err);
                 });
-            }).catch(function (err) {
-                if (err.message !== 'ETIMEDOUT') {
-                    throw err;
-                }
-
+            }, function () {
                 var cancelText = language.commandCanceled.replace('{command}', 'setChannel');
                 return bot.editMessageText(cancelText, {
                     chat_id: chatId,
                     message_id: msg.message_id
                 });
+            }).catch(function (err) {
+                debug('setChannel error', err);
             });
         });
     });
