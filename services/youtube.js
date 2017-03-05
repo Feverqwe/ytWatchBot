@@ -732,7 +732,6 @@ Youtube.prototype.requestChannelIdByVideoUrl = function (url) {
  /add https://www.youtube.com/watch?v=SF58Lsvqg5E
  /add https://www.youtube.com/channel/UCmYTgpKxd-QOJCPDrmaXuqQ
  /add UCmYTgpKxd-QOJCPDrmaXuqQ
- /add Premium Extensions HQ
  */
 
 /**
