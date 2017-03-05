@@ -653,6 +653,26 @@ Youtube.prototype.requestChannelIdByUsername = function(username) {
     });
 };
 
+Youtube.prototype.getChannelByUrl = function (url) {
+    var channelId = '';
+    [
+        /youtube\.com\/(?:#\/)?(?:user|channel)\/([0-9A-Za-z_-]+)/i,
+        /youtube\.com\/([0-9A-Za-z_-]+)$/i
+    ].some(function (re) {
+        var m = re.exec(url);
+        if (m) {
+            channelId = m[1];
+            return true;
+        }
+    });
+
+    if (!channelId) {
+        return Promise.reject(new CustomError('It not channel url!'));
+    } else {
+        return Promise.resolve(channelId);
+    }
+};
+
 /**
  * @param {String} url
  * @return {Promise.<string>}
@@ -716,30 +736,36 @@ Youtube.prototype.getChannelId = function(channelName) {
         localTitle: null
     };
 
-    return _this.requestChannelIdByVideoUrl(channelName).catch(function (err) {
+    return _this.getChannelByUrl(channelName).catch(function (err) {
         if (!err instanceof CustomError) {
             throw err;
         }
 
-        if (/^UC/.test(channelName)) {
-            return channelName;
-        }
-
-        return _this.requestChannelIdByUsername(channelName).then(function (result) {
-            channel.username = result.username;
-            return result.id;
-        }).catch(function(err) {
+        return _this.requestChannelIdByVideoUrl(channelName).catch(function (err) {
             if (!err instanceof CustomError) {
                 throw err;
             }
 
-            return _this.requestChannelIdByQuery(channelName).then(function(channelId) {
-                return _this.requestChannelIdByUsername(channelId).then(function (result) {
-                    channel.username = result.username;
-                    return result.id;
+            if (/^UC/.test(channelName)) {
+                return channelName;
+            }
+
+            return _this.requestChannelIdByUsername(channelName).then(function (result) {
+                channel.username = result.username;
+                return result.id;
+            }).catch(function (err) {
+                if (!err instanceof CustomError) {
+                    throw err;
+                }
+
+                return _this.requestChannelIdByQuery(channelName).then(function (channelId) {
+                    return _this.requestChannelIdByUsername(channelId).then(function (result) {
+                        channel.username = result.username;
+                        return result.id;
+                    });
                 });
             });
-        });
+        })
     }).then(function(channelId) {
         return requestPromise({
             method: 'GET',
