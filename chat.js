@@ -20,6 +20,8 @@ var Chat = function(options) {
     var users = options.users;
     var router = new Router(bot);
 
+    var textOrCb = router.custom(['text', 'callback_query']);
+
     router.message(function (req, next) {
         var chatId = req.getChatId();
         var message = req.message;
@@ -44,7 +46,7 @@ var Chat = function(options) {
         });
     });
 
-    router.all(/(.+)/, function (req, next) {
+    textOrCb(/(.+)/, function (req, next) {
         next();
         if (req.message) {
             var entities = req.getEntities();
@@ -74,7 +76,7 @@ var Chat = function(options) {
         });
     });
 
-    router.all(/\/(start|menu|help)/, function (req) {
+    textOrCb(/\/(start|menu|help)/, function (req) {
         var chatId = req.getChatId();
 
         if (req.message) {
@@ -110,7 +112,7 @@ var Chat = function(options) {
         }
     });
 
-    router.all(/\/top/, function (req) {
+    textOrCb(/\/top/, function (req) {
         var chatId = req.getChatId();
 
         return users.getAllChatChannels().then(function (items) {
@@ -200,7 +202,7 @@ var Chat = function(options) {
         });
     });
 
-    router.all(/\/about/, function (req) {
+    textOrCb(/\/about/, function (req) {
         var chatId = req.getChatId();
 
         var liveTime = {
@@ -239,7 +241,7 @@ var Chat = function(options) {
         });
     });
 
-    router.all(/\/.+/, function (req, next) {
+    textOrCb(/\/.+/, function (req, next) {
         var chatId = req.getChatId();
         Promise.all([
             users.getChat(chatId).then(function (chat) {
@@ -253,7 +255,7 @@ var Chat = function(options) {
         });
     });
 
-    router.all(/\/add(?:\s+(.+$))?/, function (req) {
+    textOrCb(/\/add(?:\s+(.+$))?/, function (req) {
         var chatId = req.getChatId();
         var channel = req.params[0];
 
@@ -311,7 +313,7 @@ var Chat = function(options) {
         });
     });
 
-    router.all(/\/.+/, function (req, next) {
+    textOrCb(/\/.+/, function (req, next) {
         var chatId = req.getChatId();
         if (!req.chat) {
             bot.sendMessage(chatId, language.emptyServiceList).catch(function (err) {
@@ -322,7 +324,7 @@ var Chat = function(options) {
         }
     });
 
-    router.all(/\/clear/, function (req) {
+    textOrCb(/\/clear/, function (req) {
         var chatId = req.chat.id;
         var messageId = req.getMessageId();
         var query = req.getQuery();
@@ -366,7 +368,7 @@ var Chat = function(options) {
         });
     });
 
-    router.all(/\/.+/, function (req, next) {
+    textOrCb(/\/.+/, function (req, next) {
         var chatId = req.getChatId();
         if (!req.channels.length) {
             bot.sendMessage(chatId, language.emptyServiceList).catch(function (err) {
@@ -377,7 +379,7 @@ var Chat = function(options) {
         }
     });
 
-    router.all(/\/delete/, function (req) {
+    textOrCb(/\/delete/, function (req) {
         var chatId = req.getChatId();
         var query = req.getQuery();
         var messageId = req.getMessageId();
@@ -435,7 +437,7 @@ var Chat = function(options) {
         });
     });
 
-    router.all(/\/options/, function (req) {
+    textOrCb(/\/options/, function (req) {
         var chatId = req.chat.id;
         var messageId = req.getMessageId();
         var query = req.getQuery();
@@ -467,7 +469,7 @@ var Chat = function(options) {
         });
     });
 
-    router.all(/\/setChannel/, function (req) {
+    textOrCb(/\/setChannel/, function (req) {
         var chatId = req.chat.id;
         var messageId = req.getMessageId();
         var query = req.getQuery();
@@ -527,7 +529,7 @@ var Chat = function(options) {
         });
     });
 
-    router.all(/\/list/, function (req) {
+    textOrCb(/\/list/, function (req) {
         var chatId = req.chat.id;
         var channels = req.channels;
 

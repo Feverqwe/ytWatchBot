@@ -312,6 +312,20 @@ Router.prototype.callback_query = function (re, callback) {
 };
 
 /**
+ * @param {String[]} methods
+ * @returns {function(RegExp, function(Req, function()))}
+ */
+Router.prototype.custom = function (methods) {
+    var _this = this;
+    return function (re, callback) {
+        var args = arguments;
+        methods.forEach(function (method) {
+            _this[method].apply(_this, args);
+        });
+    };
+};
+
+/**
  * @param {{}} details
  * @param {String} details.event
  * @param {String} details.type
