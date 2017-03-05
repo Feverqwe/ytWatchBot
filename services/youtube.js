@@ -56,7 +56,7 @@ var videoIdToId = function (videoId) {
 Youtube.prototype.clean = function () {
     var _this = this;
     var db = _this.gOptions.db;
-    var promise = new Promise();
+    var promise = Promise.resolve();
     promise = promise.then(function () {
         return new Promise(function (resolve, reject) {
             db.connection.query('\
