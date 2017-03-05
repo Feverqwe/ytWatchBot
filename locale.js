@@ -11,7 +11,7 @@ var Locale = function (options) {
 Locale.prototype.default = {
     "help": "Hi! I will notify you about new videos on Youtube channels!",
     "emptyServiceList": "You don't have channels in watchlist, yet.",
-    "enterChannelName": "Enter the channel URL or name (example: blacksilverufa):",
+    "enterChannelName": "Enter the channel URL or name or video URL (example: blacksilverufa):",
     "channelExists": "This channel has been added!",
     "channelAdded": "Success! The channel {channelName} has been added!",
     "telegramChannelEnter": "Enter the channel name (example: @telegram):",
