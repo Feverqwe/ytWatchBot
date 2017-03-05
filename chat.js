@@ -614,6 +614,26 @@ var Chat = function(options) {
         });
     });
 
+    textOrCb(/\/refreshChannelInfo/, function (req) {
+        var _this = this;
+        var chatId = req.getChatId();
+
+        return users.getAllChannels().then(function (channels) {
+            var queue = Promise.resolve();
+            channels.forEach(function (item) {
+                var service = services[item.service];
+                queue = queue.then(function () {
+                    return service.getChannelId(item.channelId).catch(function (err) {
+                        debug('refreshChannelInfo %s', item.channelId, err);
+                    });
+                });
+            });
+            return queue;
+        }).then(function() {
+            return bot.sendMessage(chatId, 'Done!');
+        });
+    });
+
     var setChannel = function (req, channelId) {
         var chat = req.chat;
         return Promise.resolve().then(function () {
