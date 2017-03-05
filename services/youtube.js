@@ -563,25 +563,33 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
         });
     };
 
-    var promise = requestPool.do(function () {
-        var channelId = _channelIdList.shift();
-        if (!channelId) return;
+    var promise = Promise.resolve();
+    if (isFullCheck) {
+        promise = promise.then(function () {
+            return _this.clean();
+        });
+    }
+    promise = promise.then(function () {
+        return requestPool.do(function () {
+            var channelId = _channelIdList.shift();
+            if (!channelId) return;
 
-        return _this.getChannelInfo(channelId).then(function (channel) {
-            return _this.gOptions.users.getChatIdsByChannel('youtube', channelId).then(function (chatIdList) {
-                if (!channel.id) {
-                    debug('Channel info is not found!', channelId);
-                    return;
-                }
+            return _this.getChannelInfo(channelId).then(function (channel) {
+                return _this.gOptions.users.getChatIdsByChannel('youtube', channelId).then(function (chatIdList) {
+                    if (!channel.id) {
+                        debug('Channel info is not found!', channelId);
+                        return;
+                    }
 
-                return requestNewVideoIds(channel).then(function (videoIds) {
-                    var queue = Promise.resolve();
-                    base.arrToParts(videoIds, 50).forEach(function (partVideoIds) {
-                        queue = queue.then(function () {
-                            return getVideoIdsInfo(channel, partVideoIds, chatIdList);
+                    return requestNewVideoIds(channel).then(function (videoIds) {
+                        var queue = Promise.resolve();
+                        base.arrToParts(videoIds, 50).forEach(function (partVideoIds) {
+                            queue = queue.then(function () {
+                                return getVideoIdsInfo(channel, partVideoIds, chatIdList);
+                            });
                         });
+                        return queue;
                     });
-                    return queue;
                 });
             });
         });
