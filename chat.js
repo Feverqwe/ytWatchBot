@@ -62,15 +62,15 @@ var Chat = function(options) {
         } else
         if (req.callback_query) {
             var message = req.callback_query.data;
-            var commnad = '';
+            var command = '';
             var m = /(\/[^?\s]+)/.exec(message);
             if (m) {
-                commnad = m[1];
+                command = m[1];
             }
             var msg = JSON.parse(JSON.stringify(req.callback_query.message));
             msg.text = message;
             msg.from = req.callback_query.from;
-            _this.track(msg, commnad);
+            _this.track(msg, command);
         }
     });
 
