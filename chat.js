@@ -618,17 +618,17 @@ var Chat = function(options) {
         var _this = this;
         var chatId = req.getChatId();
 
+        var pool = new base.Pool(30);
         return users.getAllChannels().then(function (channels) {
-            var queue = Promise.resolve();
-            channels.forEach(function (item) {
+            return pool.do(function () {
+                var item = channels.shift();
+                if (!item) return;
+
                 var service = services[item.service];
-                queue = queue.then(function () {
-                    return service.getChannelId(item.channelId).catch(function (err) {
-                        debug('refreshChannelInfo %s', item.channelId, err);
-                    });
+                return service.getChannelId(item.channelId).catch(function (err) {
+                    debug('refreshChannelInfo %s', item.channelId, err);
                 });
             });
-            return queue;
         }).then(function() {
             return bot.sendMessage(chatId, 'Done!');
         });
