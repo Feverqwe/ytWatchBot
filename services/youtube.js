@@ -464,7 +464,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                     return _this.setChannelPublishedAfter(channel.id, lastPublishedAt);
                 });
             }
-            if (channel.title !== channelTitle) {
+            if (channelTitle && channel.title !== channelTitle) {
                 promise = promise.then(function () {
                     return _this.setChannelTitle(channel.id, channelTitle);
                 });
