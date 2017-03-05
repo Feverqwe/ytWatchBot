@@ -29,7 +29,7 @@ MsgStack.prototype.init = function () {
                 `id` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
                 `videoId` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
                 `channelId` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
-                `publishedAt` TEXT CHARACTER SET utf8mb4 NOT NULL, \
+                `publishedAt` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
                 `data` LONGTEXT CHARACTER SET utf8mb4 NOT NULL, \
                 `imageFileId` TEXT CHARACTER SET utf8mb4 NULL, \
             UNIQUE INDEX `videoIdChannelId_UNIQUE` (`videoId` ASC, `channelId` ASC), \
