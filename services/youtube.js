@@ -653,7 +653,7 @@ Youtube.prototype.requestChannelIdByUsername = function(username) {
     });
 };
 
-Youtube.prototype.getChannelByUrl = function (url) {
+Youtube.prototype.getChannelIdByUrl = function (url) {
     var channelId = '';
     [
         /youtube\.com\/(?:#\/)?(?:user|channel)\/([0-9A-Za-z_-]+)/i,
@@ -736,7 +736,7 @@ Youtube.prototype.getChannelId = function(channelName) {
         localTitle: null
     };
 
-    return _this.getChannelByUrl(channelName).catch(function (err) {
+    return _this.getChannelIdByUrl(channelName).catch(function (err) {
         if (!err instanceof CustomError) {
             throw err;
         }
