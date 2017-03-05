@@ -20,6 +20,23 @@ var Chat = function(options) {
     var users = options.users;
     var router = new Router(bot);
 
+    router.message(function (req, next) {
+        var chatId = req.getChatId();
+        var message = req.message;
+        var promise = Promise.resolve();
+        if (message.migrate_from_chat_id) {
+            promise = promise.then(function () {
+                return users.changeChatId(message.migrate_from_chat_id, chatId);
+            })
+        }
+        if (message.migrate_to_chat_id) {
+            promise = promise.then(function () {
+                return users.changeChatId(chatId, message.migrate_to_chat_id);
+            });
+        }
+        promise.then(next);
+    });
+
     router.callback_query(function (req, next) {
         var id = req.callback_query.id;
         bot.answerCallbackQuery(id).then(next).catch(function (err) {
