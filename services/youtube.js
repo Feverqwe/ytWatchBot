@@ -558,37 +558,6 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
 };
 
 /**
- * @param {String} channelId
- * @return {Promise.<string>}
- */
-Youtube.prototype.requestChannelLocalTitle = function(channelId) {
-    var _this = this;
-    return requestPromise({
-        method: 'GET',
-        url: 'https://www.googleapis.com/youtube/v3/search',
-        qs: {
-            part: 'snippet',
-            channelId: channelId,
-            type: 'channel',
-            maxResults: 1,
-            fields: 'items/snippet',
-            key: _this.config.token
-        },
-        json: true,
-        gzip: true,
-        forever: true
-    }).then(function(responseBody) {
-        var localTitle = '';
-        responseBody.items.some(function (item) {
-            return localTitle = item.snippet.title;
-        });
-        return localTitle;
-    }).catch(function(err) {
-        debug('requestChannelLocalTitle %s error!', channelId, err);
-    });
-};
-
-/**
  * @param {String} query
  * @return {Promise.<string>}
  */
@@ -807,13 +776,7 @@ Youtube.prototype.getChannelId = function(channelName) {
             channel.id = channelId;
             channel.title = snippet.channelTitle;
 
-            return _this.requestChannelLocalTitle(channelId).then(function (localTitle) {
-                if (localTitle && localTitle !== channel.title) {
-                    channel.localTitle = localTitle;
-                }
-            }).then(function() {
-                return _this.setChannelInfo(channel);
-            }).then(function () {
+            return _this.setChannelInfo(channel).then(function () {
                 return {
                     id: channel.id,
                     localTitle: getChannelLocalTitleFromInfo(channel)
