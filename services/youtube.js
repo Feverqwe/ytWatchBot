@@ -622,11 +622,28 @@ Youtube.prototype.requestChannelIdByQuery = function(query) {
 };
 
 /**
- * @param {String} username
+ * @param {String} url
  * @return {Promise.<{id: string, username: username}>}
  */
-Youtube.prototype.requestChannelIdByUsername = function(username) {
+Youtube.prototype.requestChannelIdByUsername = function(url) {
     var _this = this;
+
+    var username = '';
+    [
+        /youtube\.com\/(?:#\/)?user\/([0-9A-Za-z_-]+)/i,
+        /youtube\.com\/([0-9A-Za-z_-]+)$/i
+    ].some(function (re) {
+        var m = re.exec(url);
+        if (m) {
+            username = m[1];
+            return true;
+        }
+    });
+
+    if (!username) {
+        username = url;
+    }
+
     return requestPromise({
         method: 'GET',
         url: 'https://www.googleapis.com/youtube/v3/channels',
@@ -653,11 +670,18 @@ Youtube.prototype.requestChannelIdByUsername = function(username) {
     });
 };
 
+/**
+ * @param {String} url
+ * @returns {Promise.<String>}
+ */
 Youtube.prototype.getChannelIdByUrl = function (url) {
+    if (/^UC/.test(url)) {
+        return Promise.resolve(url);
+    }
+
     var channelId = '';
     [
-        /youtube\.com\/(?:#\/)?(?:user|channel)\/([0-9A-Za-z_-]+)/i,
-        /youtube\.com\/([0-9A-Za-z_-]+)$/i
+        /youtube\.com\/(?:#\/)?channel\/([0-9A-Za-z_-]+)/i
     ].some(function (re) {
         var m = re.exec(url);
         if (m) {
@@ -744,10 +768,6 @@ Youtube.prototype.getChannelId = function(channelName) {
         return _this.requestChannelIdByVideoUrl(channelName).catch(function (err) {
             if (!err instanceof CustomError) {
                 throw err;
-            }
-
-            if (/^UC/.test(channelName)) {
-                return channelName;
             }
 
             return _this.requestChannelIdByUsername(channelName).then(function (result) {
