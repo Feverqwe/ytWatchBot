@@ -33,6 +33,7 @@ MsgStack.prototype.init = function () {
                 `data` LONGTEXT CHARACTER SET utf8mb4 NOT NULL, \
                 `imageFileId` TEXT CHARACTER SET utf8mb4 NULL, \
             UNIQUE INDEX `videoIdChannelId_UNIQUE` (`videoId` ASC, `channelId` ASC), \
+            INDEX `publishedAt_idx` (`publishedAt` ASC), \
             UNIQUE INDEX `id_UNIQUE` (`id` ASC)); \
         ', function (err) {
                 if (err) {
