@@ -261,18 +261,26 @@ var Chat = function(options) {
 
         var onResponse = function (channel, messageId) {
             return addChannel(req, channel).then(function (result) {
+                var sendResultAsNewMessage = function () {
+                    return bot.sendMessage(chatId, result, {
+                        disable_web_page_preview: true,
+                        parse_mode: 'HTML'
+                    });
+                };
                 if (messageId) {
                     return bot.editMessageText(result, {
                         chat_id: chatId,
                         message_id: messageId,
                         disable_web_page_preview: true,
                         parse_mode: 'HTML'
+                    }).catch(function (err) {
+                        if (/message can't be edited/.test(err.message)) {
+                            return sendResultAsNewMessage();
+                        }
+                        throw err;
                     });
                 } else {
-                    return bot.sendMessage(chatId, result, {
-                        disable_web_page_preview: true,
-                        parse_mode: 'HTML'
-                    });
+                    return sendResultAsNewMessage();
                 }
             });
         };
