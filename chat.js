@@ -703,7 +703,7 @@ var Chat = function(options) {
             var promise = Promise.resolve();
             channels.forEach(function(item) {
                 promise = promise.then(function () {
-                    return base.getChannelLocalTitle(_this.gOptions, item.service, item.channelId).then(function (title) {
+                    return base.getChannelTitle(_this.gOptions, item.service, item.channelId).then(function (title) {
                         var btnItem = {};
 
                         btnItem.text = title;
@@ -729,7 +729,7 @@ var Chat = function(options) {
         var chatId = req.getChatId();
         return services.youtube.getChannelId(channelName).then(function (channel) {
             var channelId = channel.id;
-            var title = channel.localTitle;
+            var title = channel.title;
 
             var found = req.channels.some(function (item) {
                 return item.service === 'youtube' && item.channelId === channelId;

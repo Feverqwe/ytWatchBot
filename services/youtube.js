@@ -27,7 +27,6 @@ Youtube.prototype.init = function () {
             CREATE TABLE IF NOT EXISTS `ytChannels` ( \
                 `id` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
                 `title` TEXT CHARACTER SET utf8mb4 NOT NULL, \
-                `localTitle` TEXT CHARACTER SET utf8mb4 NULL, \
                 `username` TEXT CHARACTER SET utf8mb4 NULL, \
                 `publishedAfter` TEXT CHARACTER SET utf8mb4 NULL, \
             UNIQUE INDEX `id_UNIQUE` (`id` ASC)); \
@@ -51,7 +50,6 @@ var videoIdToId = function (videoId) {
  * @typedef {{}} ChannelInfo
  * @property {String} id
  * @property {String} title
- * @property {String} [localTitle]
  * @property {String} [username]
  * @property {String} publishedAfter
  */
@@ -130,24 +128,6 @@ var getChannelTitleFromInfo = function (info) {
 Youtube.prototype.getChannelTitle = function (channelId) {
     return this.getChannelInfo(channelId).then(function (info) {
         return getChannelTitleFromInfo(info) || channelId;
-    });
-};
-
-/**
- * @param {ChannelInfo} info
- * @return {String}
- */
-var getChannelLocalTitleFromInfo = function (info) {
-    return info.localTitle || info.title || info.id;
-};
-
-/**
- * @param {String} channelId
- * @return {Promise}
- */
-Youtube.prototype.getChannelLocalTitle = function (channelId) {
-    return this.getChannelInfo(channelId).then(function (info) {
-        return getChannelLocalTitleFromInfo(info) || channelId;
     });
 };
 
@@ -274,7 +254,7 @@ Youtube.prototype.insertItem = function (channel, chatIdList, id, snippet, conte
         preview: previewList,
         duration: formatDuration(contentDetails.duration),
         channel: {
-            title: getChannelLocalTitleFromInfo(channel),
+            title: getChannelTitleFromInfo(channel),
             id: snippet.channelId
         }
     };
@@ -718,15 +698,14 @@ Youtube.prototype.requestChannelIdByVideoUrl = function (url) {
 
 /**
  * @param {String} channelName
- * @return {Promise.<{id, localTitle}>}
+ * @return {Promise.<{id, title}>}
  */
 Youtube.prototype.getChannelId = function(channelName) {
     var _this = this;
 
     var channel = {
         id: null,
-        title: null,
-        localTitle: null
+        title: null
     };
 
     return _this.getChannelIdByUrl(channelName).catch(function (err) {
@@ -779,7 +758,7 @@ Youtube.prototype.getChannelId = function(channelName) {
             return _this.setChannelInfo(channel).then(function () {
                 return {
                     id: channel.id,
-                    localTitle: getChannelLocalTitleFromInfo(channel)
+                    title: getChannelTitleFromInfo(channel)
                 };
             });
         });

@@ -155,28 +155,6 @@ utils.getChannelTitle = function(gOptions, service, channelName) {
 };
 
 /**
- * @param {Object} gOptions
- * @param {String} service
- * @param {String} channelName
- * @return {Promise}
- */
-utils.getChannelLocalTitle = function(gOptions, service, channelName) {
-    var services = gOptions.services;
-
-    var result;
-    if (services[service].getChannelLocalTitle) {
-        result = services[service].getChannelLocalTitle(channelName);
-    } else
-    if (services[service].getChannelTitle) {
-        result = services[service].getChannelTitle(channelName);
-    } else {
-        result = Promise.resolve(channelName);
-    }
-
-    return result;
-};
-
-/**
  * @param {String} service
  * @param {String} channelName
  * @return {String}
