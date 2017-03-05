@@ -614,7 +614,7 @@ var Chat = function(options) {
         });
     });
 
-    textOrCb(/\/refreshChannelInfo/, function (req) {
+    /*textOrCb(/\/refreshChannelInfo/, function (req) {
         var _this = this;
         var chatId = req.getChatId();
 
@@ -632,7 +632,7 @@ var Chat = function(options) {
         }).then(function() {
             return bot.sendMessage(chatId, 'Done!');
         });
-    });
+    });*/
 
     var setChannel = function (req, channelId) {
         var chat = req.chat;
