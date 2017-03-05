@@ -52,7 +52,12 @@ var Chat = function(options) {
             var entities = req.getEntities();
             var commands = entities.bot_command || [];
             commands.forEach(function (entity) {
-                _this.track(req.message, entity.value);
+                var command = entity.value;
+                var m = /([^@]+)/.exec(command);
+                if (m) {
+                    command = m[1];
+                }
+                _this.track(req.message, command);
             });
         } else
         if (req.callback_query) {
@@ -308,6 +313,7 @@ var Chat = function(options) {
                 chatId: chatId,
                 fromId: req.getFromId()
             }, 3 * 60).then(function (req) {
+                _this.track(req.message, '/add');
                 return onResponse(req.message.text, msg.message_id);
             }, function () {
                 var cancelText = language.commandCanceled.replace('{command}', 'add');
@@ -517,6 +523,7 @@ var Chat = function(options) {
                 chatId: chatId,
                 fromId: req.getFromId()
             }, 3 * 60).then(function (_req) {
+                _this.track(_req.message, '/setChannel');
                 return setChannel(req, _req.message.text).then(function (result) {
                     return bot.editMessageText(result, {
                         chat_id: chatId,
