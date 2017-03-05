@@ -42,8 +42,35 @@ Youtube.prototype.init = function () {
     return promise;
 };
 
+Youtube.prototype.getFullCheckTime = function (factor) {
+    if (!factor) {
+        factor = 1;
+    }
+    return new Date((parseInt(Date.now() / 1000) - factor * 3 * 24 * 60 * 60) * 1000).toISOString();
+};
+
 var videoIdToId = function (videoId) {
     return 'y_' + videoId;
+};
+
+Youtube.prototype.clean = function () {
+    var _this = this;
+    var db = _this.gOptions.db;
+    var promise = new Promise();
+    promise = promise.then(function () {
+        return new Promise(function (resolve, reject) {
+            db.connection.query('\
+            DELETE FROM messages WHERE publishedAt < ?; \
+        ', [_this.getFullCheckTime(2)], function (err, results) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    });
+    return promise;
 };
 
 /**
@@ -454,7 +481,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
         var channelId = channel.id;
         var publishedAfter = channel.publishedAfter;
         if (isFullCheck || !publishedAfter) {
-            publishedAfter = new Date((parseInt(Date.now() / 1000) - 3 * 24 * 60 * 60) * 1000).toISOString();
+            publishedAfter = _this.getFullCheckTime();
         }
 
         var pageLimit = 100;
