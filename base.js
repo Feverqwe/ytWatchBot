@@ -72,13 +72,13 @@ utils.getNowStreamPhotoText = function(gOptions, videoItem) {
         if (videoItem.channel.title && title.indexOf(videoItem.channel.title) === -1) {
             descPart.push(videoItem.channel.title);
         }
-        if (videoItem.duration) {
-            descPart.push(videoItem.duration);
-        }
         if (descPart.length) {
             var desc = descPart.join(', ');
             if (stripLen) {
                 desc = desc.substr(0, desc.length - stripLen - 3) + '...';
+            }
+            if (videoItem.duration) {
+                desc += ', ' + videoItem.duration;
             }
             textArr.push(desc);
         }
