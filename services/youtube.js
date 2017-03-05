@@ -60,8 +60,8 @@ Youtube.prototype.clean = function () {
     promise = promise.then(function () {
         return new Promise(function (resolve, reject) {
             db.connection.query('\
-            DELETE FROM messages WHERE publishedAt < ?; \
-        ', [_this.getFullCheckTime(2)], function (err, results) {
+                DELETE FROM messages WHERE publishedAt < ?; \
+            ', [_this.getFullCheckTime(2)], function (err, results) {
                 if (err) {
                     reject(err);
                 } else {
