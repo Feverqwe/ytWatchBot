@@ -23,12 +23,6 @@ var options = {
     serviceToTitle: {
         youtube: 'Youtube'
     },
-    serviceMatchRe: {
-        youtube: [
-            /youtube\.com\/(?:#\/)?(?:user|channel)\/([0-9A-Za-z_-]+)/i,
-            /youtube\.com\/([0-9A-Za-z_-]+)$/i
-        ]
-    },
     services: {},
     events: null,
     tracker: null,
