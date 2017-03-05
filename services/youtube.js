@@ -778,12 +778,7 @@ Youtube.prototype.getChannelId = function(channelName) {
                     throw err;
                 }
 
-                return _this.requestChannelIdByQuery(channelName).then(function (channelId) {
-                    return _this.requestChannelIdByUsername(channelId).then(function (result) {
-                        channel.username = result.username;
-                        return result.id;
-                    });
-                });
+                return _this.requestChannelIdByQuery(channelName);
             });
         })
     }).then(function(channelId) {
