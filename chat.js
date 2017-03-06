@@ -438,6 +438,11 @@ var Chat = function(options) {
                 }), {
                     chat_id: chatId,
                     message_id: messageId
+                }).catch(function (err) {
+                    if (/message is not modified/.test(err.message)) {
+                        return;
+                    }
+                    throw err;
                 });
             } else {
                 return bot.sendMessage(chatId, language.selectDelChannel, {
