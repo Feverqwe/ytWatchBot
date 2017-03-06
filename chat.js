@@ -452,8 +452,8 @@ var Chat = function(options) {
         });
 
         return promise.then(function () {
-            return base.pageBtnList(btnList, '/delete', page, mediumBtn);
-        }).then(function (pageBtnList) {
+            var pageBtnList = base.pageBtnList(btnList, '/delete', page, mediumBtn);
+
             if (req.callback_query && !query.rel) {
                 return bot.editMessageReplyMarkup(JSON.stringify({
                     inline_keyboard: pageBtnList
