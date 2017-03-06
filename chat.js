@@ -431,10 +431,32 @@ var Chat = function(options) {
             callback_data: '/delete?cancel=true'
         };
 
-        return getDeleteChannelList(req, page, mediumBtn).then(function (btnList) {
+        var channels = req.channels;
+        var btnList = [];
+        var promise = Promise.resolve();
+        channels.forEach(function(item) {
+            promise = promise.then(function () {
+                return base.getChannelTitle(_this.gOptions, item.service, item.channelId).then(function (title) {
+                    var btnItem = {};
+
+                    btnItem.text = title;
+
+                    btnItem.callback_data = '/delete?' + querystring.stringify({
+                            channelId: item.channelId,
+                            service: item.service
+                        });
+
+                    btnList.push([btnItem]);
+                });
+            });
+        });
+
+        return promise.then(function () {
+            return base.pageBtnList(btnList, '/delete', page, mediumBtn);
+        }).then(function (pageBtnList) {
             if (req.callback_query && !query.rel) {
                 return bot.editMessageReplyMarkup(JSON.stringify({
-                    inline_keyboard: btnList
+                    inline_keyboard: pageBtnList
                 }), {
                     chat_id: chatId,
                     message_id: messageId
@@ -447,7 +469,7 @@ var Chat = function(options) {
             } else {
                 return bot.sendMessage(chatId, language.selectDelChannel, {
                     reply_markup: JSON.stringify({
-                        inline_keyboard: btnList
+                        inline_keyboard: pageBtnList
                     })
                 });
             }
@@ -727,36 +749,6 @@ var Chat = function(options) {
         });
     };
 
-    /**
-     * @param {Req} req
-     * @param {number} page
-     * @param {Object|Array} mediumBtn
-     * @returns {Promise}
-     */
-    var getDeleteChannelList = function (req, page, mediumBtn) {
-        var channels = req.channels;
-        var btnList = [];
-        var promise = Promise.resolve();
-        channels.forEach(function(item) {
-            promise = promise.then(function () {
-                return base.getChannelTitle(_this.gOptions, item.service, item.channelId).then(function (title) {
-                    var btnItem = {};
-
-                    btnItem.text = title;
-
-                    btnItem.callback_data = '/delete?' + querystring.stringify({
-                            channelId: item.channelId,
-                            service: item.service
-                        });
-
-                    btnList.push([btnItem]);
-                });
-            });
-        });
-        return promise.then(function () {
-            return base.pageBtnList(btnList, '/delete', page, mediumBtn);
-        });
-    };
 
     var addChannel = function (req, channelName) {
         var chatId = req.getChatId();
