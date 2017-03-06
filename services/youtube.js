@@ -672,6 +672,10 @@ Youtube.prototype.requestChannelIdByUsername = function(url) {
         username = url;
     }
 
+    if (!/^[0-9A-Za-z_-]+$/.test(url)) {
+        return Promise.reject(new CustomError('It is not username!'));
+    }
+
     return requestPromise({
         method: 'GET',
         url: 'https://www.googleapis.com/youtube/v3/channels',
@@ -719,7 +723,7 @@ Youtube.prototype.getChannelIdByUrl = function (url) {
     });
 
     if (!channelId) {
-        return Promise.reject(new CustomError('It not channel url!'));
+        return Promise.reject(new CustomError('It is not channel url!'));
     } else {
         return Promise.resolve(channelId);
     }
@@ -746,7 +750,7 @@ Youtube.prototype.requestChannelIdByVideoUrl = function (url) {
     });
 
     if (!videoId) {
-        return Promise.reject(new CustomError('It not video url!'));
+        return Promise.reject(new CustomError('It is not video url!'));
     }
 
     return requestPromise({
