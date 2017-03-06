@@ -453,7 +453,7 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
                 }).then(function () {
                     if (responseBody.nextPageToken) {
                         if (pageLimit-- < 1) {
-                            throw new CustomError('Page limit reached ' + channelId);
+                            throw new CustomError('Page limit reached ' + channel.id);
                         }
 
                         return getPage(responseBody.nextPageToken);
