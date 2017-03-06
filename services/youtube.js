@@ -84,7 +84,7 @@ Youtube.prototype.clean = function () {
 /**
  * @private
  * @param {String[]} channelIds
- * @return {Promise.<[{}]>}
+ * @return {Promise.<ChannelInfo[]>}
  */
 Youtube.prototype.getChannelsInfo = function (channelIds) {
     var db = this.gOptions.db;
@@ -590,6 +590,9 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
     });
     promise = promise.then(function (channels) {
         return requestPool.do(function () {
+            /**
+             * @type {ChannelInfo}
+             */
             var channel = channels.shift();
             if (!channel) return;
 
