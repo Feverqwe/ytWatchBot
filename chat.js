@@ -734,30 +734,26 @@ var Chat = function(options) {
      * @returns {Promise}
      */
     var getDeleteChannelList = function (req, page, mediumBtn) {
-        var chatId = req.chat.id;
-        return users.getChannels(chatId).then(function (channels) {
-            var btnList = [];
-            var promise = Promise.resolve();
-            channels.forEach(function(item) {
-                promise = promise.then(function () {
-                    return base.getChannelTitle(_this.gOptions, item.service, item.channelId).then(function (title) {
-                        var btnItem = {};
+        var channels = req.channels;
+        var btnList = [];
+        var promise = Promise.resolve();
+        channels.forEach(function(item) {
+            promise = promise.then(function () {
+                return base.getChannelTitle(_this.gOptions, item.service, item.channelId).then(function (title) {
+                    var btnItem = {};
 
-                        btnItem.text = title;
+                    btnItem.text = title;
 
-                        btnItem.callback_data = '/delete?' + querystring.stringify({
+                    btnItem.callback_data = '/delete?' + querystring.stringify({
                             channelId: item.channelId,
                             service: item.service
                         });
 
-                        btnList.push([btnItem]);
-                    });
+                    btnList.push([btnItem]);
                 });
             });
-            return promise.then(function () {
-                return btnList;
-            });
-        }).then(function (btnList) {
+        });
+        return promise.then(function () {
             return base.pageBtnList(btnList, '/delete', page, mediumBtn);
         });
     };
