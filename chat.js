@@ -696,9 +696,11 @@ var Chat = function(options) {
 
     var setOption = function (chat, key, value) {
         ['hidePreview', 'mute'].forEach(function (option) {
-            chat.options[option] = value === 'true';
-            if (!chat.options[option]) {
-                delete chat.options[option];
+            if (option === key) {
+                chat.options[option] = value === 'true';
+                if (!chat.options[option]) {
+                    delete chat.options[option];
+                }
             }
         });
 
