@@ -752,12 +752,13 @@ var Chat = function(options) {
 
     var addChannel = function (req, channelName) {
         var chatId = req.getChatId();
-        return services.youtube.getChannelId(channelName).then(function (channel) {
+        var serviceName = 'youtube';
+        return services[serviceName].getChannelId(channelName).then(function (channel) {
             var channelId = channel.id;
             var title = channel.title;
 
             var found = req.channels.some(function (item) {
-                return item.service === 'youtube' && item.channelId === channelId;
+                return item.service === serviceName && item.channelId === channelId;
             });
 
             if (found) {
@@ -771,16 +772,18 @@ var Chat = function(options) {
                 });
             }
             return promise.then(function () {
-                return users.addChannel(chatId, 'youtube', channelId);
+                return users.addChannel(chatId, serviceName, channelId);
             }).then(function () {
-                var url = base.getChannelUrl('youtube', channelId);
+                var url = base.getChannelUrl(serviceName, channelId);
                 var displayName = base.htmlSanitize('a', title, url);
 
-                events.emit('subscribe', channelId);
+                if (serviceName === 'youtube') {
+                    events.emit('subscribe', channelId);
+                }
 
                 return language.channelAdded
                     .replace('{channelName}', displayName)
-                    .replace('{serviceName}', base.htmlSanitize(serviceToTitle.youtube));
+                    .replace('{serviceName}', base.htmlSanitize(serviceToTitle[serviceName]));
             });
         }).catch(function(err) {
             if (!err instanceof CustomError) {
