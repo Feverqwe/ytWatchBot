@@ -397,6 +397,7 @@ var Chat = function(options) {
         var chatId = req.getChatId();
         var query = req.getQuery();
         var messageId = req.getMessageId();
+        var channels = req.channels;
 
         if (query.cancel) {
             var cancelText = language.commandCanceled.replace('{command}', 'delete');
@@ -431,7 +432,6 @@ var Chat = function(options) {
             callback_data: '/delete?cancel=true'
         };
 
-        var channels = req.channels;
         var btnList = [];
         var promise = Promise.resolve();
         channels.forEach(function(item) {
