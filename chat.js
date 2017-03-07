@@ -30,7 +30,7 @@ var Chat = function(options) {
             promise = promise.then(function () {
                 return users.changeChatId(message.migrate_from_chat_id, chatId);
             })
-        }
+        } else
         if (message.migrate_to_chat_id) {
             promise = promise.then(function () {
                 return users.changeChatId(chatId, message.migrate_to_chat_id);
