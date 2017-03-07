@@ -266,27 +266,10 @@ var Chat = function(options) {
 
         var onResponse = function (channel, messageId) {
             return addChannel(req, channel).then(function (result) {
-                var sendResultAsNewMessage = function () {
-                    return bot.sendMessage(chatId, result, {
-                        disable_web_page_preview: true,
-                        parse_mode: 'HTML'
-                    });
-                };
-                if (messageId) {
-                    return bot.editMessageText(result, {
-                        chat_id: chatId,
-                        message_id: messageId,
-                        disable_web_page_preview: true,
-                        parse_mode: 'HTML'
-                    }).catch(function (err) {
-                        if (/message can't be edited/.test(err.message)) {
-                            return sendResultAsNewMessage();
-                        }
-                        throw err;
-                    });
-                } else {
-                    return sendResultAsNewMessage();
-                }
+                return editOrSendNewMessage(chatId, messageId, result, {
+                    disable_web_page_preview: true,
+                    parse_mode: 'HTML'
+                });
             });
         };
 
@@ -317,10 +300,7 @@ var Chat = function(options) {
                 return onResponse(req.message.text, msg.message_id);
             }, function () {
                 var cancelText = language.commandCanceled.replace('{command}', 'add');
-                return bot.editMessageText(cancelText, {
-                    chat_id: chatId,
-                    message_id: msg.message_id
-                });
+                return editOrSendNewMessage(chatId, msg.message_id, cancelText);
             });
         }).catch(function (err) {
             debug('Command add error!', err);
@@ -557,19 +537,13 @@ var Chat = function(options) {
             }, 3 * 60).then(function (_req) {
                 _this.track(_req.message, '/setChannel');
                 return setChannel(req, _req.message.text).then(function (result) {
-                    return bot.editMessageText(result, {
-                        chat_id: chatId,
-                        message_id: msg.message_id
-                    }).then(function () {
+                    return editOrSendNewMessage(chatId, msg.message_id, result).then(function () {
                         return updateOptionsMessage();
                     });
                 });
             }, function () {
                 var cancelText = language.commandCanceled.replace('{command}', 'setChannel');
-                return bot.editMessageText(cancelText, {
-                    chat_id: chatId,
-                    message_id: msg.message_id
-                });
+                return editOrSendNewMessage(chatId, msg.message_id, cancelText);
             });
         }).catch(function (err) {
             debug('setChannel error', err);
@@ -672,6 +646,41 @@ var Chat = function(options) {
             return bot.sendMessage(chatId, 'Done!');
         });
     });*/
+
+    /**
+     * @param {Number|String} chatId
+     * @param {Number} messageId
+     * @param {String} text
+     * @param {{}} [details]
+     */
+    var editOrSendNewMessage = function (chatId, messageId, text, details) {
+        details = details || {};
+
+        var sendMessage = function () {
+            return bot.sendMessage(chatId, text, details);
+        };
+
+        var editMessage = function () {
+            var _details = {};
+            for (var key in details) {
+                _details[key] = details[key];
+            }
+            _details.chat_id = chatId;
+            _details.message_id = messageId;
+            return bot.editMessageText(text, _details).catch(function (err) {
+                if (/message can't be edited/.test(err.message)) {
+                    return sendMessage();
+                }
+                throw err;
+            });
+        };
+
+        if (messageId) {
+            return editMessage();
+        } else {
+            return sendMessage();
+        }
+    };
 
     var setChannel = function (req, channelId) {
         var chat = req.chat;
