@@ -672,7 +672,7 @@ Youtube.prototype.requestChannelIdByUsername = function(url) {
         username = url;
     }
 
-    if (!/^[0-9A-Za-z_-]+$/.test(url)) {
+    if (!/^[0-9A-Za-z_-]+$/.test(username)) {
         return Promise.reject(new CustomError('It is not username!'));
     }
 
@@ -786,6 +786,7 @@ Youtube.prototype.requestChannelIdByVideoUrl = function (url) {
  /add https://www.youtube.com/watch?v=SF58Lsvqg5E
  /add https://www.youtube.com/channel/UCmYTgpKxd-QOJCPDrmaXuqQ
  /add UCmYTgpKxd-QOJCPDrmaXuqQ
+ /add https://www.youtube.com/user/ChromeDevelopers/videos
  */
 
 /**
