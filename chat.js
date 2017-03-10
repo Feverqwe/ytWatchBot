@@ -798,7 +798,9 @@ var Chat = function(options) {
             });
         }).catch(function(err) {
             if (!err instanceof CustomError) {
-                debug('addChannel %s is not found!', channelName, err);
+                debug('addChannel %s error!', channelName, err);
+            } else {
+                debug('Channel is not found! %j', channelName, err);
             }
 
             return language.channelIsNotFound.replace('{channelName}', channelName);
