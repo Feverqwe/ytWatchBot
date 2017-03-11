@@ -264,11 +264,30 @@ var Chat = function(options) {
         var chatId = req.getChatId();
         var channel = req.params[0];
 
-        var onResponse = function (channel, messageId) {
-            return addChannel(req, channel).then(function (result) {
+        var onResponse = function (channelName, messageId) {
+            var serviceName = 'youtube';
+            return addChannel(req, serviceName, channelName).then(function (/*ChannelInfo*/channel) {
+                var url = base.getChannelUrl(serviceName, channel.id);
+                var displayName = base.htmlSanitize('a', channel.title, url);
+
+                var result = language.channelAdded
+                    .replace('{channelName}', displayName)
+                    .replace('{serviceName}', base.htmlSanitize(serviceToTitle[serviceName]));
+
                 return editOrSendNewMessage(chatId, messageId, result, {
                     disable_web_page_preview: true,
                     parse_mode: 'HTML'
+                });
+            }, function (err) {
+                var result;
+                if (err.message === 'CHANNEL_EXISTS') {
+                    result = language.channelExists;
+                } else {
+                    result = language.channelIsNotFound.replace('{channelName}', channelName);
+                }
+
+                return editOrSendNewMessage(chatId, messageId, result, {
+                    disable_web_page_preview: true
                 });
             });
         };
@@ -761,19 +780,18 @@ var Chat = function(options) {
     };
 
 
-    var addChannel = function (req, channelName) {
+    var addChannel = function (req, serviceName, channelName) {
         var chatId = req.getChatId();
-        var serviceName = 'youtube';
         return services[serviceName].getChannelId(channelName).then(function (channel) {
             var channelId = channel.id;
-            var title = channel.title;
+            // var title = channel.title;
 
             var found = req.channels.some(function (item) {
                 return item.service === serviceName && item.channelId === channelId;
             });
 
             if (found) {
-                return language.channelExists;
+                throw new CustomError('CHANNEL_EXISTS');
             }
 
             var promise = Promise.resolve();
@@ -785,25 +803,20 @@ var Chat = function(options) {
             return promise.then(function () {
                 return users.addChannel(chatId, serviceName, channelId);
             }).then(function () {
-                var url = base.getChannelUrl(serviceName, channelId);
-                var displayName = base.htmlSanitize('a', title, url);
-
                 if (serviceName === 'youtube') {
                     events.emit('subscribe', channelId);
                 }
 
-                return language.channelAdded
-                    .replace('{channelName}', displayName)
-                    .replace('{serviceName}', base.htmlSanitize(serviceToTitle[serviceName]));
+                return channel;
             });
         }).catch(function(err) {
             if (!err instanceof CustomError) {
                 debug('addChannel %s error!', channelName, err);
-            } else {
+            } else
+            if (err.message !== 'CHANNEL_EXISTS') {
                 debug('Channel is not found! %j', channelName, err);
             }
-
-            return language.channelIsNotFound.replace('{channelName}', channelName);
+            throw err;
         });
     };
 
