@@ -627,7 +627,7 @@ Youtube.prototype.requestChannelIdByQuery = function(query) {
         url: 'https://www.googleapis.com/youtube/v3/search',
         qs: {
             part: 'snippet',
-            q: JSON.stringify(query),
+            q: query,
             type: 'channel',
             maxResults: 1,
             fields: 'items(id)',
