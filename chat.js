@@ -246,7 +246,7 @@ var Chat = function(options) {
         });
     });
 
-    textOrCb(/\/.+/, function (req, next) {
+    textOrCb(function (req, next) {
         var chatId = req.getChatId();
         Promise.all([
             users.getChat(chatId).then(function (chat) {
@@ -307,7 +307,7 @@ var Chat = function(options) {
         });
     });
 
-    textOrCb(/\/.+/, function (req, next) {
+    textOrCb(function (req, next) {
         var chatId = req.getChatId();
         if (!req.chat) {
             bot.sendMessage(chatId, language.emptyServiceList).catch(function (err) {
@@ -362,7 +362,7 @@ var Chat = function(options) {
         });
     });
 
-    textOrCb(/\/.+/, function (req, next) {
+    textOrCb(function (req, next) {
         var chatId = req.getChatId();
         if (!req.channels.length) {
             bot.sendMessage(chatId, language.emptyServiceList).catch(function (err) {
