@@ -60,6 +60,19 @@ Youtube.prototype.clean = function () {
     promise = promise.then(function () {
         return new Promise(function (resolve, reject) {
             db.connection.query('\
+                DELETE FROM ytChannels WHERE id NOT IN (SELECT DISTINCT channelId FROM chatIdChannelId WHERE service = ?); \
+            ', ['youtube'], function (err, results) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    });
+    promise = promise.then(function () {
+        return new Promise(function (resolve, reject) {
+            db.connection.query('\
                 DELETE FROM messages WHERE publishedAt < ?; \
             ', [_this.getFullCheckTime(2)], function (err, results) {
                 if (err) {
