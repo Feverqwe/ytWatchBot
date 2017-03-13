@@ -64,7 +64,7 @@ var options = {
             polling: true
         });
         options.bot.on('polling_error', function (err) {
-            debug('pollingError', err);
+            debug('pollingError %o', err);
         });
 
         var quote = new base.Quote(30);
