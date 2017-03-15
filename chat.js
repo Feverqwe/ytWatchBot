@@ -313,7 +313,8 @@ var Chat = function(options) {
                 event: 'message',
                 type: 'text',
                 chatId: chatId,
-                fromId: req.getFromId()
+                fromId: req.getFromId(),
+                throwOnCommand: true
             }, 3 * 60).then(function (req) {
                 _this.track(req.message, '/add');
                 return onResponse(req.message.text, msg.message_id);
@@ -552,7 +553,8 @@ var Chat = function(options) {
                 event: 'message',
                 type: 'text',
                 chatId: chatId,
-                fromId: req.getFromId()
+                fromId: req.getFromId(),
+                throwOnCommand: true
             }, 3 * 60).then(function (_req) {
                 _this.track(_req.message, '/setChannel');
                 return setChannel(req, _req.message.text).then(function (result) {

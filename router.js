@@ -354,8 +354,18 @@ Router.prototype.waitResponse = function (details, timeoutSec) {
         var timeoutTimer = setTimeout(function () {
             callback(new Error('ETIMEDOUT'));
         }, timeoutSec * 1000);
-        var route = new Route(details, null, function (req) {
-            callback(null, req);
+        var route = new Route(details, null, function (/*Req*/req, next) {
+            if (details.throwOnCommand) {
+                var entities = req.getEntities();
+                if (entities.bot_command) {
+                    callback(new Error('BOT_COMMAND'));
+                    next();
+                } else {
+                    callback(null, req);
+                }
+            } else {
+                callback(null, req);
+            }
         });
         _this.stack.unshift(route);
     });
