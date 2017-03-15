@@ -27,7 +27,6 @@ Youtube.prototype.init = function () {
             CREATE TABLE IF NOT EXISTS `ytChannels` ( \
                 `id` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
                 `title` TEXT CHARACTER SET utf8mb4 NOT NULL, \
-                `username` TEXT CHARACTER SET utf8mb4 NULL, \
                 `publishedAfter` TEXT CHARACTER SET utf8mb4 NULL, \
             UNIQUE INDEX `id_UNIQUE` (`id` ASC)); \
         ', function (err) {
@@ -90,7 +89,6 @@ Youtube.prototype.clean = function () {
  * @typedef {{}} ChannelInfo
  * @property {String} id
  * @property {String} title
- * @property {String} [username]
  * @property {String} publishedAfter
  */
 
@@ -664,7 +662,7 @@ Youtube.prototype.requestChannelIdByQuery = function(query) {
 
 /**
  * @param {String} url
- * @return {Promise.<{id: string, username: username}>}
+ * @return {Promise.<String>}
  */
 Youtube.prototype.requestChannelIdByUsername = function(url) {
     var _this = this;
@@ -711,7 +709,7 @@ Youtube.prototype.requestChannelIdByUsername = function(url) {
             throw new CustomError('Channel ID is not found by username!');
         }
 
-        return {id: id, username: username};
+        return id;
     });
 };
 
@@ -824,10 +822,7 @@ Youtube.prototype.getChannelId = function(channelName) {
                 throw err;
             }
 
-            return _this.requestChannelIdByUsername(channelName).then(function (result) {
-                channel.username = result.username;
-                return result.id;
-            }).catch(function (err) {
+            return _this.requestChannelIdByUsername(channelName).catch(function (err) {
                 if (!err instanceof CustomError) {
                     throw err;
                 }
