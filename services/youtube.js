@@ -115,7 +115,7 @@ Youtube.prototype.getChannelsInfo = function (channelIds) {
         });
     }).catch(function (err) {
         debug('getChannelsInfo', err);
-        return {};
+        return [];
     });
 };
 
