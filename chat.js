@@ -812,7 +812,7 @@ var Chat = function(options) {
                 return channel;
             });
         }).catch(function(err) {
-            if (!err instanceof CustomError) {
+            if (!(err instanceof CustomError)) {
                 debug('addChannel %s error!', channelName, err);
             } else
             if (err.message !== 'CHANNEL_EXISTS') {

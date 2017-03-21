@@ -813,17 +813,17 @@ Youtube.prototype.getChannelId = function(channelName) {
     };
 
     return _this.getChannelIdByUrl(channelName).catch(function (err) {
-        if (!err instanceof CustomError) {
+        if (!(err instanceof CustomError)) {
             throw err;
         }
 
         return _this.requestChannelIdByVideoUrl(channelName).catch(function (err) {
-            if (!err instanceof CustomError) {
+            if (!(err instanceof CustomError)) {
                 throw err;
             }
 
             return _this.requestChannelIdByUsername(channelName).catch(function (err) {
-                if (!err instanceof CustomError) {
+                if (!(err instanceof CustomError)) {
                     throw err;
                 }
 
