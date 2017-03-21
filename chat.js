@@ -688,16 +688,6 @@ var Chat = function(options) {
             }
             _details.chat_id = chatId;
             _details.message_id = messageId;
-            if (_details.reply_markup) {
-                var reply_markup = JSON.parse(_details.reply_markup);
-                if (reply_markup.inline_keyboard) {
-                    _details.reply_markup = JSON.stringify({
-                        inline_keyboard: reply_markup.inline_keyboard
-                    });
-                } else {
-                    delete _details.reply_markup;
-                }
-            }
             return bot.editMessageText(text, _details).catch(function (err) {
                 if (/message can't be edited/.test(err.message) ||
                     /message to edit not found/.test(err.message)
