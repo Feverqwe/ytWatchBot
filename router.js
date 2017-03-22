@@ -326,6 +326,7 @@ Router.prototype.custom = function (methods) {
 };
 
 /**
+ * @param {RegExp} [re]
  * @param {{}} details
  * @param {String} details.event
  * @param {String} details.type
@@ -334,7 +335,12 @@ Router.prototype.custom = function (methods) {
  * @param {number} timeoutSec
  * @return {Promise.<Req>}
  */
-Router.prototype.waitResponse = function (details, timeoutSec) {
+Router.prototype.waitResponse = function (re, details, timeoutSec) {
+    if (!(re instanceof RegExp)) {
+        timeoutSec = arguments[1];
+        details = arguments[0];
+        re = null;
+    }
     var _this = this;
     return new Promise(function (resolve, reject) {
         var callback = function (err, req) {
@@ -354,7 +360,7 @@ Router.prototype.waitResponse = function (details, timeoutSec) {
         var timeoutTimer = setTimeout(function () {
             callback(new Error('ETIMEDOUT'));
         }, timeoutSec * 1000);
-        var route = new Route(details, null, function (/*Req*/req, next) {
+        var route = new Route(details, re, function (/*Req*/req, next) {
             if (details.throwOnCommand) {
                 var entities = req.getEntities();
                 if (entities.bot_command) {
