@@ -2,9 +2,9 @@
  * Created by Anton on 18.12.2015.
  */
 "use strict";
-var debug = require('debug')('app:pubsub');
-var pubSubHubbub = require("pubsubhubbub");
-var xmldoc = require("xmldoc");
+const debug = require('debug')('app:pubsub');
+const pubSubHubbub = require("pubsubhubbub");
+const xmldoc = require("xmldoc");
 
 var PushApi = function(options) {
     var _this = this;

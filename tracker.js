@@ -2,10 +2,10 @@
  * Created by anton on 31.01.16.
  */
 "use strict";
-var debug = require('debug')('app:tracker');
-var request = require('request');
-var Uuid = require('uuid');
-var requestPromise = require('request-promise');
+const debug = require('debug')('app:tracker');
+const request = require('request');
+const Uuid = require('uuid');
+const requestPromise = require('request-promise');
 
 var Tracker = function(options) {
     this.gOptions = options;
