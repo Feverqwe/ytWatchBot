@@ -327,49 +327,17 @@ Youtube.prototype.insertItem = function (channel, chatIdList, id, snippet, conte
     };
 
     var insert = function (item) {
-        return db.newConnection().then(function (connection) {
+        return db.transaction(function (connection) {
             return new Promise(function (resolve, reject) {
-                connection.beginTransaction(function (err) {
+                connection.query('INSERT INTO messages SET ?', item, function (err, results) {
                     if (err) {
                         reject(err);
                     } else {
-                        resolve();
+                        resolve(item.id);
                     }
-                });
-            }).then(function () {
-                return new Promise(function (resolve, reject) {
-                    connection.query('INSERT INTO messages SET ?', item, function (err, results) {
-                        if (err) {
-                            reject(err);
-                        } else {
-                            resolve(item.id);
-                        }
-                    });
                 });
             }).then(function (messageId) {
                 return _this.gOptions.msgStack.addChatIdsMessageId(connection, chatIdList, messageId);
-            }).then(function () {
-                return new Promise(function (resolve, reject) {
-                    connection.commit(function(err) {
-                        if (err) {
-                            reject(err);
-                        } else {
-                            resolve();
-                        }
-                    });
-                });
-            }).catch(function (err) {
-                return new Promise(function (resolve) {
-                    connection.rollback(resolve);
-                }).then(function () {
-                    throw err;
-                });
-            }).then(function (result) {
-                connection.end();
-                return result;
-            }, function (err) {
-                connection.end();
-                throw err;
             });
         });
     };
