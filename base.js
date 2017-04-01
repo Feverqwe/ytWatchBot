@@ -99,7 +99,6 @@ utils.getNowStreamPhotoText = function(gOptions, videoItem) {
 
             lines.push(titleLine);
         }
-
         if (linkLine) {
             lines.push(linkLine);
         }
@@ -132,7 +131,6 @@ utils.getNowStreamText = function(gOptions, videoItem) {
         if (name) {
             title.push('—');
         }
-
         title.push(utils.htmlSanitize(channelName));
     }
     var titleLine = title.join(' ');
