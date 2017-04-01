@@ -123,6 +123,7 @@ utils.getNowStreamText = function(gOptions, videoItem) {
     var duration = videoItem.duration || '';
     var url = videoItem.url || '';
 
+
     var title = [];
     if (name) {
         title.push(utils.htmlSanitize(name));
@@ -153,7 +154,6 @@ utils.getNowStreamText = function(gOptions, videoItem) {
     if (linkLine) {
         lines.push(linkLine);
     }
-
 
     return lines.join('\n');
 };
