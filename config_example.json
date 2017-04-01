@@ -2,7 +2,6 @@
   "token": "",
   "interval": 360,
   "gaId": "",
-  "botanToken": "",
   "ytToken": "",
   "checkOnRun": false,
   "botName": "ytWatchBot",
@@ -11,7 +10,6 @@
     "secret": "",
     "callbackUrl": ""
   },
-  "sendPhotoMaxRetry": 3,
   "db": {
     "host": "localhost",
     "port": 3306,
