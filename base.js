@@ -61,33 +61,50 @@ utils.htmlSanitize = function (type, text, url) {
 
 utils.getNowStreamPhotoText = function(gOptions, videoItem) {
     var getText = function (stripLen) {
-        var textArr = [];
+        var lines = [];
 
-        var title = '';
+        var name = videoItem.title || '';
+        var channelName = videoItem.channel.title || '';
+        var duration = videoItem.duration || '';
+        var url = videoItem.url || '';
 
-        var descPart = [];
-        if (videoItem.title) {
-            descPart.push(title = videoItem.title);
+
+        var title = [];
+        if (name) {
+            title.push(name);
         }
-        if (videoItem.channel.title && title.indexOf(videoItem.channel.title) === -1) {
-            descPart.push(videoItem.channel.title);
+        if (channelName) {
+            if (name) {
+                title.push('—');
+            }
+            title.push(channelName);
         }
-        if (descPart.length) {
-            var desc = descPart.join(', ');
+        var titleLine = title.join(' ');
+
+
+        var link = [];
+        if (url) {
+            link.push(url);
+        }
+        if (duration) {
+            link.push(duration);
+        }
+        var linkLine = link.join(' ');
+
+
+        if (titleLine) {
             if (stripLen) {
-                desc = desc.substr(0, desc.length - stripLen - 3) + '...';
+                titleLine = titleLine.substr(0, titleLine.length - stripLen - 3) + '...';
             }
-            if (videoItem.duration) {
-                desc += ', ' + videoItem.duration;
-            }
-            textArr.push(desc);
+
+            lines.push(titleLine);
         }
 
-        if (videoItem.url) {
-            textArr.push(videoItem.url);
+        if (linkLine) {
+            lines.push(linkLine);
         }
 
-        return textArr.join('\n');
+        return lines.join('\n');
     };
 
     var text = getText();
@@ -99,29 +116,46 @@ utils.getNowStreamPhotoText = function(gOptions, videoItem) {
 };
 
 utils.getNowStreamText = function(gOptions, videoItem) {
-    var textArr = [];
+    var lines = [];
 
-    var title = '';
+    var name = videoItem.title || '';
+    var channelName = videoItem.channel.title || '';
+    var duration = videoItem.duration || '';
+    var url = videoItem.url || '';
 
-    var line = [];
-    if (videoItem.title) {
-        line.push(this.htmlSanitize(title = videoItem.title));
+    var title = [];
+    if (name) {
+        title.push(utils.htmlSanitize(name));
     }
-    if (videoItem.channel.title && title.indexOf(videoItem.channel.title) === -1) {
-        line.push(this.htmlSanitize('i', videoItem.channel.title));
+    if (channelName) {
+        if (name) {
+            title.push('—');
+        }
+
+        title.push(utils.htmlSanitize(channelName));
     }
-    if (videoItem.duration) {
-        line.push(videoItem.duration);
+    var titleLine = title.join(' ');
+
+
+    var link = [];
+    if (url) {
+        link.push(url);
     }
-    if (line.length) {
-        textArr.push(line.join(', '));
+    if (duration) {
+        link.push(duration);
+    }
+    var linkLine = link.join(' ');
+
+
+    if (titleLine) {
+        lines.push(titleLine);
+    }
+    if (linkLine) {
+        lines.push(linkLine);
     }
 
-    if (videoItem.url) {
-        textArr.push(this.htmlSanitize(videoItem.url));
-    }
 
-    return textArr.join('\n');
+    return lines.join('\n');
 };
 
 utils.extend = function() {
