@@ -344,7 +344,7 @@ var Chat = function(options) {
         var query = req.getQuery();
 
         if (query.clear === 'true') {
-            users.removeChat(chatId).then(function () {
+            users.removeChat(chatId, 'By user').then(function () {
                 return bot.editMessageText(language.cleared, {
                     chat_id: chatId,
                     message_id: messageId
@@ -773,7 +773,7 @@ var Chat = function(options) {
         return _this.gOptions.users.removeChannel(req.chat.id, 'youtube', channelId).then(function () {
             return _this.gOptions.users.getChannels(req.chat.id).then(function (channels) {
                 if (channels.length === 0) {
-                    return _this.gOptions.users.removeChat(req.chat.id);
+                    return _this.gOptions.users.removeChat(req.chat.id, 'Empty channels');
                 }
             });
         }).then(function () {
