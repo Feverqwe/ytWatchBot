@@ -761,13 +761,18 @@ var Chat = function(options) {
         return users.setChat(chat);
     };
 
+    /**
+     * @param {Object} req
+     * @param {String} channelId
+     * @return {Promise.<String>}
+     */
     var deleteChannel = function (req, channelId) {
         var found = req.channels.some(function (item) {
             return item.service === 'youtube' && item.channelId === channelId;
         });
 
         if (!found) {
-            return language.channelDontExist;
+            return Promise.resolve(language.channelDontExist);
         }
 
         return _this.gOptions.users.removeChannel(req.chat.id, 'youtube', channelId).then(function () {
