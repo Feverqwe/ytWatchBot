@@ -3,7 +3,6 @@
  */
 "use strict";
 const debug = require('debug')('app:tracker');
-const request = require('request');
 const Uuid = require('uuid');
 const requestPromise = require('request-promise');
 
