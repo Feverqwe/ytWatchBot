@@ -109,7 +109,7 @@ MsgSender.prototype.requestPicId = function(chatId, messageId, caption, text, da
     if (!promise) {
         promise = _this.messageRequestPicturePromise[messageId] = _this.getPicId(chatId, caption, data).then(function (msg) {
             any();
-            _this.track(chatId, data, 'sendPhoto');
+            _this.gOptions.tracker.track(chatId, 'bot', 'sendPhoto', data._channelName);
 
             var imageFileId = null;
             msg.photo.some(function (item) {
@@ -142,7 +142,7 @@ MsgSender.prototype.sendMsg = function(chatId, noPhotoText, stream) {
     return _this.gOptions.bot.sendMessage(chatId, noPhotoText, {
         parse_mode: 'HTML'
     }).then(function() {
-        _this.track(chatId, stream, 'sendMsg');
+        _this.gOptions.tracker.track(chatId, 'bot', 'sendMsg', stream._channelName);
     });
 };
 
@@ -151,7 +151,7 @@ MsgSender.prototype.sendPhoto = function(chatId, fileId, text, stream) {
     return _this.gOptions.bot.sendPhotoQuote(chatId, fileId, {
         caption: text
     }).then(function() {
-        _this.track(chatId, stream, 'sendPhoto');
+        _this.gOptions.tracker.track(chatId, 'bot', 'sendPhoto', stream._channelName);
     });
 };
 
@@ -193,19 +193,6 @@ MsgSender.prototype.sendMessage = function (chatId, messageId, message, data, us
             return _this.gOptions.msgStack.setImageFileId(messageId, imageFileId);
         }
     });
-};
-
-MsgSender.prototype.track = function(chatId, stream, title) {
-    return this.gOptions.tracker.track({
-        text: stream._channelName,
-        from: {
-            id: 1
-        },
-        chat: {
-            id: chatId
-        },
-        date: base.getNow()
-    }, title);
 };
 
 
