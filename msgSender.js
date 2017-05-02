@@ -112,7 +112,9 @@ MsgSender.prototype.requestPicId = function(chatId, messageId, caption, text, da
             _this.gOptions.tracker.track(chatId, 'bot', 'sendPhoto', data._channelName);
 
             var imageFileId = null;
-            msg.photo.some(function (item) {
+            msg.photo.sort(function (a, b) {
+                return a.file_size > b.file_size ? - 1 : 1;
+            }).some(function (item) {
                 return imageFileId = item.file_id;
             });
             return imageFileId;
