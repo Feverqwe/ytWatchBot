@@ -466,6 +466,8 @@ Youtube.prototype.getVideoList = function(_channelIdList, isFullCheck) {
         var publishedAfter = channel.publishedAfter;
         if (isFullCheck || !publishedAfter) {
             publishedAfter = _this.getFullCheckTime();
+        } else {
+            publishedAfter = (new Date(new Date(publishedAfter).getTime() + 1000)).toISOString();
         }
 
         var pageLimit = 100;
