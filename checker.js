@@ -44,7 +44,6 @@ var Checker = function(options) {
                     debug('updateList error!', err);
                 });
             });
-
         });
     });
 };
