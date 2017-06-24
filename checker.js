@@ -34,13 +34,13 @@ var Checker = function(options) {
 
             // debug('Feed event, %j', data);
 
-            return _this.gOptions.users.getChatIdsByChannel(channelId).then(function (chatIds) {
-                if (!chatIds.length) {
+            return _this.gOptions.channels.getChannels([channelId]).then(function (channels) {
+                if (!channels.length) {
                     _this.gOptions.events.emit('unsubscribe', [channelId]);
                     return;
                 }
 
-                return _this.updateList([channelId]).catch(function (err) {
+                return _this.updateList(channels).catch(function (err) {
                     debug('updateList error!', err);
                 });
             });
@@ -82,15 +82,15 @@ Checker.prototype.gcFeedTimeout = function () {
 /**
  * @return {Promise.<dbChannel[][]>}
  */
-Checker.prototype.getServiceChannels = function(channelIds = []) {
+Checker.prototype.getServiceChannels = function(channels = []) {
     var _this = this;
     var serviceNames = Object.keys(this.gOptions.services);
 
     var promise = null;
-    if (!channelIds.length) {
-        promise = _this.gOptions.users.getAllChannels();
+    if (channels.length) {
+        promise = Promise.resolve(channels);
     } else {
-        promise = _this.gOptions.channels.getChannels(channelIds);
+        promise = _this.gOptions.users.getAllChannels();
     }
 
     return promise.then(function (channels) {
@@ -123,13 +123,13 @@ Checker.prototype.getServiceChannels = function(channelIds = []) {
     });
 };
 
-Checker.prototype.updateList = function(filterChannelList = []) {
+Checker.prototype.updateList = function(channels = []) {
     var _this = this;
 
     var services = _this.gOptions.services;
-    var isFullCheck = filterChannelList.length === 0;
+    var isFullCheck = channels.length === 0;
 
-    return _this.getServiceChannels(filterChannelList).then(function (serviceChannelList) {
+    return _this.getServiceChannels(channels).then(function (serviceChannelList) {
         var queue = Promise.resolve();
 
         Object.keys(services).forEach(function (serviceName) {
