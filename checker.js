@@ -34,9 +34,17 @@ var Checker = function(options) {
 
             // debug('Feed event, %j', data);
 
-            return _this.updateList([channelId]).catch(function(err) {
-                debug('updateList error!', err);
+            return _this.gOptions.users.getChatIdsByChannel(channelId).then(function (chatIds) {
+                if (!chatIds.length) {
+                    _this.gOptions.events.emit('unsubscribe', [channelId]);
+                    return;
+                }
+
+                return _this.updateList([channelId]).catch(function (err) {
+                    debug('updateList error!', err);
+                });
             });
+
         });
     });
 };
@@ -75,10 +83,18 @@ Checker.prototype.gcFeedTimeout = function () {
 /**
  * @return {Promise.<dbChannel[][]>}
  */
-Checker.prototype.getServiceChannels = function() {
+Checker.prototype.getServiceChannels = function(channelIds = []) {
     var _this = this;
     var serviceNames = Object.keys(this.gOptions.services);
-    return _this.gOptions.users.getAllChannels().then(function (channels) {
+
+    var promise = null;
+    if (!channelIds.length) {
+        promise = _this.gOptions.users.getAllChannels();
+    } else {
+        promise = _this.gOptions.channels.getChannels(channelIds);
+    }
+
+    return promise.then(function (channels) {
         var dDblChannel = [];
         var services = {};
         channels.forEach(function (channel) {
@@ -112,33 +128,14 @@ Checker.prototype.updateList = function(filterChannelList = []) {
     var _this = this;
 
     var services = _this.gOptions.services;
+    var isFullCheck = filterChannelList.length === 0;
 
-    return _this.getServiceChannels().then(function (serviceChannelList) {
+    return _this.getServiceChannels(filterChannelList).then(function (serviceChannelList) {
         var queue = Promise.resolve();
 
         Object.keys(services).forEach(function (serviceName) {
             var service = services[serviceName];
-
             var channelList = serviceChannelList[serviceName] || [];
-            var isFullCheck = filterChannelList.length === 0;
-
-            if (filterChannelList.length) {
-                let channelIdMap = {};
-                channelList.forEach(function (channel) {
-                    channelIdMap[channel.id] = channel;
-                });
-                channelList.splice(0);
-                filterChannelList.forEach(function(channelId) {
-                    const channel = channelIdMap[channelId];
-                    if (channel) {
-                        channelList.push(channel);
-                    }
-                });
-
-                if (!channelList.length) {
-                    _this.gOptions.events.emit('unsubscribe', filterChannelList);
-                }
-            }
 
             queue = queue.then(function() {
                 return service.getVideoList(channelList, isFullCheck);
