@@ -42,7 +42,7 @@ var Chat = function(options) {
     router.callback_query(function (req, next) {
         var id = req.callback_query.id;
         bot.answerCallbackQuery(id).then(next).catch(function (err) {
-            debug('answerCallbackQuery error!', err);
+            debug('answerCallbackQuery error! %o', err);
         });
     });
 
@@ -143,11 +143,13 @@ var Chat = function(options) {
                     services.push(service);
                 }
 
-                var channelId = item.channelId;
+                var channelId = item.id;
                 var channel = service.channelObjMap[channelId];
                 if (!channel) {
                     channel = service.channelObjMap[channelId] = {
                         id: channelId,
+                        title: item.title,
+                        url: item.url,
                         count: 0
                     };
                     service.count++;
@@ -172,19 +174,11 @@ var Chat = function(options) {
                 service.channels.sort(sortFn).splice(10);
             });
 
-            return Promise.all(services.map(function (service) {
-                return Promise.all(service.channels.map(function (channel) {
-                    return base.getChannelTitle(options, service.name, channel.id).then(function (title) {
-                        channel.title = title;
-                    })
-                }));
-            })).then(function () {
-                return {
-                    users: users,
-                    channels: channels,
-                    services: services
-                };
-            });
+            return {
+                users: users,
+                channels: channels,
+                services: services
+            };
         }).then(function (info) {
             var textArr = [];
 
@@ -266,8 +260,8 @@ var Chat = function(options) {
 
         var onResponse = function (channelName, messageId) {
             var serviceName = 'youtube';
-            return addChannel(req, serviceName, channelName).then(function (/*ChannelInfo*/channel) {
-                var url = base.getChannelUrl(serviceName, channel.id);
+            return addChannel(req, serviceName, channelName).then(function (/*dbChannel*/channel) {
+                var url = channel.url;
                 var displayName = base.htmlSanitize('a', channel.title, url);
 
                 var result = language.channelAdded
@@ -435,20 +429,13 @@ var Chat = function(options) {
         var btnList = [];
         var promise = Promise.resolve();
         channels.forEach(function(item) {
-            promise = promise.then(function () {
-                return base.getChannelTitle(_this.gOptions, item.service, item.channelId).then(function (title) {
-                    var btnItem = {};
-
-                    btnItem.text = title;
-
-                    btnItem.callback_data = '/delete?' + querystring.stringify({
-                            channelId: item.channelId,
-                            service: item.service
-                        });
-
-                    btnList.push([btnItem]);
-                });
-            });
+            var btnItem = {
+                text: item.title,
+                callback_data: '/delete?' + querystring.stringify({
+                    channelId: item.id
+                })
+            };
+            btnList.push([btnItem]);
         });
 
         return promise.then(function () {
@@ -590,11 +577,13 @@ var Chat = function(options) {
                 services.push(service);
             }
 
-            var channelId = item.channelId;
+            var channelId = item.id;
             var channel = service.channelObjMap[channelId];
             if (!channel) {
                 channel = service.channelObjMap[channelId] = {
-                    id: channelId
+                    id: channelId,
+                    title: item.title,
+                    url: item.url
                 };
                 service.count++;
                 service.channels.push(channel);
@@ -614,27 +603,17 @@ var Chat = function(options) {
             delete service.channelObjMap;
         });
 
-        return Promise.all(services.map(function (service) {
-            return Promise.all(service.channels.map(function (channel) {
-                return base.getChannelTitle(_this.gOptions, service.name, channel.id).then(function (title) {
-                    channel.title = title;
-                })
-            }));
-        })).then(function () {
-            return {
-                services: services
-            };
-        }).then(function (info) {
-            if (!info.services.length) {
+        return Promise.resolve(services).then(function (services) {
+            if (!services.length) {
                 return bot.sendMessage(chatId, language.emptyServiceList);
             }
 
             var serviceList = [];
-            info.services.forEach(function (service) {
+            services.forEach(function (service) {
                 var channelList = [];
                 channelList.push(base.htmlSanitize('b', serviceToTitle[service.name]) + ':');
                 service.channels.forEach(function (channel) {
-                    channelList.push(base.htmlSanitize('a', channel.title, base.getChannelUrl(service.name, channel.id)));
+                    channelList.push(base.htmlSanitize('a', channel.title, channel.url));
                 });
                 serviceList.push(channelList.join('\n'));
             });
@@ -659,8 +638,8 @@ var Chat = function(options) {
                 if (!item) return;
 
                 var service = services[item.service];
-                return service.getChannelId(item.channelId).catch(function (err) {
-                    debug('refreshChannelInfo %s', item.channelId, err);
+                return service.getChannelId(item.id).catch(function (err) {
+                    debug('refreshChannelInfo %s', item.id, err);
                 });
             });
         }).then(function() {
@@ -767,22 +746,26 @@ var Chat = function(options) {
      * @return {Promise.<String>}
      */
     var deleteChannel = function (req, channelId) {
-        var found = req.channels.some(function (item) {
-            return item.service === 'youtube' && item.channelId === channelId;
+        var channel = null;
+        req.channels.some(function (item) {
+            if (item.id === channelId) {
+                channel = item;
+                return true;
+            }
         });
 
-        if (!found) {
+        if (!channel) {
             return Promise.resolve(language.channelDontExist);
         }
 
-        return _this.gOptions.users.removeChannel(req.chat.id, 'youtube', channelId).then(function () {
+        return _this.gOptions.users.removeChannel(req.chat.id, channel.id).then(function () {
             return _this.gOptions.users.getChannels(req.chat.id).then(function (channels) {
                 if (channels.length === 0) {
                     return _this.gOptions.users.removeChat(req.chat.id, 'Empty channels');
                 }
             });
         }).then(function () {
-            return _this.gOptions.language.channelDeleted.replace('{channelName}', channelId);
+            return _this.gOptions.language.channelDeleted.replace('{channelName}', channel.title);
         });
     };
 
@@ -794,7 +777,7 @@ var Chat = function(options) {
             // var title = channel.title;
 
             var found = req.channels.some(function (item) {
-                return item.service === serviceName && item.channelId === channelId;
+                return item.id === channelId;
             });
 
             if (found) {
@@ -807,10 +790,10 @@ var Chat = function(options) {
                     return users.setChat({id: chatId});
                 }
             }).then(function () {
-                return users.addChannel(chatId, serviceName, channelId);
+                return users.addChannel(chatId, channelId);
             }).then(function () {
-                if (serviceName === 'youtube') {
-                    events.emit('subscribe', channelId);
+                if (!channel.subscribed && serviceName === 'youtube') {
+                    events.emit('subscribe', channel);
                 }
 
                 return channel;
@@ -820,7 +803,7 @@ var Chat = function(options) {
                 debug('addChannel %s error! %o', channelName, err);
             } else
             if (err.message !== 'CHANNEL_EXISTS') {
-                debug('Channel is not found! %j', channelName, err);
+                debug('Channel is not found! %s %o', channelName, err);
             }
             throw err;
         });

@@ -19,11 +19,10 @@ var Checker = function(options) {
     });
 
     options.events.on('feed', function(data) {
-        var channelId = data['yt:channelId'];
+        var channelId = _this.gOptions.channels.wrapId(data['yt:channelId'], 'youtube');
+        var videoId = _this.gOptions.channels.wrapId(data['yt:videoId'], 'youtube');
 
-        var videoId = data['yt:videoId'];
-
-        options.services.youtube.videoIdInList(channelId, videoId).then(function (hasVideoId) {
+        options.services.youtube.videoIdInList(videoId).then(function (hasVideoId) {
             if (hasVideoId) {
                 return;
             }
@@ -35,7 +34,7 @@ var Checker = function(options) {
 
             // debug('Feed event, %j', data);
 
-            return _this.updateList({youtube: [channelId]}).catch(function(err) {
+            return _this.updateList([channelId]).catch(function(err) {
                 debug('updateList error!', err);
             });
         });
@@ -73,67 +72,76 @@ Checker.prototype.gcFeedTimeout = function () {
     });
 };
 
-Checker.prototype.getChannelList = function() {
+/**
+ * @return {Promise.<dbChannel[][]>}
+ */
+Checker.prototype.getServiceChannels = function() {
     var _this = this;
+    var serviceNames = Object.keys(this.gOptions.services);
     return _this.gOptions.users.getAllChannels().then(function (channels) {
-        var serviceList = {};
-        channels.forEach(function (item) {
-            var channelList = serviceList[item.service];
-            if (!channelList) {
-                channelList = serviceList[item.service] = [];
+        var dDblChannel = [];
+        var services = {};
+        channels.forEach(function (channel) {
+            // todo: rm me!
+            if (dDblChannel.indexOf(channel.id) !== -1) {
+                debug('Dbl channels! Fix me!');
+                return;
             }
-            channelList.push(item.channelId);
+            dDblChannel.push(channel.id);
+
+            var channelArray = services[channel.service];
+            if (!channelArray) {
+                channelArray = services[channel.service] = [];
+            }
+
+            channelArray.push(channel);
         });
-        return serviceList;
+
+        Object.keys(services).forEach(function (serviceName) {
+            if (serviceNames.indexOf(serviceName) === -1) {
+                debug('Service %s is not found! %j', serviceName, services[serviceName]);
+                delete services[serviceName];
+            }
+        });
+
+        return services;
     });
 };
 
-Checker.prototype.updateList = function(filterServiceChannelList) {
+Checker.prototype.updateList = function(filterChannelList = []) {
     var _this = this;
-    if (!filterServiceChannelList) {
-        filterServiceChannelList = {};
-    }
 
     var services = _this.gOptions.services;
 
-    return _this.getChannelList().then(function (serviceUserChannelList) {
+    return _this.getServiceChannels().then(function (serviceChannelList) {
         var queue = Promise.resolve();
 
         Object.keys(services).forEach(function (serviceName) {
             var service = services[serviceName];
-            var userChannelList = serviceUserChannelList[serviceName] || [];
-            var filterChannelList = filterServiceChannelList[serviceName];
-            var isFullCheck = !filterChannelList;
 
-            if (filterChannelList) {
-                userChannelList = filterChannelList.filter(function(channelName) {
-                    return userChannelList.indexOf(channelName) !== -1;
+            var channelList = serviceChannelList[serviceName] || [];
+            var isFullCheck = filterChannelList.length === 0;
+
+            if (filterChannelList.length) {
+                let channelIdMap = {};
+                channelList.forEach(function (channel) {
+                    channelIdMap[channel.id] = channel;
+                });
+                channelList.splice(0);
+                filterChannelList.forEach(function(channelId) {
+                    const channel = channelIdMap[channelId];
+                    if (channel) {
+                        channelList.push(channel);
+                    }
                 });
 
-                if (!userChannelList.length) {
+                if (!channelList.length) {
                     _this.gOptions.events.emit('unsubscribe', filterChannelList);
                 }
             }
 
             queue = queue.then(function() {
-                return service.getVideoList(userChannelList, isFullCheck);
-                /**
-                 * @typedef {{}} stackItem
-                 * @property {String} channelId
-                 * @property {String} videoId
-                 * @property {String} publishedAt
-                 * @property {String} data
-                 */
-            }).then(function (/*[stackItem]*/items) {
-                if (isFullCheck && items.length) {
-                    var channelList = [];
-                    items.forEach(function (item) {
-                        if (channelList.indexOf(item.channelId) === -1) {
-                            channelList.push(item.channelId);
-                        }
-                    });
-                    _this.gOptions.events.emit('subscribe', channelList);
-                }
+                return service.getVideoList(channelList, isFullCheck);
             });
         });
 

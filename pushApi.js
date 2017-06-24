@@ -19,36 +19,35 @@ var PushApi = function(options) {
         _this.initListener(resolve);
     });
 
-    _this.gOptions.events.on('subscribe', function(channelList) {
-        if (!Array.isArray(channelList)) {
-            channelList = [channelList];
-        }
-
-        var dDblList = [];
-
-        channelList.forEach(function(channelId) {
-            if (dDblList.indexOf(channelId) === -1) {
-                dDblList.push(channelId);
-                
-                return _this.subscribe(channelId).catch(function (err) {
-                    debug('Subscribe event error! %s', channelId, err);
-                });
-            }
+    _this.gOptions.events.on('subscribe', function(/*dbChannel*/channel) {
+        const ytChannelId = _this.gOptions.channels.unWrapId(channel.id);
+        _this.subscribe(ytChannelId).then(function () {
+            channel.subscribed = 1;
+            return _this.gOptions.channels.updateChannel(channel.id, {
+                subscribed: channel.subscribed
+            });
+        }).catch(function (err) {
+            debug('Subscribe event error! %s', channel.id, err);
         });
     });
 
-    _this.gOptions.events.on('unsubscribe', function(channelList) {
-        if (!Array.isArray(channelList)) {
-            channelList = [channelList];
+    _this.gOptions.events.on('unsubscribe', function(channelIds) {
+        if (!Array.isArray(channelIds)) {
+            channelIds = [channelIds];
         }
 
         var dDblList = [];
 
-        channelList.forEach(function(channelId) {
+        channelIds.forEach(function(channelId) {
             if (dDblList.indexOf(channelId) === -1) {
                 dDblList.push(channelId);
 
-                return _this.unsubscribe(channelId).catch(function (err) {
+                const ytChannelId = _this.gOptions.channels.unWrapId(channelId);
+                return _this.unsubscribe(ytChannelId).then(function () {
+                    return _this.gOptions.channels.updateChannel(channelId, {
+                        subscribed: 0
+                    });
+                }).catch(function (err) {
                     debug('Unsubscribe event error! %s', channelId, err);
                 });
             }
@@ -88,33 +87,25 @@ PushApi.prototype.initListener = function(resolve) {
     this.pubsub.listen(_this.gOptions.config.push.port);
 };
 
-PushApi.prototype.subscribe = function(channelList) {
+PushApi.prototype.subscribe = function(channelId) {
     var _this = this;
     var pubsub = this.pubsub;
 
-    if (!Array.isArray(channelList)) {
-        channelList = [channelList];
-    }
-
-    var promiseList = channelList.map(function (channelId) {
-        return new Promise(function (resolve, reject) {
-            var topicUrl = _this.topic + channelId;
-            pubsub.subscribe(topicUrl, _this.hub, function (err) {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve();
-                    // debug('Subscribe %s', channelId);
-                }
-            });
-        }).catch(function (err) {
-            debug('Subscribe error %s', channelId, err);
-
-            throw new Error('Subscribe error!');
+    return new Promise(function (resolve, reject) {
+        var topicUrl = _this.topic + channelId;
+        pubsub.subscribe(topicUrl, _this.hub, function (err) {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
+                // debug('Subscribe %s', channelId);
+            }
         });
-    });
+    }).catch(function (err) {
+        debug('Subscribe error %s', channelId, err);
 
-    return Promise.all(promiseList);
+        throw new Error('Subscribe error!');
+    });
 };
 
 PushApi.prototype.unsubscribe = function(channelList) {

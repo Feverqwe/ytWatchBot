@@ -168,45 +168,6 @@ utils.extend = function() {
 };
 
 /**
- * @param {Object} gOptions
- * @param {String} service
- * @param {String} channelName
- * @return {Promise}
- */
-utils.getChannelTitle = function(gOptions, service, channelName) {
-    var services = gOptions.services;
-
-    var result;
-    if (services[service].getChannelTitle) {
-        result = services[service].getChannelTitle(channelName);
-    } else {
-        result = Promise.resolve(channelName);
-    }
-
-    return result;
-};
-
-/**
- * @param {String} service
- * @param {String} channelName
- * @return {String}
- */
-utils.getChannelUrl = function(service, channelName) {
-    var url = '';
-    if (service === 'youtube') {
-        url = 'https://youtube.com/';
-        if (/^UC/.test(channelName)) {
-            url += 'channel/';
-        } else {
-            url += 'user/';
-        }
-        url += channelName;
-    }
-
-    return url;
-};
-
-/**
  * @param {number} limitPerSecond
  * @constructor
  */

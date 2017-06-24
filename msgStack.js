@@ -20,6 +20,7 @@ var MsgStack = function (options) {
 };
 
 MsgStack.prototype.init = function () {
+    var _this = this;
     var db = this.gOptions.db;
     var promise = Promise.resolve();
     promise = promise.then(function () {
@@ -27,14 +28,16 @@ MsgStack.prototype.init = function () {
             db.connection.query('\
             CREATE TABLE IF NOT EXISTS `messages` ( \
                 `id` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
-                `videoId` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
                 `channelId` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
                 `publishedAt` VARCHAR(191) CHARACTER SET utf8mb4 NOT NULL, \
                 `data` LONGTEXT CHARACTER SET utf8mb4 NOT NULL, \
                 `imageFileId` TEXT CHARACTER SET utf8mb4 NULL, \
-            UNIQUE INDEX `videoIdChannelId_UNIQUE` (`videoId` ASC, `channelId` ASC), \
             INDEX `publishedAt_idx` (`publishedAt` ASC), \
-            UNIQUE INDEX `id_UNIQUE` (`id` ASC)); \
+            UNIQUE INDEX `id_UNIQUE` (`id` ASC), \
+            FOREIGN KEY (`channelId`) \
+                REFERENCES `channels` (`id`) \
+                ON DELETE CASCADE \
+                ON UPDATE CASCADE); \
         ', function (err) {
                 if (err) {
                     reject(err);
@@ -69,6 +72,193 @@ MsgStack.prototype.init = function () {
             });
         });
     });
+    promise = promise.then(function () {
+        return _this.migrate();
+    });
+    return promise;
+};
+
+MsgStack.prototype.migrate = function () {
+    var _this = this;
+    var gOptions = _this.gOptions;
+    var db = _this.gOptions.db;
+
+    /**
+     * @param tableName
+     * @return {Promise.<{id, title, publishedAfter}>}
+     */
+    var getServiceChannels = function (tableName) {
+        return new Promise(function (resolve, reject) {
+            db.connection.query('\
+            SELECT * FROM ' + tableName + '; \
+        ', function (err, results) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(results);
+                }
+            });
+        });
+    };
+
+    var insertChannel = function (connection, channel) {
+        return new Promise(function (resolve, reject) {
+            connection.query('\
+            INSERT INTO channels SET ? \
+        ', [channel], function (err, results) {
+                if (err) {
+                    debug('insertChannel error', err);
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    };
+
+    var getChatIdChannelId = function (connection, channelId, service) {
+        return new Promise(function (resolve, reject) {
+            connection.query('\
+                SELECT * FROM oldChatIdChannelId WHERE channelId = ? AND service = ?; \
+            ', [channelId, service], function (err, results) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(results);
+                }
+            });
+        });
+    };
+
+    var addChatIdChannelId = function (connection, item) {
+        var db = _this.gOptions.db;
+        return new Promise(function (resolve, reject) {
+            connection.query('\
+                INSERT INTO chatIdChannelId SET ? ON DUPLICATE KEY UPDATE ?; \
+            ', [item, item], function (err, result) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+    };
+
+    var getMessages = function (connection, channelId) {
+        return new Promise(function (resolve, reject) {
+            connection.query('\
+                SELECT * FROM oldMessages WHERE channelId = ?; \
+            ', [channelId], function (err, results) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(results);
+                }
+            });
+        });
+    };
+
+    var insertMessage = function (connection, item) {
+        return new Promise(function (resolve, reject) {
+            connection.query('INSERT INTO messages SET ?', item, function (err, results) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    };
+
+    const insertPool = new base.Pool(30);
+
+    var promise = Promise.resolve();
+
+    [{
+        name: 'youtube',
+        table: 'ytChannels'
+    }].forEach(function (item) {
+        var serviceName = item.name;
+        var tableName = item.table;
+        var service = gOptions.services[serviceName];
+
+        promise = promise.then(function () {
+            return getServiceChannels(tableName);
+        }).then(function (channels) {
+            return insertPool.do(function () {
+                var oldChannel = channels.shift();
+                if (!oldChannel) return;
+
+                return db.transaction(function (connection) {
+                    const ytChannelId = oldChannel.id;
+                    const channelId = _this.gOptions.channels.wrapId(ytChannelId, serviceName);
+                    const title = oldChannel.title;
+                    const publishedAfter = oldChannel.publishedAfter;
+
+                    const channel = {
+                        id: channelId,
+                        service: serviceName,
+                        title: title,
+                        url: service.getChannelUrl(ytChannelId),
+                        publishedAfter: publishedAfter,
+                        subscribed: 1
+                    };
+
+                    return insertChannel(connection, channel).then(function () {
+                        var promise = Promise.resolve();
+                        promise = promise.then(function () {
+                            return getChatIdChannelId(connection, oldChannel.id, serviceName).then(function (rows) {
+                                var promise = Promise.resolve();
+                                rows.forEach(function (row) {
+                                    promise = promise.then(function () {
+                                        delete row.service;
+                                        row.channelId = channel.id;
+                                        return addChatIdChannelId(connection, row).catch(function (err) {
+                                            debug('addChannel error %o %o %o', oldChannel, channel, err);
+                                        });
+                                    });
+                                });
+                                return promise;
+                            });
+                        });
+                        promise = promise.then(function () {
+                            return getMessages(connection, oldChannel.id).then(function (messages) {
+                                var promise = Promise.resolve();
+                                messages.forEach(function (oldMessage) {
+                                    promise = promise.then(function () {
+                                        var data = JSON.parse(oldMessage.data);
+                                        delete data._service;
+                                        delete data._channelName;
+                                        delete data._videoId;
+                                        delete data.publishedAt;
+                                        data.channel.id = channel.id;
+
+                                        var id = oldMessage.id.substr(2);
+
+                                        var item = {
+                                            id: gOptions.channels.wrapId(id, serviceName),
+                                            channelId: channel.id,
+                                            publishedAt: oldMessage.publishedAt,
+                                            data: JSON.stringify(data)
+                                        };
+
+                                        return insertMessage(connection, item).catch(function (err) {
+                                            debug('setStream error %o %o', item, err);
+                                        });
+                                    });
+                                });
+                                return promise;
+                            });
+                        });
+                        return promise;
+                    }).catch(function (err) {
+                        debug('getChannelId error %o %o', oldChannel, err);
+                    });
+                });
+            });
+        });
+    });
     return promise;
 };
 
@@ -93,16 +283,31 @@ MsgStack.prototype.addChatIdsMessageId = function (connection, chatIds, messageI
 };
 
 /**
+ * @typedef {{}} StackItemData
+ * @property {string} url
+ * @property {string} title
+ * @property {string[]} preview
+ * @property {string} duration
+ * @property {{}} channel
+ * @property {string} channel.title
+ * @property {id} channel.id
+ */
+
+/**
  * @typedef {{}} StackItem
+ *
  * @property {String} chatId
  * @property {String} messageId
  * @property {Number} timeout
+ *
  * @property {String} id
- * @property {String} videoId
  * @property {String} channelId
  * @property {String} publishedAt
  * @property {String} data
  * @property {String} [imageFileId]
+ */
+/**
+ * @return {Promise.<StackItem[]>}
  */
 MsgStack.prototype.getStackItems = function () {
     var db = this.gOptions.db;
@@ -126,8 +331,6 @@ MsgStack.prototype.getStackItems = function () {
 MsgStack.prototype.sendLog = function (chatId, messageId, data) {
     var debugItem = JSON.parse(JSON.stringify(data));
     delete debugItem.preview;
-    delete debugItem._videoId;
-    delete debugItem._service;
     debugLog('[send] %s %s %j', messageId, chatId, debugItem);
 };
 
@@ -178,6 +381,8 @@ MsgStack.prototype.setImageFileId = function (messageId, imageFileId) {
                 resolve();
             }
         });
+    }).catch(function (err) {
+        debug('setImageFileId error', err);
     });
 };
 
@@ -240,6 +445,15 @@ MsgStack.prototype.onSendMessageError = function (err) {
     return result;
 };
 
+MsgStack.prototype.sendVideoMessage = function (chat_id, messageId, message, data, useCache, chatId) {
+    var _this = this;
+    return _this.gOptions.msgSender.sendMessage(chat_id, messageId, message, data, useCache).then(function (msg) {
+        var isPhoto = !!msg.photo;
+
+        _this.gOptions.tracker.track(chat_id, 'bot', isPhoto ? 'sendPhoto' : 'sendMsg', data.channel.id);
+    });
+};
+
 MsgStack.prototype.sendItem = function (/*StackItem*/item) {
     var _this = this;
     var chatId = item.chatId;
@@ -248,12 +462,10 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
 
     var timeout = 5 * 60;
     return _this.setTimeout(chatId, messageId, base.getNow() + timeout).then(function () {
-        var data = null;
-        if (/^%/.test(item.data)) {
-            data = JSON.parse(decodeURIComponent(item.data));
-        } else {
-            data = JSON.parse(item.data);
-        }
+        /**
+         * @type {StackItemData}
+         */
+        var data = JSON.parse(item.data);
 
         return _this.gOptions.users.getChat(chatId).then(function (chat) {
             if (!chat) {
@@ -265,9 +477,16 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
 
             var text = base.getNowStreamText(_this.gOptions, data);
             var caption = '';
+
             if (!options.hidePreview) {
                 caption = base.getNowStreamPhotoText(_this.gOptions, data);
             }
+
+            var message = {
+                imageFileId: imageFileId,
+                caption: caption,
+                text: text
+            };
 
             var chatList = [{
                 type: 'chat',
@@ -285,24 +504,19 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
                 }
             }
 
-            var message = {
-                imageFileId: imageFileId,
-                caption: caption,
-                text: text
-            };
-
             var promise = Promise.resolve();
             chatList.forEach(function (itemObj) {
-                var id = itemObj.id;
+                var chat_id = itemObj.id;
                 promise = promise.then(function () {
-                    return _this.gOptions.msgSender.sendMessage(id, messageId, message, data, true).then(function () {
-                        _this.sendLog(id, messageId, data);
+                    return _this.sendVideoMessage(chat_id, messageId, message, data, true, chat.id).then(function () {
+                        _this.sendLog(chat_id, messageId, data);
                     });
                 }).catch(function (err) {
                     err.itemObj = itemObj;
                     throw err;
                 });
             });
+
             return promise.catch(function (err) {
                 return _this.onSendMessageError(err);
             });
@@ -327,7 +541,7 @@ MsgStack.prototype.checkStack = function () {
     var limit = 10;
     if (activePromises.length >= limit) return;
 
-    _this.getStackItems().then(function (/*[StackItem]*/items) {
+    _this.getStackItems().then(function (/*StackItem[]*/items) {
         items.some(function (item) {
             var chatId = item.chatId;
 

@@ -8,4 +8,4 @@ Run
 ---
 Use node-ytSub_example as the service for init.d or enter in console:
 
-    node --always-compact --expose-gc index.js
+    node index.js
