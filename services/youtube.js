@@ -422,6 +422,8 @@ Youtube.prototype.getVideoList = function(_channelList, isFullCheck) {
             if (!channel) return;
 
             return _this.gOptions.users.getChatIdsByChannel(channel.id).then(function (chatIdList) {
+                if (!chatIdList.length) return;
+
                 return requestNewVideoIds(channel).then(function (ytVideoIds) {
                     var queue = Promise.resolve();
                     base.arrToParts(ytVideoIds, 50).forEach(function (partYtVideoIds) {
