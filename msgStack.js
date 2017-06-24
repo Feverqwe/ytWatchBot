@@ -140,9 +140,10 @@ MsgStack.prototype.getStackItems = function () {
     });
 };
 
-MsgStack.prototype.sendLog = function (chatId, messageId, data) {
+MsgStack.prototype.sendLog = function (chatId, messageId, data, /*StackItem*/item) {
     var debugItem = JSON.parse(JSON.stringify(data));
     delete debugItem.preview;
+    debugItem.publishedAt = item.publishedAt;
     debugLog('[send] %s %s %j', messageId, chatId, debugItem);
 };
 
@@ -321,7 +322,7 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
                 var chat_id = itemObj.id;
                 promise = promise.then(function () {
                     return _this.sendVideoMessage(chat_id, messageId, message, data, true, chat.id).then(function () {
-                        _this.sendLog(chat_id, messageId, data);
+                        _this.sendLog(chat_id, messageId, data, item);
                     });
                 }).catch(function (err) {
                     err.itemObj = itemObj;
