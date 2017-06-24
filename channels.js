@@ -163,7 +163,7 @@ Channels.prototype.removeUnusedChannels = function () {
     return new Promise(function (resolve, reject) {
         db.connection.query('\
             DELETE FROM channels WHERE id NOT IN (SELECT DISTINCT channelId FROM chatIdChannelId); \
-        ', ['youtube'], function (err, results) {
+        ', function (err, results) {
             if (err) {
                 reject(err);
             } else {
