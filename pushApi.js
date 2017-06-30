@@ -65,7 +65,7 @@ PushApi.prototype.subscribe = function(channelId) {
 
     return new Promise(function (resolve, reject) {
         var topicUrl = _this.topic + channelId;
-        pubsub.subscribe(topicUrl, _this.hub, function callbackUrl(err, topic) {
+        pubsub.subscribe(topicUrl, _this.hub, function (err, topic) {
             if (err) {
                 reject(err);
             } else {
