@@ -198,7 +198,7 @@ Youtube.prototype.insertItem = function (channel, chatIdList, id, snippet, conte
     };
     return insert(item).then(function () {
         return item;
-    }, function (err) {
+    }).catch(function (err) {
         if (err.code !== 'ER_DUP_ENTRY') {
             debug('insertItem', err);
         }
@@ -215,6 +215,7 @@ var insertPool = new base.Pool(15);
  */
 Youtube.prototype.getVideoList = function(_channelList, isFullCheck) {
     var _this = this;
+    var updatedChannels = [];
 
     var getVideoIdsInfo = function (channel, ytVideoIds, chatIdList) {
         var lastPublishedAt = '';
@@ -277,12 +278,9 @@ Youtube.prototype.getVideoList = function(_channelList, isFullCheck) {
                     }
 
                     return _this.insertItem(channel, chatIdList, id, snippet, contentDetails).then(function (item) {
-                        item && newItems.push({
-                            service: 'youtube',
-                            videoId: item.id,
-                            channelId: item.channelId,
-                            publishedAt: item.id
-                        });
+                        if (isFullCheck && item && updatedChannels.indexOf(channel) === -1) {
+                            updatedChannels.push(channel);
+                        }
                     });
                 }).then(function () {
                     if (responseBody.nextPageToken) {
@@ -437,10 +435,13 @@ Youtube.prototype.getVideoList = function(_channelList, isFullCheck) {
         });
     });
 
-    var newItems = [];
-    return promise.then(function () {
-        return newItems;
+    promise = promise.then(function () {
+        updatedChannels.forEach(function (channel) {
+            _this.gOptions.events.emit('subscribe', channel);
+        });
     });
+
+    return promise;
 };
 
 /**

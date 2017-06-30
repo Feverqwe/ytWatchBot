@@ -826,7 +826,7 @@ var Chat = function(options) {
             }).then(function () {
                 return users.addChannel(chatId, channelId);
             }).then(function () {
-                if (!channel.subscribed && serviceName === 'youtube') {
+                if (serviceName === 'youtube') {
                     events.emit('subscribe', channel);
                 }
 

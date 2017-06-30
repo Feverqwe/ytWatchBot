@@ -20,7 +20,7 @@ Channels.prototype.init = function () {
                 `title` TEXT CHARACTER SET utf8mb4 NULL, \
                 `url` TEXT CHARACTER SET utf8mb4 NOT NULL, \
                 `publishedAfter` TEXT CHARACTER SET utf8mb4 NULL, \
-                `subscribed` TINYINT NOT NULL DEFAULT 0, \
+                `subscribeExpire` INT NULL DEFAULT 0, \
             INDEX `service_idx` (`service` ASC),  \
             UNIQUE INDEX `id_UNIQUE` (`id` ASC)); \
         ', function (err) {
@@ -53,7 +53,7 @@ Channels.prototype.unWrapId = function (id) {
  * @property {string} title
  * @property {string} url
  * @property {string} publishedAfter
- * @property {number} subscribed
+ * @property {number} subscribeExpire
  */
 
 /**
