@@ -5,7 +5,7 @@
 const debug = require('debug')('app:pubsub');
 const pubSubHubbub = require("pubsubhubbub");
 const xmldoc = require("xmldoc");
-const utils = require("./base");
+const base = require("./base");
 
 var PushApi = function(options) {
     var _this = this;
@@ -26,18 +26,29 @@ var PushApi = function(options) {
         });
     });
 
-    _this.gOptions.events.on('subscribe', function(/*dbChannel*/channel) {
-        var now = utils.getNow();
-        if (channel.subscribeExpire > now) return;
+    var requestPool = new base.Pool(10);
 
-        var ytChannelId = _this.gOptions.channels.unWrapId(channel.id);
-        _this.subscribe(ytChannelId).then(function () {
-            channel.subscribeExpire = now + 86400;
-            return _this.gOptions.channels.updateChannel(channel.id, {
-                subscribeExpire: channel.subscribeExpire
+    _this.gOptions.events.on('subscribe', function(/*dbChannel[]*/channels) {
+        if (!Array.isArray(channels)) {
+            channels = [channels];
+        }
+
+        var now = base.getNow();
+        requestPool.do(function () {
+            var channel = channels.shift();
+            if (!channel) return;
+
+            if (channel.subscribeExpire > now) return Promise.resolve();
+
+            var ytChannelId = _this.gOptions.channels.unWrapId(channel.id);
+            return _this.subscribe(ytChannelId).then(function () {
+                channel.subscribeExpire = now + 86400;
+                return _this.gOptions.channels.updateChannel(channel.id, {
+                    subscribeExpire: channel.subscribeExpire
+                });
+            }).catch(function (err) {
+                debug('Subscribe error! %s %o', channel.id, err);
             });
-        }).catch(function (err) {
-            debug('Subscribe error! %s %o', channel.id, err);
         });
     });
 
@@ -46,7 +57,10 @@ var PushApi = function(options) {
             channelIds = [channelIds];
         }
 
-        channelIds.forEach(function(channelId) {
+        requestPool.do(function () {
+            var channelId = channelIds.shift();
+            if (!channelId) return;
+
             const ytChannelId = _this.gOptions.channels.unWrapId(channelId);
             return _this.unsubscribe(ytChannelId).then(function () {
                 return _this.gOptions.channels.updateChannel(channelId, {
