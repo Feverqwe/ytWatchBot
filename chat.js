@@ -77,7 +77,7 @@ var Chat = function(options) {
     router.text(/\/ping/, function (req) {
         var chatId = req.getChatId();
         bot.sendMessage(chatId, "pong").catch(function (err) {
-            debug('Command ping error!', err);
+            debug('Command ping error! %o', err);
         });
     });
 
@@ -97,7 +97,7 @@ var Chat = function(options) {
                     inline_keyboard: menuBtnList(0)
                 })
             }).catch(function (err) {
-                debug('Command start error!', err);
+                debug('Command start error! %o', err);
             });
         } else
         if (req.callback_query) {
@@ -112,7 +112,7 @@ var Chat = function(options) {
                 if (/message is not modified/.test(err.message)) {
                     return;
                 }
-                debug('CallbackQuery start error!', err);
+                debug('CallbackQuery start error! %o', err);
             });
         }
     });
@@ -197,7 +197,7 @@ var Chat = function(options) {
                 disable_web_page_preview: true
             });
         }).catch(function (err) {
-            debug('Command top error!', err);
+            debug('Command top error! %o', err);
         });
     });
 
@@ -214,7 +214,7 @@ var Chat = function(options) {
         try {
             liveTime = JSON.parse(require("fs").readFileSync('./liveTime.json', 'utf8'));
         } catch (err) {
-            debug('Load liveTime.json error!', err);
+            debug('Load liveTime.json error! %o', err);
         }
 
         var count = '';
@@ -234,9 +234,7 @@ var Chat = function(options) {
         message += language.rateMe;
 
         return bot.sendMessage(chatId, message).catch(function (err) {
-            debug('Command about error!', err);
-        }).catch(function (err) {
-            debug('Command about error!', err);
+            debug('Command about error! %o', err);
         });
     });
 
@@ -250,7 +248,7 @@ var Chat = function(options) {
                 req.channels = channels;
             })
         ]).then(next).catch(function (err) {
-            debug('Get chat, channels error!', err);
+            debug('Get chat, channels error! %o', err);
         });
     });
 
@@ -288,7 +286,7 @@ var Chat = function(options) {
 
         if (channel) {
             onResponse(channel).catch(function (err) {
-                debug('Command add error!', err);
+                debug('Command add error! %o', err);
             });
             return;
         }
@@ -317,7 +315,7 @@ var Chat = function(options) {
                 return editOrSendNewMessage(chatId, msg.message_id, cancelText);
             });
         }).catch(function (err) {
-            debug('Command add error!', err);
+            debug('Command add error! %o', err);
         });
     });
 
@@ -325,7 +323,7 @@ var Chat = function(options) {
         var chatId = req.getChatId();
         if (!req.chat) {
             bot.sendMessage(chatId, language.emptyServiceList).catch(function (err) {
-                debug('Check chat error!', err);
+                debug('Check chat error! %o', err);
             });
         } else {
             next();
@@ -344,7 +342,7 @@ var Chat = function(options) {
                     message_id: messageId
                 });
             }).catch(function (err) {
-                debug('Command clear error!', err);
+                debug('Command clear error! %o', err);
             });
             return;
         }
@@ -354,7 +352,7 @@ var Chat = function(options) {
                 chat_id: chatId,
                 message_id: messageId
             }).catch(function (err) {
-                debug('Command clear error!', err);
+                debug('Command clear error! %o', err);
             });
             return;
         }
@@ -372,7 +370,7 @@ var Chat = function(options) {
                 inline_keyboard: btnList
             })
         }).catch(function (err) {
-            debug('Command clear error!', err);
+            debug('Command clear error! %o', err);
         });
     });
 
@@ -380,7 +378,7 @@ var Chat = function(options) {
         var chatId = req.getChatId();
         if (!req.channels.length) {
             bot.sendMessage(chatId, language.emptyServiceList).catch(function (err) {
-                debug('Check channel list error!', err);
+                debug('Check channel list error! %o', err);
             });
         } else {
             next();
@@ -399,7 +397,7 @@ var Chat = function(options) {
                 chat_id: chatId,
                 message_id: messageId
             }).catch(function (err) {
-                debug('Command delete error!', err);
+                debug('Command delete error! %o', err);
             });
             return;
         }
@@ -415,7 +413,7 @@ var Chat = function(options) {
                     return bot.sendMessage(chatId, result);
                 }
             }).catch(function (err) {
-                debug('deleteChannel error!', err);
+                debug('deleteChannel error! %o', err);
             });
             return;
         }
@@ -461,7 +459,7 @@ var Chat = function(options) {
                 });
             }
         }).catch(function (err) {
-            debug('Command delete error!', err);
+            debug('Command delete error! %o', err);
         });
     });
 
@@ -493,7 +491,7 @@ var Chat = function(options) {
                 });
             }
         }).catch(function (err) {
-            debug('Command options error!', err);
+            debug('Command options error! %o', err);
         });
     });
 
@@ -521,7 +519,7 @@ var Chat = function(options) {
             users.setChat(req.chat).then(function () {
                 return updateOptionsMessage();
             }).catch(function (err) {
-                debug('Command setChannel error!', err);
+                debug('Command setChannel error! %o', err);
             });
             return;
         }
@@ -554,7 +552,7 @@ var Chat = function(options) {
                 return editOrSendNewMessage(chatId, msg.message_id, cancelText);
             });
         }).catch(function (err) {
-            debug('setChannel error', err);
+            debug('setChannel error %o', err);
         });
     });
 
@@ -623,7 +621,7 @@ var Chat = function(options) {
                 parse_mode: 'HTML'
             });
         }).catch(function (err) {
-            debug('Command list error!', err);
+            debug('Command list error! %o', err);
         });
     });
 
@@ -677,7 +675,7 @@ var Chat = function(options) {
         }).then(function () {
             return bot.sendMessage(chatId, 'Success');
         }).catch(function (err) {
-            debug('Command cleanYoutubeChannels error!', err);
+            debug('Command cleanYoutubeChannels error! %o', err);
         });
     });
 
@@ -755,7 +753,7 @@ var Chat = function(options) {
             if (/chat not found/.test(err.message)) {
                 msgText += ' Telegram chat is not found!';
             } else {
-                debug('setChannel %s error!', channelId, err);
+                debug('setChannel %s error! %o', channelId, err);
             }
             return msgText;
         });
