@@ -15,8 +15,14 @@ var PushApi = function(options) {
 
     this.pubsub = pubSubHubbub.createServer(this.gOptions.config.push);
 
-    this.onReady = new Promise(function(resolve) {
-        _this.initListener(resolve);
+    this.onReady = new Promise(function(resolve, reject) {
+        _this.initListener(function (err) {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
+            }
+        });
     });
 
     _this.gOptions.events.on('subscribe', function(/*dbChannel*/channel) {
@@ -55,15 +61,16 @@ var PushApi = function(options) {
     });
 };
 
-PushApi.prototype.initListener = function(resolve) {
+PushApi.prototype.initListener = function(callback) {
     var _this = this;
     var pubsub = this.pubsub;
 
     pubsub.on("listen", function () {
-        resolve();
+        callback();
     });
 
     pubsub.on('error', function(err) {
+        callback(err);
         debug('Error', err);
     });
 
