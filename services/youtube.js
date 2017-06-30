@@ -278,7 +278,7 @@ Youtube.prototype.getVideoList = function(_channelList, isFullCheck) {
                     }
 
                     return _this.insertItem(channel, chatIdList, id, snippet, contentDetails).then(function (item) {
-                        if (isFullCheck && item && updatedChannels.indexOf(channel) === -1) {
+                        if (item && updatedChannels.indexOf(channel) === -1) {
                             updatedChannels.push(channel);
                         }
                     });
