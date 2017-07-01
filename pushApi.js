@@ -46,7 +46,7 @@ var PushApi = function(options) {
 
             var ytChannelId = _this.gOptions.channels.unWrapId(channel.id);
             return _this.subscribe(ytChannelId).then(function () {
-                channel.subscribeExpire = now + _this.config.lease_seconds;
+                channel.subscribeExpire = now + parseInt(_this.config.lease_seconds / 2);
                 return _this.gOptions.channels.updateChannel(channel.id, {
                     subscribeExpire: channel.subscribeExpire
                 });
