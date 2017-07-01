@@ -8,7 +8,8 @@
   "push": {
     "port": 80,
     "secret": "",
-    "callbackUrl": ""
+    "callbackUrl": "",
+    "lease_seconds": 86400
   },
   "db": {
     "host": "localhost",
