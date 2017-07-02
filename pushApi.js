@@ -9,6 +9,7 @@ const base = require("./base");
 const qs = require('querystring');
 const crypto = require('crypto');
 const request = require('request');
+const URL = require('url');
 
 var PushApi = function(options) {
     var _this = this;
@@ -198,10 +199,22 @@ PushApi.prototype.initListener = function(callback) {
 
     pubsub.on('subscribe', function (data) {
         debug('subscribe %j', data);
+        const uri = URL.parse(data.topic);
+        const query = qs.parse(uri.query);
+        const channelId = _this.gOptions.channels.wrapId(query.channel_id, 'youtube');
+        return _this.gOptions.channels.updateChannel(channelId, {
+            subscribeExpire: data.lease
+        });
     });
 
     pubsub.on('unsubscribe', function (data) {
         debug('unsubscribe %j', data);
+        const uri = URL.parse(data.topic);
+        const query = qs.parse(uri.query);
+        const channelId = _this.gOptions.channels.wrapId(query.channel_id, 'youtube');
+        return _this.gOptions.channels.updateChannel(channelId, {
+            subscribeExpire: 0
+        });
     });
 
     this.pubsub.listen(_this.gOptions.config.push.port);
