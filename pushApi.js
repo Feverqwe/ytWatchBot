@@ -196,6 +196,14 @@ PushApi.prototype.initListener = function(callback) {
         }
     });
 
+    pubsub.on('subscribe', function (data) {
+        debug('subscribe %j', data);
+    });
+
+    pubsub.on('unsubscribe', function (data) {
+        debug('unsubscribe %j', data);
+    });
+
     this.pubsub.listen(_this.gOptions.config.push.port);
 };
 
