@@ -37,11 +37,11 @@ var PushApi = function(options) {
             channels = [channels];
         }
 
+        var now = base.getNow();
+
         const subscribeChannels = channels.filter(function (channel) {
             return channel.subscribeExpire < now;
         });
-
-        var now = base.getNow();
         requestPool.do(function () {
             var channel = subscribeChannels.shift();
             if (!channel) return;
