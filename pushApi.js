@@ -198,7 +198,7 @@ PushApi.prototype.initListener = function(callback) {
     });
 
     pubsub.on('subscribe', function (data) {
-        debug('subscribe %j', data);
+        // debug('subscribe %j', data);
         const uri = URL.parse(data.topic);
         const query = qs.parse(uri.query);
         const channelId = _this.gOptions.channels.wrapId(query.channel_id, 'youtube');
@@ -208,7 +208,7 @@ PushApi.prototype.initListener = function(callback) {
     });
 
     pubsub.on('unsubscribe', function (data) {
-        debug('unsubscribe %j', data);
+        // debug('unsubscribe %j', data);
         const uri = URL.parse(data.topic);
         const query = qs.parse(uri.query);
         const channelId = _this.gOptions.channels.wrapId(query.channel_id, 'youtube');
