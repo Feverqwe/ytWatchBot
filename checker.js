@@ -37,13 +37,13 @@ Checker.prototype.stackUpdateList = function (channelId) {
     _this.gOptions.channels.getChannels([channelId]).then(function (channels) {
         let result = null;
         if (channels.length) {
-            result = _this.updateList(channels).catch(function (err) {
-                debug('stackUpdateList error!', err);
-            });
+            result = _this.updateList(channels);
         } else {
             _this.gOptions.events.emit('unsubscribe', [channelId]);
         }
         return result;
+    }).catch(function (err) {
+        debug('stackUpdateList error!', err);
     });
 };
 
@@ -58,6 +58,7 @@ Checker.prototype.inStack = function (id) {
     }
 
     const update = function () {
+        item.timer = null;
         item.expire = now + 5 * 60;
         _this.stackUpdateList(id);
     };
@@ -66,10 +67,7 @@ Checker.prototype.inStack = function (id) {
         update();
     } else
     if (!item.timer) {
-        item.timer = setTimeout(function () {
-            item.timer = null;
-            update();
-        }, 5 * 60 * 1000);
+        item.timer = setTimeout(update, 5 * 60 * 1000);
     }
 
     if (this.gcFeedTime < now) {
