@@ -9,8 +9,8 @@ var Checker = function(options) {
     var _this = this;
     this.gOptions = options;
 
-    this.feedTimeout = {};
-    this.gcTime = base.getNow();
+    this.feedTimeout = new Map();
+    this.gcFeedTime = base.getNow();
 
     options.events.on('check', function() {
         _this.updateList().catch(function(err) {
@@ -27,56 +27,59 @@ var Checker = function(options) {
                 return;
             }
 
-            var isTimeout = _this.isFeedTimeout(channelId);
-            if (isTimeout) {
-                return;
-            }
-
-            // debug('Feed event, %j', data);
-
-            return _this.gOptions.channels.getChannels([channelId]).then(function (channels) {
-                if (!channels.length) {
-                    _this.gOptions.events.emit('unsubscribe', [channelId]);
-                    return;
-                }
-
-                return _this.updateList(channels).catch(function (err) {
-                    debug('updateList error!', err);
-                });
-            });
+            return _this.inStack(channelId);
         });
     });
 };
 
-Checker.prototype.isFeedTimeout = function (id) {
-    var result = false;
-
-    var now = base.getNow();
-    var feedTimeout = this.feedTimeout;
-    if (feedTimeout[id] > now) {
-        result = true;
-    } else {
-        feedTimeout[id] = now + 5 * 60;
-    }
-
-    this.gcFeedTimeout();
-
-    return result;
+Checker.prototype.stackUpdateList = function (channelId) {
+    const _this = this;
+    _this.gOptions.channels.getChannels([channelId]).then(function (channels) {
+        let result = null;
+        if (channels.length) {
+            result = _this.updateList(channels).catch(function (err) {
+                debug('stackUpdateList error!', err);
+            });
+        } else {
+            _this.gOptions.events.emit('unsubscribe', [channelId]);
+        }
+        return result;
+    });
 };
 
-Checker.prototype.gcFeedTimeout = function () {
-    var now = base.getNow();
-    if (this.gcTime > now) {
-        return;
-    }
-    this.gcTime = now + 60 * 60;
+Checker.prototype.inStack = function (id) {
+    const _this = this;
+    const feedTimeout = this.feedTimeout;
+    const now = base.getNow();
 
-    var feedTimeout = this.feedTimeout;
-    Object.keys(feedTimeout).forEach(function (id) {
-        if (feedTimeout[id] < now) {
-            delete feedTimeout[id];
-        }
-    });
+    let item = feedTimeout.get(id);
+    if (!item) {
+        feedTimeout.set(id, item = {});
+    }
+
+    const update = function () {
+        item.expire = now + 5 * 60;
+        _this.stackUpdateList(id);
+    };
+
+    if (!item.expire || item.expire < now) {
+        update();
+    } else
+    if (!item.timer) {
+        item.timer = setTimeout(function () {
+            item.timer = null;
+            update();
+        }, 5 * 60 * 1000);
+    }
+
+    if (this.gcFeedTime < now) {
+        this.gcFeedTime = now + 60 * 60;
+        feedTimeout.forEach(function (item, id) {
+            if (!item.timer && item.expire < now) {
+                feedTimeout.delete(id);
+            }
+        });
+    }
 };
 
 /**
