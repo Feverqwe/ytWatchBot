@@ -196,9 +196,7 @@ Youtube.prototype.insertItem = function (channel, chatIdList, id, snippet, conte
             });
         });
     };
-    return insert(item).then(function () {
-        return item;
-    }).catch(function (err) {
+    return insert(item).catch(function (err) {
         if (err.code !== 'ER_DUP_ENTRY') {
             debug('insertItem', err);
         }
@@ -215,7 +213,6 @@ var insertPool = new base.Pool(15);
  */
 Youtube.prototype.getVideoList = function(_channelList, isFullCheck) {
     var _this = this;
-    var updatedChannels = [];
 
     var getVideoIdsInfo = function (channel, ytVideoIds, chatIdList) {
         var lastPublishedAt = '';
@@ -277,11 +274,7 @@ Youtube.prototype.getVideoList = function(_channelList, isFullCheck) {
                         channelTitle = snippet.channelTitle;
                     }
 
-                    return _this.insertItem(channel, chatIdList, id, snippet, contentDetails).then(function (item) {
-                        if (item && updatedChannels.indexOf(channel) === -1) {
-                            updatedChannels.push(channel);
-                        }
-                    });
+                    return _this.insertItem(channel, chatIdList, id, snippet, contentDetails);
                 }).then(function () {
                     if (responseBody.nextPageToken) {
                         if (pageLimit-- < 1) {
@@ -412,6 +405,7 @@ Youtube.prototype.getVideoList = function(_channelList, isFullCheck) {
         return _channelList;
     });
     promise = promise.then(function (channels) {
+        const _channels = channels.slice(0);
         return requestPool.do(function () {
             /**
              * @type {dbChannel}
@@ -432,11 +426,13 @@ Youtube.prototype.getVideoList = function(_channelList, isFullCheck) {
                     return queue;
                 });
             });
+        }).then(function () {
+            return _channels;
         });
     });
 
-    promise = promise.then(function () {
-        _this.gOptions.events.emit('subscribe', updatedChannels);
+    promise = promise.then(function (channels) {
+        _this.gOptions.events.emit('subscribe', channels);
     });
 
     return promise;
