@@ -37,12 +37,14 @@ var PushApi = function(options) {
             channels = [channels];
         }
 
+        const subscribeChannels = channels.filter(function (channel) {
+            return channel.subscribeExpire < now;
+        });
+
         var now = base.getNow();
         requestPool.do(function () {
-            var channel = channels.shift();
+            var channel = subscribeChannels.shift();
             if (!channel) return;
-
-            if (channel.subscribeExpire > now) return Promise.resolve();
 
             var ytChannelId = _this.gOptions.channels.unWrapId(channel.id);
             return _this.subscribe(ytChannelId).then(function () {
