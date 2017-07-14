@@ -142,9 +142,9 @@ MsgStack.prototype.getStackItems = function () {
 
 MsgStack.prototype.sendLog = function (chatId, messageId, isPhoto) {
     if (isPhoto) {
-        debugLog('[send] (P) %s %s', messageId, chatId);
+        debugLog('[send] (p) %s %s', messageId, chatId);
     } else {
-        debugLog('[send] (T) %s %s', messageId, chatId);
+        debugLog('[send] (t) %s %s', messageId, chatId);
     }
 };
 
