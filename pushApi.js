@@ -201,7 +201,7 @@ PushApi.prototype.initListener = function(callback) {
 
     pubsub.on('subscribe', function (data) {
         // debug('subscribe %j', data);
-        const uri = URL.parse(data.topic);
+        /*const uri = URL.parse(data.topic);
         const query = qs.parse(uri.query);
         const ytChannelId = query.channel_id;
         const channelId = _this.gOptions.channels.wrapId(ytChannelId, 'youtube');
@@ -213,18 +213,18 @@ PushApi.prototype.initListener = function(callback) {
             });
         }).catch(function (err) {
             debug('Subscribe error! %s %o', ytChannelId, err);
-        });
+        });*/
     });
 
     pubsub.on('unsubscribe', function (data) {
         // debug('unsubscribe %j', data);
-        const uri = URL.parse(data.topic);
+        /*const uri = URL.parse(data.topic);
         const query = qs.parse(uri.query);
         const channelId = _this.gOptions.channels.wrapId(query.channel_id, 'youtube');
         debug('[auto] (u) %s', channelId);
         return _this.gOptions.channels.updateChannel(channelId, {
             subscribeExpire: 0
-        });
+        });*/
     });
 
     this.pubsub.listen(_this.gOptions.config.push.port);
