@@ -141,11 +141,7 @@ MsgStack.prototype.getStackItems = function () {
 };
 
 MsgStack.prototype.sendLog = function (chatId, messageId, isPhoto) {
-    if (isPhoto) {
-        debugLog('[send] (p) %s %s', messageId, chatId);
-    } else {
-        debugLog('[send] (t) %s %s', messageId, chatId);
-    }
+    debugLog('[send] %s %s %s', isPhoto ? '(p)' : '(t)', messageId, chatId);
 };
 
 MsgStack.prototype.setTimeout = function (chatId, messageId, timeout) {
