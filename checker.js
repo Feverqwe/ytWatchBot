@@ -39,7 +39,7 @@ Checker.prototype.stackUpdateList = function (channelId) {
         if (channels.length) {
             result = _this.updateList(channels);
         } else {
-            _this.gOptions.events.emit('unsubscribe2', [channelId]);
+            _this.gOptions.events.emit('unsubscribe', [channelId]);
         }
         return result;
     }).catch(function (err) {
