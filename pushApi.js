@@ -50,7 +50,7 @@ var PushApi = function(options) {
             var ytChannelId = _this.gOptions.channels.unWrapId(channel.id);
             return _this.subscribe(ytChannelId).then(function () {
                 debug('[manual] (s) %s', channel.id);
-                channel.subscribeExpire = now + _this.config.lease_seconds;
+                channel.subscribeExpire = now + (_this.config.lease_seconds / 2);
                 return _this.gOptions.channels.updateChannel(channel.id, {
                     subscribeExpire: channel.subscribeExpire
                 });
@@ -197,34 +197,6 @@ PushApi.prototype.initListener = function(callback) {
 
             debug('Parse xml error!', err);
         }
-    });
-
-    pubsub.on('subscribe', function (data) {
-        // debug('subscribe %j', data);
-        /*const uri = URL.parse(data.topic);
-        const query = qs.parse(uri.query);
-        const ytChannelId = query.channel_id;
-        const channelId = _this.gOptions.channels.wrapId(ytChannelId, 'youtube');
-        const now = base.getNow();
-        return _this.subscribe(ytChannelId).then(function () {
-            debug('[auto] (s) %s', channelId);
-            return _this.gOptions.channels.updateChannel(channelId, {
-                subscribeExpire: now + _this.config.lease_seconds
-            });
-        }).catch(function (err) {
-            debug('Subscribe error! %s %o', ytChannelId, err);
-        });*/
-    });
-
-    pubsub.on('unsubscribe', function (data) {
-        // debug('unsubscribe %j', data);
-        /*const uri = URL.parse(data.topic);
-        const query = qs.parse(uri.query);
-        const channelId = _this.gOptions.channels.wrapId(query.channel_id, 'youtube');
-        debug('[auto] (u) %s', channelId);
-        return _this.gOptions.channels.updateChannel(channelId, {
-            subscribeExpire: 0
-        });*/
     });
 
     this.pubsub.listen(_this.gOptions.config.push.port);
