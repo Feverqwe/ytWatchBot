@@ -203,10 +203,16 @@ PushApi.prototype.initListener = function(callback) {
         // debug('subscribe %j', data);
         const uri = URL.parse(data.topic);
         const query = qs.parse(uri.query);
-        const channelId = _this.gOptions.channels.wrapId(query.channel_id, 'youtube');
-        debug('[auto] (s) %s', channelId);
-        return _this.gOptions.channels.updateChannel(channelId, {
-            subscribeExpire: data.lease
+        const ytChannelId = query.channel_id;
+        const channelId = _this.gOptions.channels.wrapId(ytChannelId, 'youtube');
+        const now = base.getNow();
+        return _this.subscribe(ytChannelId).then(function () {
+            debug('[auto] (s) %s', channelId);
+            return _this.gOptions.channels.updateChannel(channelId, {
+                subscribeExpire: now + _this.config.lease_seconds
+            });
+        }).catch(function (err) {
+            debug('Subscribe error! %s %o', ytChannelId, err);
         });
     });
 
