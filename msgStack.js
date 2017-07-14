@@ -140,11 +140,12 @@ MsgStack.prototype.getStackItems = function () {
     });
 };
 
-MsgStack.prototype.sendLog = function (chatId, messageId, data, /*StackItem*/item) {
-    var debugItem = JSON.parse(JSON.stringify(data));
-    delete debugItem.preview;
-    debugItem.publishedAt = item.publishedAt;
-    debugLog('[send] %s %s %j', messageId, chatId, debugItem);
+MsgStack.prototype.sendLog = function (chatId, messageId, isPhoto) {
+    if (isPhoto) {
+        debugLog('[send] (P) %s %s', messageId, chatId);
+    } else {
+        debugLog('[send] (T) %s %s', messageId, chatId);
+    }
 };
 
 MsgStack.prototype.setTimeout = function (chatId, messageId, timeout) {
@@ -264,6 +265,8 @@ MsgStack.prototype.sendVideoMessage = function (chat_id, messageId, message, dat
         var isPhoto = !!msg.photo;
 
         _this.gOptions.tracker.track(chat_id, 'bot', isPhoto ? 'sendPhoto' : 'sendMsg', data.channel.id);
+
+        _this.sendLog(chat_id, messageId, isPhoto);
     });
 };
 
@@ -321,9 +324,7 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
             chatList.forEach(function (itemObj) {
                 var chat_id = itemObj.id;
                 promise = promise.then(function () {
-                    return _this.sendVideoMessage(chat_id, messageId, message, data, true, chat.id).then(function () {
-                        _this.sendLog(chat_id, messageId, data, item);
-                    });
+                    return _this.sendVideoMessage(chat_id, messageId, message, data, true, chat.id);
                 }).catch(function (err) {
                     err.itemObj = itemObj;
                     throw err;

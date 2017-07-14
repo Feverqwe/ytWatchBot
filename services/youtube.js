@@ -2,6 +2,8 @@
  * Created by Anton on 06.12.2015.
  */
 "use strict";
+const debugLog = require('debug')('app:youtube:log');
+debugLog.log = console.log.bind(console);
 const debug = require('debug')('app:youtube');
 const base = require('../base');
 const CustomError = require('../customError').CustomError;
@@ -200,6 +202,8 @@ Youtube.prototype.insertItem = function (channel, chatIdList, id, snippet, conte
         if (err.code !== 'ER_DUP_ENTRY') {
             debug('insertItem', err);
         }
+    }).then(function () {
+        debugLog('[insert] %s %j', item.id, item);
     });
 };
 
