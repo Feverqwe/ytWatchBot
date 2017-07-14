@@ -33,7 +33,7 @@ var PushApi = function(options) {
 
     var requestPool = new base.Pool(10);
 
-    _this.gOptions.events.on('subscribe', function(/*dbChannel[]*/channels) {
+    _this.gOptions.events.on('subscribe2', function(/*dbChannel[]*/channels) {
         if (!Array.isArray(channels)) {
             channels = [channels];
         }
@@ -60,7 +60,7 @@ var PushApi = function(options) {
         });
     });
 
-    _this.gOptions.events.on('unsubscribe', function(channelIds) {
+    _this.gOptions.events.on('unsubscribe2', function(channelIds) {
         if (!Array.isArray(channelIds)) {
             channelIds = [channelIds];
         }

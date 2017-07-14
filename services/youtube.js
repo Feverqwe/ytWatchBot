@@ -436,7 +436,7 @@ Youtube.prototype.getVideoList = function(_channelList, isFullCheck) {
     });
 
     promise = promise.then(function (channels) {
-        _this.gOptions.events.emit('subscribe', channels);
+        _this.gOptions.events.emit('subscribe2', channels);
     });
 
     return promise;
