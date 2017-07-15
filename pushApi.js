@@ -49,7 +49,7 @@ var PushApi = function(options) {
 
             var ytChannelId = _this.gOptions.channels.unWrapId(channel.id);
             return _this.subscribe(ytChannelId).then(function () {
-                debug('[manual] (s) %s', channel.id);
+                // debug('[manual] (s) %s', channel.id);
                 channel.subscribeExpire = now + (_this.config.lease_seconds / 2);
                 return _this.gOptions.channels.updateChannel(channel.id, {
                     subscribeExpire: channel.subscribeExpire
@@ -71,7 +71,7 @@ var PushApi = function(options) {
 
             const ytChannelId = _this.gOptions.channels.unWrapId(channelId);
             return _this.unsubscribe(ytChannelId).then(function () {
-                debug('[manual] (u) %s', channelId);
+                // debug('[manual] (u) %s', channelId);
                 return _this.gOptions.channels.updateChannel(channelId, {
                     subscribeExpire: 0
                 });
