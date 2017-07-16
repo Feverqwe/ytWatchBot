@@ -418,7 +418,6 @@ var Chat = function(options) {
             return;
         }
 
-        var page = query.page || 0;
         var mediumBtn = {
             text: 'Cancel',
             callback_data: '/delete?cancel=true'
@@ -437,7 +436,7 @@ var Chat = function(options) {
         });
 
         return promise.then(function () {
-            var pageBtnList = base.pageBtnList(btnList, '/delete', page, mediumBtn);
+            var pageBtnList = base.pageBtnList(query, btnList, '/delete', mediumBtn);
 
             if (req.callback_query && !query.rel) {
                 return bot.editMessageReplyMarkup(JSON.stringify({
