@@ -769,8 +769,9 @@ var Chat = function(options) {
                         if (result.type !== 'channel') {
                             throw new Error('CHANNEL_ONLY');
                         }
+                        channelId = result.username;
                         chat.options.mute = false;
-                        chat.channelId = result.username;
+                        chat.channelId = channelId;
                     });
                 });
             }).then(function () {
