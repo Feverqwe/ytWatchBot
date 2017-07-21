@@ -770,7 +770,7 @@ var Chat = function(options) {
                             throw new Error('CHANNEL_ONLY');
                         }
                         chat.options.mute = false;
-                        chat.channelId = channelId;
+                        chat.channelId = result.username;
                     });
                 });
             }).then(function () {
