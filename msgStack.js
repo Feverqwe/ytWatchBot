@@ -232,6 +232,7 @@ MsgStack.prototype.onSendMessageError = function (err) {
                 /channel not found/,
                 /USER_DEACTIVATED/,
                 /not enough rights to send photos to the chat/,
+                /need administrator rights in the channel chat/
             ].some(function (re) {
                 return re.test(body.description);
             });
