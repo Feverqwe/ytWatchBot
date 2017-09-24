@@ -95,6 +95,22 @@ MsgStack.prototype.addChatIdsMessageId = function (connection, chatIds, messageI
 };
 
 /**
+ * @typedef {{}} DbChatIdMessageId
+ * @property {string} chatId
+ * @property {string} messageId
+ * @property {number} timeout
+ */
+
+/**
+ * @typedef {{}} DbMessage
+ * @property {string} is
+ * @property {string} channelId
+ * @property {string} publishedAt
+ * @property {string} data
+ * @property {string|null} imageFileId
+ */
+
+/**
  * @typedef {{}} StackItemData
  * @property {string} url
  * @property {string} title
@@ -107,26 +123,25 @@ MsgStack.prototype.addChatIdsMessageId = function (connection, chatIds, messageI
 
 /**
  * @typedef {{}} StackItem
- *
- * @property {String} chatId
- * @property {String} messageId
- * @property {Number} timeout
- *
- * @property {String} id
- * @property {String} channelId
- * @property {String} publishedAt
- * @property {String} data
- * @property {String} [imageFileId]
+ * @property {DbChatIdMessageId} chatIdMessageId
+ * @property {DbMessage} messages
+ * @property {Chat} chats
  */
 /**
  * @return {Promise.<StackItem[]>}
  */
 MsgStack.prototype.getStackItems = function () {
+    const self = this;
     var db = this.gOptions.db;
     return new Promise(function (resolve, reject) {
         db.connection.query('\
-            SELECT * FROM chatIdMessageId \
-            LEFT JOIN messages ON chatIdMessageId.messageId = messages.id \
+            SELECT \
+            ' + db.wrapTableParams('chatIdMessageId', ['chatId', 'messageId', 'timeout']) + ', \
+            ' + db.wrapTableParams('messages', ['id', 'channelId', 'publishedAt', 'data', 'imageFileId']) + ', \
+            ' + db.wrapTableParams('chats', ['id', 'channelId', 'options', 'insertTime']) + ' \
+            \ FROM chatIdMessageId \
+            INNER JOIN messages ON chatIdMessageId.messageId = messages.id \
+            INNER JOIN chats ON chatIdMessageId.chatId = chats.id \
             WHERE chatIdMessageId.timeout < ? \
             ORDER BY messages.publishedAt ASC \
             LIMIT 30; \
@@ -134,7 +149,11 @@ MsgStack.prototype.getStackItems = function () {
             if (err) {
                 reject(err);
             } else {
-                resolve(results);
+                resolve(results.map(function (row) {
+                    const item = db.unWrapTableParams(row);
+                    item.chats = self.gOptions.users.deSerializeChatRow(item.chats);
+                    return item;
+                }));
             }
         });
     });
@@ -275,68 +294,62 @@ MsgStack.prototype.sendVideoMessage = function (chat_id, messageId, message, dat
 
 MsgStack.prototype.sendItem = function (/*StackItem*/item) {
     var _this = this;
-    var chatId = item.chatId;
-    var messageId = item.messageId;
-    var imageFileId = item.imageFileId;
+    var chatId = item.chats.id;
+    var messageId = item.chatIdMessageId.messageId;
+    var imageFileId = item.messages.imageFileId;
 
     var timeout = 5 * 60;
     return _this.setTimeout(chatId, messageId, base.getNow() + timeout).then(function () {
         /**
          * @type {StackItemData}
          */
-        var data = JSON.parse(item.data);
+        var data = JSON.parse(item.messages.data);
 
-        return _this.gOptions.users.getChat(chatId).then(function (chat) {
-            if (!chat) {
-                debug('Can\'t send message %s, user %s is not found!', messageId, chatId);
-                return;
-            }
+        const chat = item.chats;
+        var options = chat.options;
 
-            var options = chat.options;
+        var text = base.getNowStreamText(_this.gOptions, data);
+        var caption = '';
 
-            var text = base.getNowStreamText(_this.gOptions, data);
-            var caption = '';
+        if (!options.hidePreview) {
+            caption = base.getNowStreamPhotoText(_this.gOptions, data);
+        }
 
-            if (!options.hidePreview) {
-                caption = base.getNowStreamPhotoText(_this.gOptions, data);
-            }
+        var message = {
+            imageFileId: imageFileId,
+            caption: caption,
+            text: text
+        };
 
-            var message = {
-                imageFileId: imageFileId,
-                caption: caption,
-                text: text
-            };
-
-            var chatList = [{
-                type: 'chat',
-                id: chat.id,
+        var chatList = [{
+            type: 'chat',
+            id: chat.id,
+            chatId: chat.id
+        }];
+        if (chat.channelId) {
+            chatList.push({
+                type: 'channel',
+                id: chat.channelId,
                 chatId: chat.id
-            }];
-            if (chat.channelId) {
-                chatList.push({
-                    type: 'channel',
-                    id: chat.channelId,
-                    chatId: chat.id
-                });
-                if (options.mute) {
-                    chatList.shift();
-                }
+            });
+            if (options.mute) {
+                chatList.shift();
             }
+        }
 
-            var promise = Promise.resolve();
-            chatList.forEach(function (itemObj) {
-                var chat_id = itemObj.id;
-                promise = promise.then(function () {
-                    return _this.sendVideoMessage(chat_id, messageId, message, data, true, chat.id);
-                }).catch(function (err) {
-                    err.itemObj = itemObj;
-                    throw err;
-                });
+        var promise = Promise.resolve();
+        chatList.forEach(function (itemObj) {
+            var chat_id = itemObj.id;
+            promise = promise.then(function () {
+                return _this.sendVideoMessage(chat_id, messageId, message, data, true, chat.id);
+            }).catch(function (err) {
+                err.itemObj = itemObj;
+                throw err;
             });
+        });
 
-            return promise.catch(function (err) {
-                return _this.onSendMessageError(err);
-            });
+        return promise.catch(function (err) {
+            return _this.onSendMessageError(err);
         });
     }).then(function () {
         return _this.removeItem(chatId, messageId);
@@ -360,7 +373,7 @@ MsgStack.prototype.checkStack = function () {
 
     _this.getStackItems().then(function (/*StackItem[]*/items) {
         items.some(function (item) {
-            var chatId = item.chatId;
+            var chatId = item.chats.id;
 
             if (activePromises.length >= limit) return true;
             if (activeChatIds.indexOf(chatId) !== -1) return;
