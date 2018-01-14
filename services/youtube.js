@@ -208,7 +208,7 @@ Youtube.prototype.insertItem = function (channel, chatIdList, id, snippet, conte
 };
 
 var requestPool = new base.Pool(10);
-var insertPool = new base.Pool(15);
+var insertPool = new base.Pool(1);
 
 /**
  * @param {dbChannel[]} _channelList
