@@ -888,11 +888,11 @@ var Chat = function(options) {
             if (!(err instanceof CustomError)) {
                 debug('addChannel %s error! %o', channelName, err);
             } else
+            if (err.message === 'CHANNELS_LIMIT') {
+                debug('Channels limit exceeded! %s %s', err.count, chatId);
+            } else
             if (err.message !== 'CHANNEL_EXISTS') {
                 debug('Channel is not found! %s %o', channelName, err);
-            } else
-            if (err.message !== 'CHANNELS_LIMIT') {
-                debug('Channels limit exceeded! %s %s', err.count, chatId);
             }
             throw err;
         });
