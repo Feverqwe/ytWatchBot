@@ -211,7 +211,7 @@ MsgStack.prototype.setImageFileId = function (messageId, imageFileId) {
             }
         });
     }).catch(function (err) {
-        debug('setImageFileId error', err);
+        debug('setImageFileId error %o', err);
     });
 };
 
@@ -354,7 +354,7 @@ MsgStack.prototype.sendItem = function (/*StackItem*/item) {
     }).then(function () {
         return _this.removeItem(chatId, messageId);
     }).catch(function (err) {
-        debug('sendItem', chatId, messageId, err);
+        debug('sendItem %s %s %o', chatId, messageId, err);
 
         if (/PEER_ID_INVALID/.test(err)) {
             timeout = 6 * 60 * 60;

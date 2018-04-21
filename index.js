@@ -7,6 +7,11 @@ const base = require('./base');
 const PushApi = require('./pushApi');
 const Checker = require('./checker');
 const Chat = require('./chat');
+const bluebird = require('bluebird');
+bluebird.config({
+    cancellation: true,
+});
+process.env.NTBA_FIX_319 = true;
 const TelegramBot = require('node-telegram-bot-api');
 const EventEmitter = require('events');
 const Daemon = require('./daemon');
