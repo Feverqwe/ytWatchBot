@@ -7,9 +7,6 @@ const pubSubHubbub = require("pubsubhubbub");
 const xmldoc = require("xmldoc");
 const base = require("./base");
 const qs = require('querystring');
-const crypto = require('crypto');
-const request = require('request');
-const URL = require('url');
 
 var PushApi = function(options) {
     var _this = this;
@@ -89,60 +86,12 @@ PushApi.prototype.getTopicUrl = function (channelId) {
     });
 };
 
-PushApi.prototype._subscribe = function (topic, hub, callback) {
-    return this._setSubscription('subscribe', topic, hub, callback);
-};
-
-PushApi.prototype._unsubscribe = function (topic, hub, callback) {
-    return this._setSubscription('unsubscribe', topic, hub, callback);
-};
-
-PushApi.prototype._setSubscription = function (mode, topic, hub, callback) {
-    const _this = this;
-    const options = _this.config;
-    const callbackUrl = options.callbackUrl +
-        (options.callbackUrl.replace(/^https?:\/\//i, '').match(/\//) ? '' : '/') +
-        (options.callbackUrl.match(/\?/) ? '&' : '?') +
-        'topic=' + encodeURIComponent(topic) +
-        '&hub=' + encodeURIComponent(hub);
-    const form = {
-        'hub.callback': callbackUrl,
-        'hub.mode': mode,
-        'hub.topic': topic,
-        'hub.verify': 'async',
-        'hub.lease_seconds': _this.config.lease_seconds
-    };
-    if (options.secret) {
-        // do not use the original secret but a generated one
-        form['hub.secret'] = crypto.createHmac('sha1', options.secret).update(topic).digest('hex');
-    }
-    const postParams = {
-        url: hub,
-        headers: options.headers || {},
-        form: form,
-        encoding: 'utf-8'
-    };
-    request.post(postParams, function(error, response, responseBody) {
-        if (error) {
-            return callback(error);
-        }
-
-        if (response.statusCode !== 202 && response.statusCode !== 204) {
-            var err = new Error('Invalid response status ' + response.statusCode);
-            err.responseBody = (responseBody || '').toString();
-            return callback(err);
-        }
-
-        return callback(null, topic);
-    });
-};
-
 PushApi.prototype.subscribe = function(channelId) {
     var _this = this;
 
     return new Promise(function (resolve, reject) {
         var topicUrl = _this.getTopicUrl(channelId);
-        _this._subscribe(topicUrl, _this.hubUrl, function (err, topic) {
+        _this.pubsub.subscribe(topicUrl, _this.hubUrl, function (err, topic) {
             if (err) {
                 reject(err);
             } else {
@@ -158,7 +107,7 @@ PushApi.prototype.unsubscribe = function(channelId) {
 
     return new Promise(function (resolve, reject) {
         var topicUrl = _this.getTopicUrl(channelId);
-        _this._unsubscribe(topicUrl, _this.hubUrl, function (err, topic) {
+        _this.pubsub.unsubscribe(topicUrl, _this.hubUrl, function (err, topic) {
             if (err) {
                 reject(err);
             } else {
