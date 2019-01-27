@@ -3,7 +3,7 @@
  */
 "use strict";
 const debug = require('debug')('app:pubsub');
-const pubSubHubbub = require("pubsubhubbub");
+const pubSubHubbub = require("./vendor/pubsubhubbub");
 const xmldoc = require("xmldoc");
 const base = require("./base");
 const qs = require('querystring');
