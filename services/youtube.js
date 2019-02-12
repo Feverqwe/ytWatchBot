@@ -8,7 +8,7 @@ const debug = require('debug')('app:youtube');
 const base = require('../base');
 const CustomError = require('../customError').CustomError;
 var apiQuote = new base.Quote(1000);
-const requestPromise = apiQuote.wrapper(require('request-promise'));
+const got = apiQuote.wrapper(require('got'));
 
 var Youtube = function(options) {
     var _this = this;
@@ -230,10 +230,8 @@ Youtube.prototype.getVideoList = function(_channelList, isFullCheck) {
         var getPage = function (pageToken) {
             var retryLimit = 5;
             var requestPage = function () {
-                return requestPromise({
-                    method: 'GET',
-                    url: 'https://www.googleapis.com/youtube/v3/videos',
-                    qs: {
+                return got('https://www.googleapis.com/youtube/v3/videos', {
+                    query: {
                         part: 'snippet,contentDetails',
                         id: ytVideoIds.join(','),
                         pageToken: pageToken,
@@ -241,8 +239,6 @@ Youtube.prototype.getVideoList = function(_channelList, isFullCheck) {
                         key: _this.config.token
                     },
                     json: true,
-                    gzip: true,
-                    forever: true
                 }).catch(function (err) {
                     if (retryLimit-- < 1) {
                         throw err;
@@ -262,7 +258,7 @@ Youtube.prototype.getVideoList = function(_channelList, isFullCheck) {
              * @property {[{id: string,snippet:VideoSnippet,contentDetails:{}}]} items
              */
 
-            return requestPage().then(function (/*v3Videos*/responseBody) {
+            return requestPage().then(function (/*v3Videos*/{body: responseBody}) {
                 var items = responseBody.items;
                 return insertPool.do(function () {
                     var item = items.shift();
@@ -328,10 +324,8 @@ Youtube.prototype.getVideoList = function(_channelList, isFullCheck) {
         var getPage = function (pageToken) {
             var retryLimit = 5;
             var requestPage = function () {
-                return requestPromise({
-                    method: 'GET',
-                    url: 'https://www.googleapis.com/youtube/v3/activities',
-                    qs: {
+                return got('https://www.googleapis.com/youtube/v3/activities', {
+                    query: {
                         part: 'contentDetails',
                         channelId: _this.channels.unWrapId(channelId),
                         maxResults: 50,
@@ -341,8 +335,6 @@ Youtube.prototype.getVideoList = function(_channelList, isFullCheck) {
                         key: _this.config.token
                     },
                     json: true,
-                    gzip: true,
-                    forever: true
                 }).catch(function (err) {
                     if (retryLimit-- < 1) {
                         throw err;
@@ -362,7 +354,7 @@ Youtube.prototype.getVideoList = function(_channelList, isFullCheck) {
              * @property {[{contentDetails:{upload:{videoId:string}}}]} items
              */
 
-            return requestPage().then(function (/*v3Activities*/responseBody) {
+            return requestPage().then(function (/*v3Activities*/{body: responseBody}) {
                 var items = responseBody.items;
                 var idVideoIdMap = {};
                 var ids = [];
@@ -474,10 +466,8 @@ Youtube.prototype.requestChannelIdByQuery = function(rawQuery) {
         query = rawQuery;
     }
 
-    return requestPromise({
-        method: 'GET',
-        url: 'https://www.googleapis.com/youtube/v3/search',
-        qs: {
+    return got('https://www.googleapis.com/youtube/v3/search', {
+        query: {
             part: 'snippet',
             q: query,
             type: 'channel',
@@ -486,9 +476,7 @@ Youtube.prototype.requestChannelIdByQuery = function(rawQuery) {
             key: _this.config.token
         },
         json: true,
-        gzip: true,
-        forever: true
-    }).then(function(responseBody) {
+    }).then(function({body: responseBody}) {
         var channelId = '';
         responseBody.items.some(function (item) {
             return channelId = item.id.channelId;
@@ -528,10 +516,8 @@ Youtube.prototype.requestChannelIdByUsername = function(url) {
         return Promise.reject(new CustomError('It is not username!'));
     }
 
-    return requestPromise({
-        method: 'GET',
-        url: 'https://www.googleapis.com/youtube/v3/channels',
-        qs: {
+    return got('https://www.googleapis.com/youtube/v3/channels', {
+        query: {
             part: 'snippet',
             forUsername: username,
             maxResults: 1,
@@ -539,9 +525,7 @@ Youtube.prototype.requestChannelIdByUsername = function(url) {
             key: _this.config.token
         },
         json: true,
-        gzip: true,
-        forever: true
-    }).then(function(responseBody) {
+    }).then(function({body: responseBody}) {
         var id = '';
         responseBody.items.some(function (item) {
             return id = item.id;
@@ -605,10 +589,8 @@ Youtube.prototype.requestChannelIdByVideoUrl = function (url) {
         return Promise.reject(new CustomError('It is not video url!'));
     }
 
-    return requestPromise({
-        method: 'GET',
-        url: 'https://www.googleapis.com/youtube/v3/videos',
-        qs: {
+    return got('https://www.googleapis.com/youtube/v3/videos', {
+        query: {
             part: 'snippet',
             id: videoId,
             maxResults: 1,
@@ -616,9 +598,7 @@ Youtube.prototype.requestChannelIdByVideoUrl = function (url) {
             key: _this.config.token
         },
         json: true,
-        gzip: true,
-        forever: true
-    }).then(function(responseBody) {
+    }).then(function({body: responseBody}) {
         var channelId = '';
         responseBody.items.some(function (item) {
             return channelId = item.snippet.channelId;
@@ -669,10 +649,8 @@ Youtube.prototype.getChannelId = function(channelName) {
             });
         });
     }).then(function(channelId) {
-        return requestPromise({
-            method: 'GET',
-            url: 'https://www.googleapis.com/youtube/v3/search',
-            qs: {
+        return got('https://www.googleapis.com/youtube/v3/search', {
+            query: {
                 part: 'snippet',
                 channelId: channelId,
                 maxResults: 1,
@@ -680,9 +658,7 @@ Youtube.prototype.getChannelId = function(channelName) {
                 key: _this.config.token
             },
             json: true,
-            gzip: true,
-            forever: true
-        }).then(function(responseBody) {
+        }).then(function({body: responseBody}) {
             var snippet = null;
             responseBody.items.some(function (item) {
                 return snippet = item.snippet;
