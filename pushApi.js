@@ -8,6 +8,9 @@ const xmldoc = require("xmldoc");
 const base = require("./base");
 const qs = require('querystring');
 const parallel = require('./tools/parallel');
+const promiseLimit = require('promise-limit');
+
+const tenLimit = promiseLimit(10);
 
 var PushApi = function(options) {
     var _this = this;
@@ -41,15 +44,17 @@ var PushApi = function(options) {
         });
 
         parallel(10, subscribeChannels, (channel) => {
-            var ytChannelId = _this.gOptions.channels.unWrapId(channel.id);
-            return _this.subscribe(ytChannelId).then(function () {
-                // debug('[manual] (s) %s', channel.id);
-                channel.subscribeExpire = now + (_this.config.leaseSeconds / 2);
-                return _this.gOptions.channels.updateChannel(channel.id, {
-                    subscribeExpire: channel.subscribeExpire
+            tenLimit(() => {
+                var ytChannelId = _this.gOptions.channels.unWrapId(channel.id);
+                return _this.subscribe(ytChannelId).then(function () {
+                    // debug('[manual] (s) %s', channel.id);
+                    channel.subscribeExpire = now + (_this.config.leaseSeconds / 2);
+                    return _this.gOptions.channels.updateChannel(channel.id, {
+                        subscribeExpire: channel.subscribeExpire
+                    });
+                }).catch(function (err) {
+                    debug('Subscribe error! %s %o', channel.id, err);
                 });
-            }).catch(function (err) {
-                debug('Subscribe error! %s %o', channel.id, err);
             });
         });
     });
@@ -60,14 +65,16 @@ var PushApi = function(options) {
         }
 
         parallel(10, channelIds, (channelId) => {
-            const ytChannelId = _this.gOptions.channels.unWrapId(channelId);
-            return _this.unsubscribe(ytChannelId).then(function () {
-                // debug('[manual] (u) %s', channelId);
-                return _this.gOptions.channels.updateChannel(channelId, {
-                    subscribeExpire: 0
+            tenLimit(() => {
+                const ytChannelId = _this.gOptions.channels.unWrapId(channelId);
+                return _this.unsubscribe(ytChannelId).then(function () {
+                    // debug('[manual] (u) %s', channelId);
+                    return _this.gOptions.channels.updateChannel(channelId, {
+                        subscribeExpire: 0
+                    });
+                }).catch(function (err) {
+                    debug('Unsubscribe error! %s %o', channelId, err);
                 });
-            }).catch(function (err) {
-                debug('Unsubscribe error! %s %o', channelId, err);
             });
         });
     });
