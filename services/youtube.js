@@ -200,9 +200,7 @@ class Youtube {
                         if (retryLimit-- < 1) {
                             throw err;
                         }
-                        return new Promise((resolve) => {
-                            setTimeout(resolve, 250);
-                        }).then(() => {
+                        return new Promise(resolve => setTimeout(resolve, 250)).then(() => {
                             return requestPage();
                         });
                     });
@@ -285,9 +283,7 @@ class Youtube {
                         if (retryLimit-- < 1) {
                             throw err;
                         }
-                        return new Promise((resolve) => {
-                            setTimeout(resolve, 250);
-                        }).then(() => {
+                        return new Promise(resolve => setTimeout(resolve, 250)).then(() => {
                             return requestPage();
                         });
                     });
