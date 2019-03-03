@@ -7,6 +7,7 @@ const base = require('./base');
 const PushApi = require('./pushApi');
 const Checker = require('./checker');
 const Chat = require('./chat');
+const Quote = require('./tools/quote');
 const bluebird = require('bluebird');
 bluebird.config({
     cancellation: true,
@@ -23,92 +24,112 @@ const Db = require('./db');
 const Locale = require('./locale');
 const Channels = require('./channels');
 
-const options = {
-    events: null,
-    config: null,
-    locale: null,
-    language: null,
-    db: null,
-    channels: null,
-    users: null,
-    msgStack: null,
-    services: {},
-    serviceList: ['youtube'],
-    serviceToTitle: {
-        youtube: 'Youtube'
+const config = {
+    token: '',
+    interval: 360,
+    gaId: '',
+    ytToken: '',
+    checkOnRun: false,
+    botName: 'ytWatchBot',
+    push: {
+        port: 80,
+        secret: '',
+        callbackUrl: '',
+        leaseSeconds: 86400
     },
-    daemon: null,
-    bot: null,
-    tracker: null,
-    msgSender: null,
-    chat: null,
-    checker: null,
-    pushApi: null
+    db: {
+        host: 'localhost',
+        port: 3306,
+        database: 'ytWatchBot',
+        user: '',
+        password: ''
+    }
 };
 
-(function() {
-    return Promise.resolve().then(function () {
-        options.events = new EventEmitter();
+class Main {
+    constructor() {
+        this.events = new EventEmitter();
+        this.config = config;
+        this.locale = null;
+        this.language = null;
+        this.db = null;
+        this.channels = null;
+        this.users = null;
+        this.msgStack = null;
+        this.services = {};
+        this.serviceList = ['youtube'];
+        this.serviceToTitle = {
+            youtube: 'Youtube'
+        };
+        this.daemon = null;
+        this.bot = null;
+        this.tracker = null;
+        this.msgSender = null;
+        this.chat = null;
+        this.checker = null;
+        this.pushApi = null;
 
-        return base.loadConfig().then(function(config) {
-            config.botName && (config.botName = config.botName.toLowerCase());
+        this.init();
+    }
 
-            options.config = config;
-        });
-    }).then(function() {
-        options.locale = new Locale(options);
+    async init() {
+        this.initConfig();
 
-        return options.locale.onReady.then(function () {
-            options.language = options.locale.language;
-        });
-    }).then(function() {
-        options.db = new Db(options);
+        const locale = this.locale = new Locale(this);
+        this.language = locale.language;
+        await locale.onReady;
 
-        return options.db.onReady;
-    }).then(function() {
-        options.channels = new Channels(options);
+        const db = this.db = new Db(this);
+        await db.onReady;
 
-        return options.channels.onReady;
-    }).then(function() {
-        return Promise.all(options.serviceList.map(function(name) {
-            var service = require('./services/' + name);
-            service = options.services[name] = new service(options);
+        const channels = this.channels = new Channels(this);
+        await channels.onReady;
 
+        await Promise.all(this.serviceList.map((name) => {
+            const Service = require('./services/' + name);
+            const service = this.services[name] = new Service(this);
             return service.onReady;
         }));
-    }).then(function() {
-        options.users = new Users(options);
 
-        return options.users.onReady;
-    }).then(function() {
-        options.msgStack = new MsgStack(options);
+        const users = this.users = new Users(this);
+        await users.onReady;
 
-        return options.msgStack.onReady;
-    }).then(function() {
-        options.daemon = new Daemon(options);
-    }).then(function() {
-        options.bot = new TelegramBot(options.config.token, {
+        const msgStack = this.msgStack = new MsgStack(this);
+        await msgStack.onReady;
+
+        this.daemon = new Daemon(this);
+
+        this.initBot();
+
+        this.tracker = new Tracker(this);
+        this.msgSender = new MsgSender(this);
+        this.chat = new Chat(this);
+        this.checker = new Checker(this);
+
+        this.pushApi = new PushApi(this);
+        await this.pushApi.onReady;
+    }
+
+    initConfig() {
+        const config = base.loadConfig();
+        if (config.botName) {
+            config.botName = config.botName.toLowerCase();
+        }
+        this.config = config;
+    }
+
+    initBot() {
+        const bot = this.bot = new TelegramBot(this.config.token, {
             polling: true
         });
-        options.bot.on('polling_error', function (err) {
-            debug('pollingError %o', err);
+        bot.on('polling_error', function (err) {
+            debug('pollingError %o', err.message);
         });
 
-        var quote = new base.Quote(30);
-        options.bot.sendMessage = quote.wrapper(options.bot.sendMessage, options.bot);
-        options.bot.sendPhotoQuote = quote.wrapper(options.bot.sendPhoto, options.bot);
-    }).then(function() {
-        options.tracker = new Tracker(options);
-    }).then(function() {
-        options.msgSender = new MsgSender(options);
-    }).then(function() {
-        options.chat = new Chat(options);
-    }).then(function() {
-        options.checker = new Checker(options);
-        options.pushApi = new PushApi(options);
+        const quote = new Quote(30);
+        bot.sendMessage = quote.wrap(bot.sendMessage.bind(bot));
+        bot.sendPhotoQuote = quote.wrap(bot.sendPhoto.bind(bot));
+    }
+}
 
-        return options.pushApi.onReady;
-    }).catch(function(err) {
-        debug('Loading error', err);
-    });
-})();
+module.exports = new Main();

@@ -7,6 +7,7 @@ const pubSubHubbub = require("./vendor/pubsubhubbub");
 const xmldoc = require("xmldoc");
 const base = require("./base");
 const qs = require('querystring');
+const parallel = require('./tools/parallel');
 
 var PushApi = function(options) {
     var _this = this;
@@ -28,8 +29,6 @@ var PushApi = function(options) {
         });
     });
 
-    var requestPool = new base.Pool(10);
-
     _this.gOptions.events.on('subscribe', function(/*dbChannel[]*/channels) {
         if (!Array.isArray(channels)) {
             channels = [channels];
@@ -40,10 +39,8 @@ var PushApi = function(options) {
         const subscribeChannels = channels.filter(function (channel) {
             return channel.subscribeExpire < now;
         });
-        requestPool.do(function () {
-            var channel = subscribeChannels.shift();
-            if (!channel) return;
 
+        parallel(10, subscribeChannels, (channel) => {
             var ytChannelId = _this.gOptions.channels.unWrapId(channel.id);
             return _this.subscribe(ytChannelId).then(function () {
                 // debug('[manual] (s) %s', channel.id);
@@ -62,10 +59,7 @@ var PushApi = function(options) {
             channelIds = [channelIds];
         }
 
-        requestPool.do(function () {
-            var channelId = channelIds.shift();
-            if (!channelId) return;
-
+        parallel(10, channelIds, (channelId) => {
             const ytChannelId = _this.gOptions.channels.unWrapId(channelId);
             return _this.unsubscribe(ytChannelId).then(function () {
                 // debug('[manual] (u) %s', channelId);

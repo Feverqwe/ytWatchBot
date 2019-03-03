@@ -9,12 +9,10 @@ const debug = require('debug')('app:base');
 var utils = {};
 /**
  *
- * @returns {Promise}
+ * @returns {Object}
  */
 utils.loadConfig = function() {
-    return Promise.resolve().then(function() {
-        return JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json')));
-    });
+    return JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json')));
 };
 
 /**
@@ -167,60 +165,6 @@ utils.extend = function() {
     return obj;
 };
 
-/**
- * @param {number} limitPerSecond
- * @constructor
- */
-utils.Quote = function (limitPerSecond) {
-    var queue = [];
-    var time = 0;
-    var count = 0;
-    var timer = null;
-    var next = function () {
-        if (timer !== null) return;
-
-        var now = Date.now();
-        if (now - time >= 1000) {
-            time = now;
-            count = 0;
-        }
-
-        while (queue.length && count < limitPerSecond) {
-            count++;
-            queue.shift()();
-        }
-
-        if (count === limitPerSecond) {
-            timer = setTimeout(function () {
-                timer = null;
-                next();
-            }, 1000 - (Date.now() - time));
-        }
-    };
-
-    /**
-     * @param {Function} callback
-     * @param {Object} [thisArg]
-     * @returns {Function}
-     */
-    this.wrapper = function(callback, thisArg) {
-        return function () {
-            var args = [].slice.call(arguments);
-
-            return new Promise(function (resolve, reject) {
-                queue.push(function () {
-                    try {
-                        resolve(callback.apply(thisArg, args));
-                    } catch (err) {
-                        reject(err);
-                    }
-                });
-                next();
-            });
-        };
-    };
-};
-
 utils.getRandomInt = function (min, max) {
     return Math.floor(Math.random() * (max - min)) + min;
 };
@@ -241,7 +185,7 @@ utils.arrToParts = function (arr, quote) {
 };
 
 utils.getNow = function () {
-    return parseInt(Date.now() / 1000);
+    return Math.trunc(Date.now() / 1000);
 };
 
 /**
@@ -391,88 +335,6 @@ utils.arrayToChainPromise = function (arr, callbackPromise) {
         return result;
     };
     return next();
-};
-
-utils.Pool = function (limit) {
-    var queuePush = [];
-    var activeCountPush = 0;
-    var end = function (cb) {
-        return function (result) {
-            activeCountPush--;
-            nextPush();
-            return cb(result);
-        };
-    };
-    var nextPush = function () {
-        var item;
-        while (queuePush.length && activeCountPush < limit) {
-            item = queuePush.shift();
-            activeCountPush++;
-            item[0]().then(end(item[1]), end(item[2]));
-        }
-    };
-    this.push = function (callbackPromise) {
-        return new Promise(function (resolve, reject) {
-            queuePush.push([callbackPromise, resolve, reject]);
-            nextPush();
-        });
-    };
-
-    var waitArr = [];
-    var activeCountDo = 0;
-    var getPromiseFnArr = [];
-    var rejectAll = function (err) {
-        getPromiseFnArr.splice(0);
-        activeCountDo = 0;
-
-        var item;
-        while (item = waitArr.shift()) {
-            item[1](err);
-        }
-    };
-    var resolveAll = function () {
-        var item;
-        while (item = waitArr.shift()) {
-            item[0]();
-        }
-    };
-    var runPromise = function () {
-        if (!getPromiseFnArr.length) return;
-
-        var promise = null;
-        try {
-            promise = getPromiseFnArr[0]();
-        } catch (err) {
-            debug('getPromiseFnArr error', err);
-        }
-        if (!promise) {
-            getPromiseFnArr.shift();
-            return runPromise();
-        } else {
-            activeCountDo++;
-            return promise.then(function () {
-                activeCountDo--;
-                nextDo();
-            }, rejectAll);
-        }
-    };
-    var nextDo = function () {
-        while (activeCountDo < limit) {
-            if (!runPromise()) {
-                break;
-            }
-        }
-        if (!activeCountDo) {
-            resolveAll();
-        }
-    };
-    this.do = function (getPromiseFn) {
-        return new Promise(function (resolve, reject) {
-            getPromiseFnArr.push(getPromiseFn);
-            waitArr.push([resolve, reject]);
-            nextDo();
-        });
-    };
 };
 
 module.exports = utils;
