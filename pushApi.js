@@ -44,7 +44,7 @@ var PushApi = function(options) {
         });
 
         parallel(10, subscribeChannels, (channel) => {
-            tenLimit(() => {
+            return tenLimit(() => {
                 var ytChannelId = _this.gOptions.channels.unWrapId(channel.id);
                 return _this.subscribe(ytChannelId).then(function () {
                     // debug('[manual] (s) %s', channel.id);
@@ -65,7 +65,7 @@ var PushApi = function(options) {
         }
 
         parallel(10, channelIds, (channelId) => {
-            tenLimit(() => {
+            return tenLimit(() => {
                 const ytChannelId = _this.gOptions.channels.unWrapId(channelId);
                 return _this.unsubscribe(ytChannelId).then(function () {
                     // debug('[manual] (u) %s', channelId);
