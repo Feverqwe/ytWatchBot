@@ -119,8 +119,19 @@ class Main {
     }
 
     initBot() {
+        let request = null;
+        if (this.config.proxy) {
+            const tunnel = require('tunnel');
+            request = {
+                agent: tunnel.httpsOverHttp({
+                    proxy: this.config.proxy
+                })
+            };
+        }
+
         const bot = this.bot = new TelegramBot(this.config.token, {
-            polling: true
+            polling: true,
+            request: request
         });
         bot.on('polling_error', function (err) {
             debug('pollingError %o', err.message);
