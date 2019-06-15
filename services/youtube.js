@@ -197,7 +197,8 @@ class Youtube {
                         },
                         json: true,
                     }).catch((err) => {
-                        if (retryLimit-- < 1) {
+                        const isDailyLimitExceeded = isDailyLimitExceeded(err);
+                        if (isDailyLimitExceeded || retryLimit-- < 1) {
                             throw err;
                         }
                         return new Promise(resolve => setTimeout(resolve, 250)).then(() => {
@@ -280,7 +281,8 @@ class Youtube {
                         },
                         json: true,
                     }).catch((err) => {
-                        if (retryLimit-- < 1) {
+                        const isDailyLimitExceeded = isDailyLimitExceeded(err);
+                        if (isDailyLimitExceeded || retryLimit-- < 1) {
                             throw err;
                         }
                         return new Promise(resolve => setTimeout(resolve, 250)).then(() => {
@@ -598,5 +600,12 @@ const formatDuration = (str) => {
     }
     return result;
 };
+
+function isDailyLimitExceeded(err) {
+    if (err.name === 'HTTPError' && err.statusCode === 403 && err.body && err.body.error && err.body.error.code === 403 && /Daily Limit Exceeded/.test(err.body.error.message)) {
+        return true;
+    }
+    return false;
+}
 
 module.exports = Youtube;
