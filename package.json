@@ -5,13 +5,14 @@
     "start": "node ./index"
   },
   "dependencies": {
-    "bluebird": "^3.5.3",
     "debug": "^4.1.1",
     "got": "^9.6.0",
     "mysql": "^2.16.0",
+    "mysql2": "^1.6.5",
     "node-telegram-bot-api": "^0.30.0",
     "promise-limit": "^2.7.0",
     "pubsubhubbub": "^1.0.1",
+    "sequelize": "^5.8.9",
     "uuid": "^3.3.2",
     "xmldoc": "^1.1.2"
   },

@@ -1,14 +1,9 @@
-/**
- * Created by Anton on 24.02.2017.
- */
-"use strict";
-var Locale = function (options) {
-    this.gOptions = options;
-    this.language = this.default;
-    this.onReady = this.init();
+const Locale = function (/**Main*/main) {
+  this.language = locales.en;
 };
 
-Locale.prototype.default = {
+const locales = {
+  en: {
     "help": "Hi! I will notify you about new videos on Youtube channels!",
     "emptyServiceList": "You don't have channels in watchlist, yet.",
     "enterChannelName": "Enter the channel URL or name (also support video URL, username, channel id; example: NationalGeographic):",
@@ -28,24 +23,16 @@ Locale.prototype.default = {
     "channels": "Channels: {count}",
     "preview": "preview",
     "rateMe": [
-        "", "",
-        "⭐️ If you like this bot, please rate us 5 stars in store:",
-        "https://telegram.me/storebot?start=ytwatchbot"
-    ],
-    "groupNote": ["", "Note for groups: Use \"Reply\" to answer."]
-};
-
-Locale.prototype.init = function () {
-    var _this = this;
-    return Promise.resolve().then(function () {
-        Object.keys(_this.language).forEach(function (key) {
-            var line = _this.language[key];
-            if (Array.isArray(line)) {
-                line = line.join('\n');
-            }
-            _this.language[key] = line;
-        });
-    });
+      "",
+      "",
+      "⭐️ If you like this bot, please rate us 5 stars in store:",
+      "https://telegram.me/storebot?start=ytwatchbot"
+    ].join('\n'),
+    "groupNote": [
+      "",
+      "Note for groups: Use \"Reply\" to answer."
+    ].join('\n')
+  }
 };
 
 module.exports = Locale;
