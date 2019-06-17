@@ -2,7 +2,11 @@
   "name": "application-name",
   "version": "0.0.1",
   "scripts": {
-    "start": "node ./index"
+    "clean": "del-cli ./dist",
+    "build": "npm run clean && rollup ./src/main.js -d ./dist --format cjs",
+    "watch": "npm run build -- -w -m inline",
+    "start": "node ./dist/main.js",
+    "postinstall": "npm run build"
   },
   "dependencies": {
     "debug": "^4.1.1",
@@ -17,6 +21,8 @@
     "xmldoc": "^1.1.2"
   },
   "devDependencies": {
+    "del-cli": "^2.0.0",
+    "rollup": "^1.15.6",
     "tunnel": "0.0.6"
   }
 }
