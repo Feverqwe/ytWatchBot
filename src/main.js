@@ -11,7 +11,7 @@ import MsgSender from "./msgSender";
 import Chat from "./chat";
 import Checker from "./checker";
 import PushApi from "./pushApi";
-import Ratelimit from "./tools/ratelimit";
+import RateLimit from "./tools/rateLimit";
 
 process.env.NTBA_FIX_319 = true;
 const TelegramBot = require('node-telegram-bot-api');
@@ -74,6 +74,7 @@ class Main extends Events {
 
     return this.db.init().then(() => {
       return this.bot.startPolling().then(() => {
+        this.daemon.start();
         return this.pushApi.init();
       });
     }).then(() => {
@@ -101,7 +102,7 @@ class Main extends Events {
       debug('pollingError %o', err.message);
     });
 
-    const limit = new Ratelimit(30);
+    const limit = new RateLimit(30);
     bot.sendMessage = limit.wrap(bot.sendMessage.bind(bot));
     bot.sendPhotoQuote = limit.wrap(bot.sendPhoto.bind(bot));
 

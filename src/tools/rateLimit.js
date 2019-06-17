@@ -1,4 +1,4 @@
-class Ratelimit {
+class RateLimit {
   /**
    * @param {number} limit
    * @param {number} [interval]
@@ -57,4 +57,4 @@ class Ratelimit {
   };
 }
 
-export default Ratelimit;
+export default RateLimit;
