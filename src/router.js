@@ -159,7 +159,7 @@ class Router {
         if (details.throwOnCommand) {
           const entities = req.entities;
           if (entities.bot_command) {
-            callback(new ErrorWithCode('BOT_COMMAND', 'BOT_GOT_COMMAND'));
+            callback(new ErrorWithCode('BOT_COMMAND', 'RESPONSE_COMMAND'));
             next();
           } else {
             callback(null, req);
