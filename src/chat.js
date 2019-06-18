@@ -197,10 +197,10 @@ class Chat {
         case '1': {
           return this.main.db.removeChatById(req.chatId, 'By user').then(() => {
             return this.main.bot.editMessageText(this.main.locale.getMessage('cleared'), {
-              chat_id: chatId,
-              message_id: messageId
+              chat_id: req.chatId,
+              message_id: req.messageId
             });
-          }).catch(function (err) {
+          }).catch((err) => {
             debug('/clear/1 error %o', err);
           });
         }
