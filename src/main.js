@@ -27,7 +27,6 @@ const config = {
   gaId: '',
   ytToken: '',
   checkOnRun: false,
-  botName: 'ytWatchBot',
   push: {
     port: 80,
     secret: '',
@@ -73,10 +72,15 @@ class Main extends Events {
     this.bot = this.initBot();
 
     return this.db.init().then(() => {
-      return this.bot.startPolling().then(() => {
-        this.daemon.start();
-        return this.pushApi.init();
-      });
+      return Promise.all([
+        this.pushApi.init().then(() => {
+          this.daemon.start();
+        }),
+        this.bot.getMe().then((user) => {
+          this.botName = user.username;
+          return this.bot.startPolling();
+        }),
+      ]);
     }).then(() => {
       debug('running');
     });
@@ -99,7 +103,7 @@ class Main extends Events {
       request: request
     });
     bot.on('polling_error', function (err) {
-      debug('pollingError %o', err.message);
+      debug('pollingError %s', err.message);
     });
 
     const limit = new RateLimit(30);

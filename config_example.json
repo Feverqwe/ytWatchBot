@@ -4,7 +4,6 @@
   "gaId": "",
   "ytToken": "",
   "checkOnRun": false,
-  "botName": "ytWatchBot",
   "push": {
     "port": 80,
     "secret": "",

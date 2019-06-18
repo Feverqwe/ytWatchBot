@@ -11,12 +11,14 @@ const messageTypes = [
 
 class Router {
   constructor(/**Main*/main) {
-    const bot = main.bot;
-    const botName = main.config.botName || '';
-    this.botNameRe = new RegExp(botName ? '^' + botName + '$' : '', 'i');
+    this.botNameRe = new RegExp('^' + main.botName + '$', 'i');
+
     this.stack = [];
-    bot.on('message', this.handle.bind(this, 'message'));
-    bot.on('callback_query', this.handle.bind(this, 'callback_query'));
+
+    main.bot.on('message', this.handle.bind(this, 'message'));
+    main.bot.on('callback_query', this.handle.bind(this, 'callback_query'));
+
+    this.handle = this.handle.bind(this);
 
     messageTypes.forEach((type) => {
       /**
@@ -43,12 +45,12 @@ class Router {
   handle(event, message) {
     let index = 0;
     const req = new RouterReq(event, message);
-    const command = getCommands(event, message, this.botNameRe)[0];
+    const firstCommand = getCommands(event, message, this.botNameRe)[0];
     const next = () => {
       const route = this.stack[index++];
       if (!route) return;
 
-      req.params = route.getParams(command);
+      req.params = route.getParams(firstCommand);
 
       if (route.match(req)) {
         return route.dispatch(req, next);
