@@ -11,12 +11,10 @@ const messageTypes = [
 
 class Router {
   constructor(/**Main*/main) {
-    this.botNameRe = new RegExp('^' + main.botName + '$', 'i');
+    this.main = main;
+    this._botNameRe = null;
 
     this.stack = [];
-
-    main.bot.on('message', this.handle.bind(this, 'message'));
-    main.bot.on('callback_query', this.handle.bind(this, 'callback_query'));
 
     this.handle = this.handle.bind(this);
 
@@ -38,27 +36,38 @@ class Router {
     });
   }
 
+  get botNameRe() {
+    if (!this._botNameRe) {
+      this._botNameRe = new RegExp('^' + this.main.botName + '$', 'i');
+    }
+    return this._botNameRe;
+  }
+
   /**
    * @param {string} event
    * @param {Object} message
    */
   handle(event, message) {
-    let index = 0;
-    const req = new RouterReq(event, message);
-    const firstCommand = getCommands(event, message, this.botNameRe)[0];
-    const next = () => {
-      const route = this.stack[index++];
-      if (!route) return;
+    const commands = getCommands(event, message, this.botNameRe);
+    commands.forEach((command) => {
+      const req = new RouterReq(event, message);
+      let index = 0;
+      const next = () => {
+        const route = this.stack[index++];
+        if (!route) return;
 
-      req.params = route.getParams(firstCommand);
+        req.commands = commands;
+        req.command = command;
+        req.params = route.getParams(command);
 
-      if (route.match(req)) {
-        return route.dispatch(req, next);
-      }
+        if (route.match(req)) {
+          return route.dispatch(req, next);
+        }
 
+        next();
+      };
       next();
-    };
-    next();
+    });
   }
 
   /**
@@ -193,18 +202,21 @@ class RouterRoute {
 
   /**
    * @param {String} command
-   * @return {[]|null}
+   * @return {Object|null}
    */
   getParams(command) {
     if (!this.re) {
-      return [];
+      return {};
     }
 
-    let params = this.re.exec(command);
-    if (params) {
-      params.shift();
+    let result = null;
+    if (this.re) {
+      const m = this.re.exec(command);
+      if (m) {
+        result = m.groups || {};
+      }
     }
-    return params;
+    return result;
   }
 
   /**
@@ -233,8 +245,12 @@ class RouterRoute {
 
 class RouterReq {
   constructor(event, message) {
+    this.commands = null;
+    this.command = null;
+    this.params = null;
     this.event = event;
     this[event] = message;
+    this._cache = {};
   }
 
   getFromId() {
@@ -258,59 +274,74 @@ class RouterReq {
   }
 
   get fromId() {
-    let from = null;
-    if (this.message) {
-      from = this.message.from;
-    } else
-    if (this.callback_query) {
-      from = this.callback_query.from;
-    }
-    return from && from.id;
+    return this._useCache('fromId', () => {
+      let from = null;
+      if (this.message) {
+        from = this.message.from;
+      } else
+      if (this.callback_query) {
+        from = this.callback_query.from;
+      }
+      return from && from.id;
+    });
   }
 
   get chatId() {
-    const message = this._message;
-    return message && message.chat.id;
+    return this._useCache('chatId', () => {
+      const message = this._findMessage();
+      return message && message.chat.id;
+    });
   }
 
   get messageId() {
-    const message = this._message;
-    return message && message.message_id;
+    return this._useCache('messageId', () => {
+      const message = this._findMessage();
+      return message && message.message_id;
+    });
   }
 
   get query() {
-    let query = {};
-    if (!this.callback_query) return query;
+    return this._useCache('query', () => {
+      let query = {};
+      if (!this.callback_query) return query;
 
-    const text = this.callback_query.data;
-    const re = /\?([^\s]+)/;
-    const m = re.exec(text);
-    if (m) {
-      query = qs.parse(m[1]);
-    }
-    return query;
+      const text = this.callback_query.data;
+      const re = /\?([^\s]+)/;
+      const m = re.exec(text);
+      if (m) {
+        const queryStr = m[1];
+        if (/^[\[{]/.test(queryStr)) {
+          query = JSON.parse(queryStr);
+        } else {
+          query = qs.parse(m[1]);
+        }
+      }
+      return Object.freeze(query);
+    });
   }
 
   get entities() {
-    const entities = {};
-    if (!this.message || !this.message.entities) return entities;
+    return this._useCache('entities', () => {
+      const entities = {};
+      if (!this.message || !this.message.entities) return entities;
 
-    this.message.entities.forEach((entity) => {
-      let array = entities[entity.type];
-      if (!array) {
-        array = entities[entity.type] = [];
-      }
-      array.push({
-        type: entity.type,
-        value: this.message.text.substr(entity.offset, entity.length),
-        url: entity.url,
-        user: entity.user
+      this.message.entities.forEach((entity) => {
+        let array = entities[entity.type];
+        if (!array) {
+          array = entities[entity.type] = [];
+        }
+        array.push({
+          type: entity.type,
+          value: this.message.text.substr(entity.offset, entity.length),
+          url: entity.url,
+          user: entity.user
+        });
       });
+      return Object.freeze(entities);
     });
-    return entities;
   }
 
-  get _message() {
+  _findMessage() {
     let message = null;
     if (this.message) {
       message = this.message;
@@ -319,6 +350,15 @@ class RouterReq {
       message = this.callback_query.message;
     }
     return message;
+  }
+
+  _useCache(key, fn) {
+    let cache = this._cache[key];
+    if (!cache) {
+      cache = this._cache[key] = {};
+      cache.value = fn();
+    }
+    return cache.value;
   }
 }
 

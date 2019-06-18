@@ -64,12 +64,12 @@ class Main extends Events {
 
     this.tracker = new Tracker(this);
     this.msgSender = new MsgSender(this);
-    this.chat = new Chat(this);
     this.checker = new Checker(this);
 
     this.pushApi = new PushApi(this);
 
     this.bot = this.initBot();
+    this.chat = new Chat(this);
 
     return this.db.init().then(() => {
       return Promise.all([
