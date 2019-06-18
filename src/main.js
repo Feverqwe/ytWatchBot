@@ -82,7 +82,10 @@ class Main extends Events {
         }),
       ]);
     }).then(() => {
-      debug('running');
+      debug('ready');
+    }, (err) => {
+      debug('init error', err);
+      process.exit(1);
     });
   }
 
