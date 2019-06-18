@@ -27,18 +27,10 @@ class Chat {
     this.router.textOrCallbackQuery(/(.+)/, (/**RouterReq*/req, next) => {
       next();
       if (req.message) {
-        const commands = req.entities.bot_command || [];
-        commands.forEach((entity) => {
-          let command = entity.value;
-          const m = /([^@]+)/.exec(command);
-          if (m) {
-            command = m[1];
-          }
-          this.main.tracker.track(req.message.chat.id, {
-            ec: 'command',
-            ea: command,
-            el: req.message.text,
-          });
+        this.main.tracker.track(req.message.chat.id, {
+          ec: 'command',
+          ea: req.command,
+          el: req.message.text,
         });
       } else
       if (req.callback_query) {
