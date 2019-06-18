@@ -23,7 +23,7 @@ class Tracker {
     let lastError = null;
     for (let i = 0; i < 5; i++) {
       try {
-        await got.post('https://www.google-analytics.com/collect', {
+        return await got.post('https://www.google-analytics.com/collect', {
           body: Object.assign({cid}, defaultParams, params),
           form: true,
         });

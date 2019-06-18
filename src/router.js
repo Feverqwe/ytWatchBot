@@ -231,6 +231,7 @@ class RouterRoute {
 
 class RouterReq {
   constructor(event, message) {
+    this.event = event;
     this[event] = message;
   }
 
@@ -258,7 +259,8 @@ class RouterReq {
     let from = null;
     if (this.message) {
       from = this.message.from;
-    } else if (this.callback_query) {
+    } else
+    if (this.callback_query) {
       from = this.callback_query.from;
     }
     return from && from.id;
@@ -323,15 +325,13 @@ class RouterReq {
  * @return {{re: RegExp, callbackList: [function]}}
  */
 function prepareArgs(args) {
-  let re = args[0];
-  const callbackList = [].slice.call(args, 1);
-  if (typeof re === 'function') {
-    callbackList.unshift(re);
-    re = null;
+  let re = null;
+  if (typeof args[0] !== 'function') {
+    re = args.shift();
   }
   return {
     re: re,
-    callbackList: callbackList
+    callbackList: args
   }
 }
 
