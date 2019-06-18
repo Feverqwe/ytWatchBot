@@ -192,7 +192,7 @@ class Chat {
       });
     });
 
-    this.router.textOrCallbackQuery(/\/clear(?:\/(?<state>\d+))?/, (req) => {
+    this.router.callback_query(/\/clear\/(?<state>\d+)/, (req) => {
       switch (req.params.state) {
         case '1': {
           return this.main.db.removeChatById(req.chatId, 'By user').then(() => {
@@ -212,22 +212,23 @@ class Chat {
             debug('/clear/0 error %o', err);
           });
         }
-        default: {
-          return this.main.bot.sendMessage(req.chatId, this.main.locale.getMessage('clearSure'), {
-            reply_markup: JSON.stringify({
-              inline_keyboard: [[{
-                text: 'Yes',
-                callback_data: '/clear/1'
-              }, {
-                text: 'No',
-                callback_data: '/clear/0'
-              }]]
-            })
-          }).catch((err) => {
-            debug('/clear error %o', err);
-          });
-        }
       }
+    });
+
+    this.router.textOrCallbackQuery(/\/clear/, (req) => {
+      return this.main.bot.sendMessage(req.chatId, this.main.locale.getMessage('clearSure'), {
+        reply_markup: JSON.stringify({
+          inline_keyboard: [[{
+            text: 'Yes',
+            callback_data: '/clear/1'
+          }, {
+            text: 'No',
+            callback_data: '/clear/0'
+          }]]
+        })
+      }).catch((err) => {
+        debug('/clear error %o', err);
+      });
     });
 
     const ensureChannels = (/**RouterReq*/req, next) => {
