@@ -303,7 +303,7 @@ class RouterReq {
   get query() {
     return this._useCache('query', () => {
       let query = {};
-      if (!this.callback_query) return query;
+      if (!this.callback_query) return Object.freeze(query);
 
       const text = this.callback_query.data;
       const re = /\?([^\s]+)/;
@@ -323,7 +323,7 @@ class RouterReq {
   get entities() {
     return this._useCache('entities', () => {
       const entities = {};
-      if (!this.message || !this.message.entities) return entities;
+      if (!this.message || !this.message.entities) return Object.freeze(entities);
 
       this.message.entities.forEach((entity) => {
         let array = entities[entity.type];
