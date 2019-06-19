@@ -266,9 +266,10 @@ class Chat {
     });
 
     this.router.callback_query(/\/delete\/(?<channelId>.+)/, (req) => {
+      const serviceId = 'youtube';
       const channelId = req.params.channelId;
 
-      return this.main.db.getChannelById('youtube', channelId).then((channel) => {
+      return this.main.db.getChannelById(serviceId, channelId).then((channel) => {
         return this.main.db.removeChatChannelId(req.chatId, channelId).then((deleted) => {
           return {channel, deleted};
         });
@@ -356,7 +357,7 @@ class Chat {
           throwOnCommand: true
         }, 3 * 60).then((req) => {
           return {req, msg};
-        }).catch(async (err) => {
+        }, async (err) => {
           if (['RESPONSE_COMMAND', 'RESPONSE_TIMEOUT'].includes(err.code)) {
             await editOrSendNewMessage(chatId, msg.message_id, cancelText);
           }
