@@ -112,7 +112,7 @@ class Router {
 
   /**
    * @param {String[]} methods
-   * @returns {function(RegExp, function(RouterReq, function()))}
+   * @returns {function(RegExp, ...function(RouterReq, function()))}
    */
   custom(methods) {
     return (re, ...callbacks) => {

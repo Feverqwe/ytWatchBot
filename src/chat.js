@@ -1,6 +1,7 @@
 import Router from "./router";
 import htmlSanitize from "./tools/htmlSanitize";
 import ErrorWithCode from "./tools/errorWithCode";
+import pageBtnList from "./tools/pageBtnList";
 
 const debug = require('debug')('app:Chat');
 const fs = require('fs');
@@ -11,7 +12,7 @@ class Chat {
 
     this.router = new Router(main);
 
-    /**@type {function(RegExp, function(RouterReq, function()))}*/
+    /**@type {function(RegExp, ...function(RouterReq, function()))}*/
     this.router.textOrCallbackQuery = this.router.custom(['text', 'callback_query']);
 
     this.main.bot.on('message', (message) => {
@@ -57,7 +58,7 @@ class Chat {
 
     this.router.text(/\/ping/, (req) => {
       this.main.bot.sendMessage(req.chatId, 'pong').catch((err) => {
-        debug('/ping error! %o', err);
+        debug('%j error %o', req.command, err);
       });
     });
   }
@@ -71,7 +72,7 @@ class Chat {
           inline_keyboard: getMenu(0)
         })
       }).catch((err) => {
-        debug('/start error! %o', err);
+        debug('%j error %o', req.command, err);
       });
     });
 
@@ -85,7 +86,7 @@ class Chat {
         if (/message is not modified/.test(err.message)) {
           // pass
         } else {
-          debug('/start callback error! %o', err);
+          debug('%j error %o', req.command, err);
         }
       });
     });
@@ -123,12 +124,57 @@ class Chat {
       const message = liveTime.message.replace('{count}', count);
 
       return this.main.bot.sendMessage(req.chatId, message).catch((err) => {
-        debug('/about error! %o', err);
+        debug('%j error %o', req.command, err);
       });
     });
   }
 
   user() {
+    const ensureChannels = (/**RouterReq*/req, next) => {
+      this.main.db.getChannelsByChatId(req.chatId).then((channels) => {
+        req.channels = channels;
+        next();
+      }, (err) => {
+        debug('ensureChannels error! %o', err);
+        this.main.bot.sendMessage(req.chatId, 'Oops something went wrong...');
+      });
+    };
+
+    const ensureChat = (/**RouterReq*/req, next) => {
+      this.main.db.getChatById(req.chatId).catch((err) => {
+        if (err.code === 'CHAT_IS_NOT_FOUND') {
+          return {id: req.chatId};
+        }
+        throw err;
+      }).then((chat) => {
+        req.chat = chat;
+        next();
+      }, (err) => {
+        debug('ensureChat error! %o', err);
+        this.main.bot.sendMessage(req.chatId, 'Oops something went wrong...');
+      });
+    };
+
+    const shouldBeChannels = (req, next) => {
+      if (!req.channels.length) {
+        next();
+      } else {
+        this.main.bot.sendMessage(req.chatId, this.main.locale.getMessage('emptyServiceList'));
+      }
+    };
+
+    this.router.callback_query(/\/cancel\/(?<command>[^\s]+)/, (req) => {
+      const command = req.params.command;
+
+      const cancelText = this.main.locale.getMessage('commandCanceled').replace('{command}', command);
+      return this.main.bot.editMessageText(cancelText, {
+        chat_id: req.chatId,
+        message_id: req.messageId
+      }).catch(function (err) {
+        debug('%j error %o', req.command, err);
+      });
+    });
+
     this.router.textOrCallbackQuery(/\/add(?:\s+(?<query>.+$))?/, (req) => {
       const serviceId = 'youtube';
       const query = req.params.query;
@@ -147,10 +193,10 @@ class Chat {
       }).then(({query, messageId}) => {
         const service = /**@type Youtube*/this.main[serviceId];
         return service.findChannel(query).then((channel) => {
-          return this.main.db.addChannel(req.chatId, serviceId, channel.id).then((created) => {
-            return {created, channel};
+          return this.main.db.addChatChannelId(req.chatId, serviceId, channel.id).then((created) => {
+            return {channel, created};
           });
-        }).then(({created, channel}) => {
+        }).then(({channel, created}) => {
           let message = null;
           if (!created) {
             message = this.main.locale.getMessage('channelExists');
@@ -187,32 +233,20 @@ class Chat {
         if (['RESPONSE_COMMAND', 'RESPONSE_TIMEOUT'].includes(err.code)) {
           // pass
         } else {
-          debug('/add error %o', err);
+          debug('%j error %o', req.command, err);
         }
       });
     });
 
-    this.router.callback_query(/\/clear\/(?<state>\d+)/, (req) => {
-      switch (req.params.state) {
-        case '1': {
-          return this.main.db.removeChatById(req.chatId, 'By user').then(() => {
-            return this.main.bot.editMessageText(this.main.locale.getMessage('cleared'), {
-              chat_id: req.chatId,
-              message_id: req.messageId
-            });
-          }).catch((err) => {
-            debug('/clear/1 error %o', err);
-          });
-        }
-        case '0': {
-          return this.main.bot.editMessageText(this.main.locale.getMessage('commandCanceled').replace('{command}', 'clear'), {
-            chat_id: req.chatId,
-            message_id: req.messageId
-          }).catch((err) => {
-            debug('/clear/0 error %o', err);
-          });
-        }
-      }
+    this.router.callback_query(/\/clear\/confirmed/, (req) => {
+      return this.main.db.removeChatById(req.chatId, 'By user').then(() => {
+        return this.main.bot.editMessageText(this.main.locale.getMessage('cleared'), {
+          chat_id: req.chatId,
+          message_id: req.messageId
+        });
+      }).catch((err) => {
+        debug('%j error %o', req.command, err);
+      });
     });
 
     this.router.textOrCallbackQuery(/\/clear/, (req) => {
@@ -220,41 +254,88 @@ class Chat {
         reply_markup: JSON.stringify({
           inline_keyboard: [[{
             text: 'Yes',
-            callback_data: '/clear/1'
+            callback_data: '/clear/confirmed'
           }, {
             text: 'No',
-            callback_data: '/clear/0'
+            callback_data: '/cancel/clear'
           }]]
         })
       }).catch((err) => {
-        debug('/clear error %o', err);
+        debug('%j error %o', req.command, err);
       });
     });
 
-    const ensureChannels = (/**RouterReq*/req, next) => {
-      this.main.db.getChannelsByChatId(req.chatId).then((channels) => {
-        req.channels = channels;
-        next();
-      }, (err) => {
-        debug('ensureChannels error! %o', err);
-        this.main.bot.sendMessage(req.chatId, 'Oops something went wrong...');
-      });
-    };
+    this.router.callback_query(/\/delete\/(?<channelId>.+)/, (req) => {
+      const channelId = req.params.channelId;
 
-    const ensureChat = (/**RouterReq*/req, next) => {
-      this.main.db.getChatById(req.chatId).catch((err) => {
-        if (err.code === 'CHAT_IS_NOT_FOUND') {
-          return {id: req.chatId};
+      return this.main.db.getChannelById('youtube', channelId).then((channel) => {
+        return this.main.db.removeChatChannelId(req.chatId, channelId).then((deleted) => {
+          return {channel, deleted};
+        });
+      }).then(({channel, deleted}) => {
+        return this.main.bot.editMessageText(this.main.locale.getMessage('channelDeleted').replace('{channelName}', channel.name), {
+          chat_id: req.chatId,
+          message_id: req.messageId
+        });
+      }, async (err) => {
+        let isResolved = false;
+        let message = null;
+        if (err.code === 'CHANNEL_IS_NOT_FOUND') {
+          isResolved = true;
+          message = this.main.locale.getMessage('channelDontExist');
+        } else {
+          message = 'Unexpected error';
         }
-        throw err;
-      }).then((chat) => {
-        req.chat = chat;
-        next();
-      }, (err) => {
-        debug('ensureChat error! %o', err);
-        this.main.bot.sendMessage(req.chatId, 'Oops something went wrong...');
+        await this.main.bot.editMessageText(message, {
+          chat_id: req.chatId,
+          message_id: req.messageId
+        });
+        if (!isResolved) {
+          throw err;
+        }
+      }).catch(function (err) {
+        debug('%j error %o', req.command, err);
       });
-    };
+    });
+
+    this.router.textOrCallbackQuery(/\/delete/, ensureChannels, shouldBeChannels, (req) => {
+      const channels = req.channels.map((channel) => {
+        return [{
+          text: channel.name,
+          callback_data: `/delete/${channel.id}`
+        }];
+      });
+
+      const page = pageBtnList(req.query, channels, '/delete', {
+        text: 'Cancel',
+        callback_data: '/cancel/delete'
+      });
+
+      return Promise.resolve().then(() => {
+        if (req.callback_query && !req.query.rel) {
+          return this.main.bot.editMessageReplyMarkup(JSON.stringify({
+            inline_keyboard: page
+          }), {
+            chat_id: req.chatId,
+            message_id: req.messageId
+          }).catch(function (err) {
+            if (/message is not modified/.test(err.message)) {
+              // pass
+            } else {
+              throw err;
+            }
+          });
+        } else {
+          return this.main.bot.sendMessage(req.chatId, this.main.locale.getMessage('selectDelChannel'), {
+            reply_markup: JSON.stringify({
+              inline_keyboard: page
+            })
+          });
+        }
+      }).catch(function (err) {
+        debug('%j error %o', req.command, err);
+      });
+    });
 
     const requestData = (chatId, fromId, messageText, cancelText) => {
       const options = {};
