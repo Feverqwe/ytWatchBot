@@ -49,6 +49,9 @@ class Router {
    */
   handle(event, message) {
     const commands = getCommands(event, message, this.botNameRe);
+    if (!commands.length) {
+      commands.push('');
+    }
     commands.forEach((command) => {
       const req = new RouterReq(event, message);
       let index = 0;
