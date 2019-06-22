@@ -275,14 +275,14 @@ class Chat {
 
       return Promise.resolve().then(() => {
         if (query) {
-          return {query};
+          return {query: query.trim()};
         }
 
         const messageText = this.main.locale.getMessage('enterChannelName');
         const cancelText = this.main.locale.getMessage('commandCanceled').replace('{command}', 'add');
         return requestData(req.chatId, req.fromId, messageText, cancelText).then(({req, msg}) => {
           this.main.tracker.track(req.chatId, 'command', '/add', req.message.text);
-          return {query: req.message.text, messageId: msg.message_id};
+          return {query: req.message.text.trim(), messageId: msg.message_id};
         });
       }).then(({query, messageId}) => {
         const service = /**@type Youtube*/this.main[serviceId];
@@ -308,7 +308,7 @@ class Chat {
         }, async (err) => {
           let isResolved = false;
           let message = null;
-          if (err.code === 'CHANNEL_IS_NOT_FOUND') {
+          if (['CHANNEL_BY_QUERY_IS_NOT_FOUND', 'CHANNEL_IS_NOT_FOUND'].includes(err.code)) {
             isResolved = true;
             message = this.main.locale.getMessage('channelIsNotFound').replace('{channelName}', query);
           } else
@@ -437,10 +437,19 @@ class Chat {
     this.router.callback_query(/\/options\/(?<key>[^\/]+)\/(?<value>.+)/, provideChat, (req) => {
       const {key, value} = req.params;
       return Promise.resolve().then(() => {
-        if (!['isHidePreview', 'isMuted'].includes(key)) {
-          throw new Error('Unknown option filed');
+        switch (key) {
+          case 'isHidePreview': {
+            req.chat.isHidePreview = value === 'true';
+            break;
+          }
+          case 'isMuted': {
+            req.chat.isMuted = value === 'true';
+            break;
+          }
+          default: {
+            throw new Error('Unknown option filed');
+          }
         }
-        req.chat[key] = value === 'true';
         return req.chat.save();
       }).catch((err) => {
         debug('%j error %o', req.command, err);

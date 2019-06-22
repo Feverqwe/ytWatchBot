@@ -18,6 +18,7 @@
     "pubsubhubbub": "^1.0.1",
     "quick-lru": "^4.0.1",
     "sequelize": "^5.8.9",
+    "superstruct": "^0.6.1",
     "uuid": "^3.3.2",
     "xmldoc": "^1.1.2"
   },
