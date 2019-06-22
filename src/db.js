@@ -1,8 +1,12 @@
+import ErrorWithCode from "./tools/errorWithCode";
+import Channels from "./channels";
+
 const debug = require('debug')('app:db');
 const Sequelize = require('sequelize');
 
 class Db {
   constructor(/**Main*/main) {
+    this.main = main;
     this.sequelize = new Sequelize(main.config.db.database, main.config.db.user, main.config.db.password, {
       host: main.config.db.host,
       port: main.config.db.port,
@@ -24,7 +28,20 @@ class Db {
       }
     });
 
-    const Channels = this.sequelize.define('channels', {
+    const Chat = this.sequelize.define('chats', {
+      id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
+      channelId: {type: Sequelize.STRING(191), allowNull: true},
+      isHidePreview: {type: Sequelize.BOOLEAN, defaultValue: false},
+      isMuted: {type: Sequelize.BOOLEAN, defaultValue: false},
+    }, {
+      indexes: [{
+        name: 'channelId_UNIQUE',
+        unique: true,
+        fields: ['channelId']
+      },]
+    });
+
+    const Channel = this.sequelize.define('channels', {
       id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
       service: {type: Sequelize.STRING(191), allowNull: false},
       title: {type: Sequelize.TEXT, allowNull: true},
@@ -32,41 +49,45 @@ class Db {
       publishedAfter: {type: Sequelize.TEXT, allowNull: true},
       subscribeExpire: {type: Sequelize.INTEGER, allowNull: true, defaultValue: 0},
     }, {
-      timestamps: false,
+      getterMethods: {
+        rawId() {
+          return this.getDataValue('id').substr(3);
+        }
+      },
+      setterMethods: {
+        rawId(value) {
+          const result = Channel.buildId(this.getDataValue('service'), JSON.stringify(value));
+          this.setDataValue('id', result);
+        }
+      },
       indexes: [{
-        name: 'id_UNIQUE',
-        unique: true,
-        fields: ['id']
-      }, {
         name: 'service_idx',
         fields: ['service']
-      },]
+      }]
     });
-
-    const Chats = this.sequelize.define('chats', {
-      id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
-      channelId: {type: Sequelize.STRING(191), allowNull: true},
-      options: {type: Sequelize.TEXT, allowNull: false},
-      insertTime: {type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW},
-    }, {
-      timestamps: false,
-      indexes: [{
-        name: 'id_UNIQUE',
-        unique: true,
-        fields: ['id']
-      }, {
-        name: 'channelId_UNIQUE',
-        unique: true,
-        fields: ['channelId']
-      },]
-    });
+    Channel.buildId = (service, serviceId) => {
+      return [service.substr(0, 2), JSON.stringify(serviceId)].join(':');
+    };
 
     const ChatIdChannelId = this.sequelize.define('chatIdChannelId', {
       chatId: {type: Sequelize.STRING(191), allowNull: false},
       channelId: {type: Sequelize.STRING(191), allowNull: false},
-      insertTime: {type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW},
     }, {
-      timestamps: false,
+      getterMethods: {
+        serviceId() {
+          let result = null;
+          const shortServiceId = this.getDataValue('channelId').substr(0, 2);
+          main.services.some((id) => {
+            if (id.substr(0, 2) === shortServiceId) {
+              return result = id;
+            }
+          });
+          if (!result) {
+            throw new Error(`serviceId is not matched`);
+          }
+          return result;
+        }
+      },
       indexes: [{
         name: 'chatId_idx',
         fields: ['chatId']
@@ -76,48 +97,42 @@ class Db {
         fields: ['chatId', 'channelId']
       }]
     });
-    ChatIdChannelId.belongsTo(Chats, {foreignKey: 'chatId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
-    ChatIdChannelId.belongsTo(Channels, {foreignKey: 'channelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
+    ChatIdChannelId.belongsTo(Chat, {foreignKey: 'chatId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
+    ChatIdChannelId.belongsTo(Channel, {foreignKey: 'channelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
 
-    const Messages = this.sequelize.define('messages', {
+    const Message = this.sequelize.define('messages', {
       id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
       channelId: {type: Sequelize.STRING(191), allowNull: false},
       publishedAt: {type: Sequelize.STRING(191), allowNull: false},
       data: {type: Sequelize.TEXT, allowNull: false},
       imageFileId: {type: Sequelize.TEXT, allowNull: true},
     }, {
-      timestamps: false,
       indexes: [{
         name: 'publishedAt_idx',
         fields: ['publishedAt']
-      }, {
-        name: 'id_UNIQUE',
-        unique: true,
-        fields: ['id']
       }]
     });
-    Messages.belongsTo(Channels, {foreignKey: 'channelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
+    Message.belongsTo(Channel, {foreignKey: 'channelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
 
     const ChatIdMessageId = this.sequelize.define('chatIdMessageId', {
       chatId: {type: Sequelize.STRING(191), allowNull: false},
       messageId: {type: Sequelize.STRING(191), allowNull: false},
       timeout: {type: Sequelize.INTEGER, allowNull: true, defaultValue: 0},
     }, {
-      timestamps: false,
       indexes: [{
         name: 'chatIdMessageId_UNIQUE',
         unique: true,
         fields: ['chatId', 'messageId']
       }]
     });
-    ChatIdMessageId.belongsTo(Chats, {foreignKey: 'chatId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
-    ChatIdMessageId.belongsTo(Messages, {foreignKey: 'messageId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
+    ChatIdMessageId.belongsTo(Chat, {foreignKey: 'chatId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
+    ChatIdMessageId.belongsTo(Message, {foreignKey: 'messageId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
 
-    this.models = {
-      Channels,
-      Chats,
+    this.model = {
+      Channel,
+      Chat,
       ChatIdChannelId,
-      Messages,
+      Message,
       ChatIdMessageId,
     };
   }
@@ -128,6 +143,85 @@ class Db {
   init() {
     return this.sequelize.authenticate().then(() => {
       return this.sequelize.sync();
+    });
+  }
+
+  ensureChat(id) {
+    return this.model.Chat.findOrBuild({
+      where: {id},
+      defaults: {id}
+    });
+  }
+
+  getChatById(id) {
+    return this.model.Chat.findByPk(id).then((chat) => {
+      if (!chat) {
+        throw new ErrorWithCode('Chat is not found', 'CHAT_IS_NOT_FOUND');
+      }
+      return chat;
+    });
+  }
+
+  getChatByChannelId(channelId) {
+    return this.model.Chat.findOne({
+      where: {channelId}
+    }).then((chat) => {
+      if (!chat) {
+        throw new ErrorWithCode('Chat is not found', 'CHAT_IS_NOT_FOUND');
+      }
+      return chat;
+    });
+  }
+
+  deleteChatById(id) {
+    return this.model.Chat.destroy({
+      where: {id}
+    });
+  }
+
+  ensureChannel(service, rawChannel) {
+    const id = this.model.Channel.buildId(service, rawChannel.id);
+
+    return this.model.Channel.findOrCreate({
+      where: id,
+      defaults: Object.assign({}, rawChannel, {id, service})
+    });
+  }
+
+  getChatIdChannelId() {
+    return this.model.ChatIdChannelId.findAll({
+      attributes: ['chatId', 'channelId']
+    });
+  }
+
+  getChannelsByChatId(chatId) {
+    return this.model.Channel.findAll({
+      where: {chatId}
+    });
+  }
+
+  getChannelsByIds(ids) {
+    return this.model.Channel.findAll({
+      where: {id: ids}
+    });
+  }
+
+  getChannelById(id) {
+    return this.model.Channel.findByPk(id).then((channel) => {
+      if (!channel) {
+        throw new ErrorWithCode('Channel is not found', 'CHANNEL_IS_NOT_FOUND');
+      }
+      return channel;
+    });
+  }
+
+  putChatIdChannelId(chatId, channelId) {
+    return this.model.ChatIdChannelId.upsert({chatId, channelId});
+  }
+
+  deleteChatIdChannelId(chatId, channelId) {
+    return this.model.ChatIdChannelId.destroy({
+      where: {chatId, channelId}
     });
   }
 }

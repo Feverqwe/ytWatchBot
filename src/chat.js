@@ -2,6 +2,7 @@ import Router from "./router";
 import htmlSanitize from "./tools/htmlSanitize";
 import ErrorWithCode from "./tools/errorWithCode";
 import pageBtnList from "./tools/pageBtnList";
+import splitTextByPages from "./tools/splitTextByPages";
 
 const debug = require('debug')('app:Chat');
 const fs = require('fs');
@@ -92,7 +93,105 @@ class Chat {
     });
 
     this.router.textOrCallbackQuery(/\/top/, (req) => {
-      // todo: fix top
+      return this.main.db.getChatIdChannelId().then((chatIdChannelIdList) => {
+        const serviceIds = [];
+        const serviceIdCount = {};
+        const chatIds = [];
+        const channelIds = [];
+        const serviceIdChannelIdCount = {};
+        chatIdChannelIdList.forEach(({chatId, channelId, serviceId}) => {
+          if (!serviceIds.includes(serviceId)) {
+            serviceIds.push(serviceId);
+          }
+
+          if (!chatIds.includes(chatId)) {
+            chatIds.push(chatId);
+          }
+
+          if (!channelIds.includes(channelId)) {
+            channelIds.push(channelId);
+          }
+
+          if (!serviceIdCount[serviceId]) {
+            serviceIdCount[serviceId] = 0;
+          }
+
+          let channelIdCount = serviceIdChannelIdCount[serviceId];
+          if (!channelIdCount) {
+            channelIdCount = serviceIdChannelIdCount[serviceId] = {};
+          }
+
+          if (!channelIdCount[channelId]) {
+            channelIdCount[channelId] = 0;
+            serviceIdCount[serviceId]++;
+          }
+
+          channelIdCount[channelId]++;
+        });
+
+        serviceIds.sort((aa, bb) => {
+          const a = serviceIdCount[aa];
+          const b = serviceIdCount[bb];
+          return a === b ? 0 : a > b ? -1 : 1;
+        });
+
+        const topChannelIds = [];
+        const serviceIdTop = {};
+        serviceIds.forEach((serviceId) => {
+          const channelIdCount = serviceIdChannelIdCount[serviceId];
+
+          const top10 = Object.keys(channelIdCount).sort((aa, bb) => {
+            const a = channelIdCount[aa];
+            const b = channelIdCount[bb];
+            return a === b ? 0 : a > b ? -1 : 1;
+          }).slice(0, 10);
+
+          serviceIdTop[serviceId] = top10;
+
+          top10.forEach((channelId) => {
+            topChannelIds.push(channelId);
+          });
+        });
+
+        return this.main.db.getChannelsByIds(topChannelIds).then((channels) => {
+          const channelIdChannelMap = channels.reduce((result, channel) => {
+            result[channel.id] = channel;
+            return result;
+          }, {});
+
+          return {
+            chatIdsCount: chatIds.length,
+            channelIdsCount: channelIds.length,
+            serviceIds,
+            serviceIdCount,
+            serviceIdTop,
+            channelIdChannelMap
+          };
+        });
+      }).then(({chatIdsCount, channelIdsCount, serviceIds, serviceIdCount, serviceIdTop, channelIdChannelMap}) => {
+        const lines = [];
+
+        lines.push(this.main.locale.getMessage('users').replace('{count}', chatIdsCount));
+        lines.push(this.main.locale.getMessage('channels').replace('{count}', channelIdsCount));
+
+        serviceIds.forEach((serviceId) => {
+          const name = this.main[serviceId].name;
+          const count = serviceIdCount[serviceId];
+          lines.push('');
+          lines.push(`${name} (${count}):`);
+
+          serviceIdTop[serviceId].forEach((channelId, index) => {
+            const channel = channelIdChannelMap[channelId];
+            lines.push((index + 1) + '. ' + channel.name);
+          });
+        });
+
+        return this.main.bot.sendMessage(req.chatId, lines.join('\n'), {
+          disable_web_page_preview: true
+        });
+      }).catch((err) => {
+        debug('%j error %o', req.command, err);
+      });
     });
 
     let liveTime = null;
@@ -130,7 +229,17 @@ class Chat {
   }
 
   user() {
-    const ensureChannels = (/**RouterReq*/req, next) => {
+    const provideChat = (/**RouterReq*/req, next) => {
+      this.main.db.ensureChat(req.chatId).then((chat) => {
+        req.chat = chat;
+        next();
+      }, (err) => {
+        debug('ensureChat error! %o', err);
+        this.main.bot.sendMessage(req.chatId, 'Oops something went wrong...');
+      });
+    };
+
+    const provideChannels = (/**RouterReq*/req, next) => {
       this.main.db.getChannelsByChatId(req.chatId).then((channels) => {
         req.channels = channels;
         next();
@@ -140,22 +249,7 @@ class Chat {
       });
     };
 
-    const ensureChat = (/**RouterReq*/req, next) => {
-      this.main.db.getChatById(req.chatId).catch((err) => {
-        if (err.code === 'CHAT_IS_NOT_FOUND') {
-          return {id: req.chatId};
-        }
-        throw err;
-      }).then((chat) => {
-        req.chat = chat;
-        next();
-      }, (err) => {
-        debug('ensureChat error! %o', err);
-        this.main.bot.sendMessage(req.chatId, 'Oops something went wrong...');
-      });
-    };
-
-    const shouldBeChannels = (req, next) => {
+    const withChannels = (req, next) => {
       if (!req.channels.length) {
         next();
       } else {
@@ -192,9 +286,11 @@ class Chat {
         });
       }).then(({query, messageId}) => {
         const service = /**@type Youtube*/this.main[serviceId];
-        return service.findChannel(query).then((channel) => {
-          return this.main.db.addChatChannelId(req.chatId, serviceId, channel.id).then((created) => {
-            return {channel, created};
+        return service.findChannel(query).then((rawChannel) => {
+          return this.main.db.ensureChannel(serviceId, rawChannel).then((channel) => {
+            return this.main.db.putChatIdChannelId(req.chatId, channel.id).then((created) => {
+              return {channel, created};
+            });
           });
         }).then(({channel, created}) => {
           let message = null;
@@ -239,7 +335,8 @@ class Chat {
     });
 
     this.router.callback_query(/\/clear\/confirmed/, (req) => {
-      return this.main.db.removeChatById(req.chatId, 'By user').then(() => {
+      return this.main.db.deleteChatById(req.chatId).then(() => {
+        debug(`Chat ${req.chatId} deleted by user`);
         return this.main.bot.editMessageText(this.main.locale.getMessage('cleared'), {
           chat_id: req.chatId,
           message_id: req.messageId
@@ -266,12 +363,11 @@ class Chat {
     });
 
     this.router.callback_query(/\/delete\/(?<channelId>.+)/, (req) => {
-      const serviceId = 'youtube';
       const channelId = req.params.channelId;
 
-      return this.main.db.getChannelById(serviceId, channelId).then((channel) => {
-        return this.main.db.removeChatChannelId(req.chatId, channelId).then((deleted) => {
-          return {channel, deleted};
+      return this.main.db.getChannelById(channelId).then((channel) => {
+        return this.main.db.deleteChatIdChannelId(req.chatId, channelId).then((count) => {
+          return {channel, deleted: !!count};
         });
       }).then(({channel, deleted}) => {
         return this.main.bot.editMessageText(this.main.locale.getMessage('channelDeleted').replace('{channelName}', channel.name), {
@@ -299,7 +395,7 @@ class Chat {
       });
     });
 
-    this.router.textOrCallbackQuery(/\/delete/, ensureChannels, shouldBeChannels, (req) => {
+    this.router.textOrCallbackQuery(/\/delete/, provideChannels, withChannels, (req) => {
       const channels = req.channels.map((channel) => {
         return [{
           text: channel.name,
@@ -338,21 +434,43 @@ class Chat {
       });
     });
 
-    this.router.callback_query(/\/options\/(?<key>[^\/]+)\/(?<value>.+)/, ensureChat, (req) => {
+    this.router.callback_query(/\/options\/(?<key>[^\/]+)\/(?<value>.+)/, provideChat, (req) => {
       const {key, value} = req.params;
-      // set key value
+      return Promise.resolve().then(() => {
+        if (!['isHidePreview', 'isMuted'].includes(key)) {
+          throw new Error('Unknown option filed');
+        }
+        req.chat[key] = value === 'true';
+        return req.chat.save();
+      }).catch((err) => {
+        debug('%j error %o', req.command, err);
+      });
     });
 
-    this.router.callback_query(/\/options\/deleteChannel/, ensureChat, (req) => {
-      // rm channel
+    this.router.callback_query(/\/deleteChannel/, provideChat, (req) => {
+      return Promise.resolve().then(() => {
+        req.chat.isMuted = false;
+        req.chat.channelId = null;
+        return req.chat.save();
+      }).catch((err) => {
+        debug('%j error %o', req.command, err);
+      });
     });
 
-    this.router.textOrCallbackQuery(/\/options\/setChannel/, ensureChat, (req) => {
-      const messageText = this.main.locale.getMessage('telegramChannelEnter');
-      const cancelText = this.main.locale.getMessage('commandCanceled').replace('{command}', '\/options\/setChannel');
-      return requestData(req.chatId, req.fromId, messageText, cancelText).then(({req, msg}) => {
-        this.main.tracker.track(req.chatId, 'command', '/options/setChannel', req.message.text);
-        return {channelId: req.message.text.trim(), messageId: msg.message_id};
+    this.router.textOrCallbackQuery(/\/setChannel(?:\s+(?<channelId>.+))?/, provideChat, (req) => {
+      const channelId = req.params.channelId;
+
+      return Promise.resolve().then(() => {
+        if (channelId) {
+          return {channelId: channelId.trim()};
+        }
+
+        const messageText = this.main.locale.getMessage('telegramChannelEnter');
+        const cancelText = this.main.locale.getMessage('commandCanceled').replace('{command}', '\/setChannel');
+        return requestData(req.chatId, req.fromId, messageText, cancelText).then(({req, msg}) => {
+          this.main.tracker.track(req.chatId, 'command', '/setChannel', req.message.text);
+          return {channelId: req.message.text.trim(), messageId: msg.message_id};
+        });
       }).then(({channelId, messageId}) => {
         return Promise.resolve().then(() => {
           if (!/^@\w+$/.test(channelId)) {
@@ -369,13 +487,15 @@ class Chat {
             }
 
             return this.main.bot.sendChatAction(channelId, 'typing').then(() => {
-              return this.main.bot.getChat(channelId).then((result) => {
-                if (result.type !== 'channel') {
+              return this.main.bot.getChat(channelId).then((chat) => {
+                if (chat.type !== 'channel') {
                   throw new ErrorWithCode('This chat type is not supported', 'INCORRECT_CHAT_TYPE');
                 }
-                // chat.options.mute = false;
-                // chat.channelId = channelId;
-                return '@' + result.username;
+                req.chat.isMuted = false;
+                req.chat.channelId = channelId;
+                return req.chat.save().then(() => {
+                  return '@' + chat.username;
+                });
               });
             });
           });
@@ -422,7 +542,7 @@ class Chat {
       });
     });
 
-    this.router.textOrCallbackQuery(/\/options/, ensureChat, (req) => {
+    this.router.textOrCallbackQuery(/\/options/, provideChat, (req) => {
       return Promise.resolve().then(() => {
         if (req.callback_query && !query.rel) {
           return this.main.bot.editMessageReplyMarkup(JSON.stringify({
@@ -437,6 +557,76 @@ class Chat {
               inline_keyboard: getOptions(req.chat)
             })
           });
+        }
+      }).catch((err) => {
+        debug('%j error %o', req.command, err);
+      });
+    });
+
+    this.router.textOrCallbackQuery(/\/list/, provideChannels, withChannels, (req) => {
+      const serviceIds = [];
+      const serviceIdChannels = {};
+      req.channels.forEach((channel) => {
+        let serviceChannels = serviceIdChannels[channel.service];
+        if (!serviceChannels) {
+          serviceChannels = serviceIdChannels[channel.service] = [];
+          serviceIds.push(channel.service);
+        }
+        serviceChannels.push(channel);
+      });
+
+      serviceIds.sort((aa, bb) => {
+        const a = serviceIdChannels[aa].length;
+        const b = serviceIdChannels[bb].length;
+        return a === b ? 0 : a > b ? -1 : 1;
+      });
+
+      const lines = [];
+      serviceIds.forEach((serviceId) => {
+        const channelLines = [];
+        channelLines.push(htmlSanitize('b', this.main[serviceId].name + ':'));
+        serviceIdChannels[serviceId].forEach((channel) => {
+          channelLines.push(htmlSanitize('a', channel.name, channel.url));
+        });
+        lines.push(channelLines.join('\n'));
+      });
+
+      const body = lines.join('\n\n');
+      const pageIndex = parseInt(req.query.page || 0);
+      const pages = splitTextByPages(body);
+      const prevPages = pages.splice(0, pageIndex);
+      const pageText = pages.shift() || prevPages.shift();
+
+      const pageControls = [];
+      if (pageIndex > 0) {
+        pageControls.push({
+          text: '<',
+          callback_data: '/list' + '?page=' + (pageIndex - 1)
+        });
+      }
+      if (pages.length) {
+        pageControls.push({
+          text: '>',
+          callback_data: '/list' + '?page=' + (pageIndex + 1)
+        });
+      }
+
+      const options = {
+        disable_web_page_preview: true,
+        parse_mode: 'HTML',
+        reply_markup: JSON.stringify({
+          inline_keyboard: [pageControls]
+        })
+      };
+
+      return Promise.resolve().then(() => {
+        if (req.callback_query && !query.rel) {
+          return this.main.bot.editMessageText(pageText, Object.assign(options, {
+            chat_id: req.chatId,
+            message_id: req.messageId,
+          }));
+        } else {
+          return this.main.bot.sendMessage(req.chatId, pageText, options);
         }
       }).catch((err) => {
         debug('%j error %o', req.command, err);
@@ -553,40 +743,40 @@ function getOptions(chat) {
 
   const btnList = [];
 
-  if (options.hidePreview) {
+  if (options.isHidePreview) {
     btnList.push([{
       text: 'Show preview',
-      callback_data: '/options/hidePreview/false'
+      callback_data: '/options/isHidePreview/false'
     }]);
   } else {
     btnList.push([{
       text: 'Hide preview',
-      callback_data: '/options/hidePreview/true'
+      callback_data: '/options/isHidePreview/true'
     }]);
   }
 
   if (chat.channelId) {
     btnList.push([{
       text: 'Remove channel (' + chat.channelId + ')',
-      callback_data: '/options/deleteChannel',
+      callback_data: '/deleteChannel',
     }]);
   } else {
     btnList.push([{
       text: 'Set channel',
-      callback_data: '/options/setChannel',
+      callback_data: '/setChannel',
     }]);
   }
 
   if (chat.channelId) {
-    if (options.mute) {
+    if (options.isMuted) {
       btnList.push([{
         text: 'Unmute',
-        callback_data: '/options/mute/false'
+        callback_data: '/options/isMuted/false'
       }]);
     } else {
       btnList.push([{
         text: 'Mute',
-        callback_data: '/options/mute/true'
+        callback_data: '/options/isMuted/true'
       }]);
     }
   }

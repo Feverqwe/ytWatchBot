@@ -60,6 +60,7 @@ class Main extends Events {
     this.msgStack = new MsgStack(this);
     this.daemon = new Daemon(this);
 
+    this.services = ['youtube'];
     this.youtube = new Youtube(this);
 
     this.tracker = new Tracker(this);
