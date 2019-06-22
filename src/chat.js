@@ -272,6 +272,7 @@ class Chat {
     this.router.textOrCallbackQuery(/\/add(?:\s+(?<query>.+$))?/, (req) => {
       const serviceId = 'youtube';
       const query = req.params.query;
+      let requestedData = null;
 
       return Promise.resolve().then(() => {
         if (query) {
@@ -281,6 +282,7 @@ class Chat {
         const messageText = this.main.locale.getMessage('enterChannelName');
         const cancelText = this.main.locale.getMessage('commandCanceled').replace('{command}', 'add');
         return requestData(req.chatId, req.fromId, messageText, cancelText).then(({req, msg}) => {
+          requestedData = req.message.text;
           this.main.tracker.track(req.chatId, 'command', '/add', req.message.text);
           return {query: req.message.text.trim(), messageId: msg.message_id};
         });
@@ -329,7 +331,7 @@ class Chat {
         if (['RESPONSE_COMMAND', 'RESPONSE_TIMEOUT'].includes(err.code)) {
           // pass
         } else {
-          debug('%j error %o', req.command, err);
+          debug('%j %j error %o', req.command, requestedData, err);
         }
       });
     });
@@ -468,6 +470,7 @@ class Chat {
 
     this.router.textOrCallbackQuery(/\/setChannel(?:\s+(?<channelId>.+))?/, provideChat, (req) => {
       const channelId = req.params.channelId;
+      let requestedData = null;
 
       return Promise.resolve().then(() => {
         if (channelId) {
@@ -477,6 +480,7 @@ class Chat {
         const messageText = this.main.locale.getMessage('telegramChannelEnter');
         const cancelText = this.main.locale.getMessage('commandCanceled').replace('{command}', '\/setChannel');
         return requestData(req.chatId, req.fromId, messageText, cancelText).then(({req, msg}) => {
+          requestedData = req.message.text;
           this.main.tracker.track(req.chatId, 'command', '/setChannel', req.message.text);
           return {channelId: req.message.text.trim(), messageId: msg.message_id};
         });
@@ -546,7 +550,7 @@ class Chat {
         if (['RESPONSE_COMMAND', 'RESPONSE_TIMEOUT'].includes(err.code)) {
           // pass
         } else {
-          debug('%j error %o', req.command, err);
+          debug('%j %j error %o', req.command, requestedData, err);
         }
       });
     });
