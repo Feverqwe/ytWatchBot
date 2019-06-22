@@ -414,7 +414,11 @@ class Chat {
           }
         });
       }).catch((err) => {
-        debug('%j error %o', req.command, err);
+        if (['RESPONSE_COMMAND', 'RESPONSE_TIMEOUT'].includes(err.code)) {
+          // pass
+        } else {
+          debug('%j error %o', req.command, err);
+        }
       });
     });
 
