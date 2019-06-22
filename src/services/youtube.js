@@ -44,7 +44,7 @@ class Youtube {
     this.name = 'Youtube';
   }
 
-  requestChannelIdByQuery(query) {
+  async requestChannelIdByQuery(query) {
     if (!query) {
       throw new ErrorWithCode('Query is empty', 'QUERY_IS_EMPTY')
     }
@@ -69,7 +69,7 @@ class Youtube {
     });
   }
 
-  requestChannelIdByUserUrl(url) {
+  async requestChannelIdByUserUrl(url) {
     let username = null;
     [
       /youtube\.com\/(?:#\/)?user\/([\w\-]+)/i,
@@ -81,12 +81,15 @@ class Youtube {
         return true;
       }
     });
+
     if (!username) {
       throw new ErrorWithCode('Is not user url', 'IS_NOT_USER_URL');
     }
+
     if (!/^[\w\-]+$/.test(username)) {
       return new ErrorWithCode('Incorrect username', 'INCORRECT_USERNAME');
     }
+
     return gotLimited('https://www.googleapis.com/youtube/v3/channels', {
       query: {
         part: 'snippet',
@@ -106,7 +109,7 @@ class Youtube {
     });
   }
 
-  requestChannelIdByVideoUrl(url) {
+  async requestChannelIdByVideoUrl(url) {
     let videoId = null;
     [
       /youtu\.be\/([\w\-]+)/i,
@@ -119,9 +122,11 @@ class Youtube {
         return true;
       }
     });
+
     if (!videoId) {
       throw new ErrorWithCode('Is not video url', 'IS_NOT_VIDEO_URL');
     }
+
     return gotLimited('https://www.googleapis.com/youtube/v3/videos', {
       query: {
         part: 'snippet',
@@ -141,7 +146,7 @@ class Youtube {
     });
   }
 
-  getChannelIdByUrl(url) {
+  async getChannelIdByUrl(url) {
     let channelId = null;
     [
       /youtube\.com\/(?:#\/)?channel\/([\w\-]+)/i
@@ -152,13 +157,16 @@ class Youtube {
         return true;
       }
     });
-    if (!/^UC/.test(channelId)) {
-      throw new ErrorWithCode('Incorrect channel id', 'INCORRECT_CHANNEL_ID');
-    }
+
     if (!channelId) {
       throw new ErrorWithCode('Is not channel url', 'IS_NOT_CHANNEL_URL');
     }
-    return Promise.resolve(channelId);
+
+    if (!/^UC/.test(channelId)) {
+      throw new ErrorWithCode('Incorrect channel id', 'INCORRECT_CHANNEL_ID');
+    }
+
+    return channelId;
   }
 
   findChannel(query) {
