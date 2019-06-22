@@ -150,6 +150,8 @@ class Db {
     return this.model.Chat.findOrBuild({
       where: {id},
       defaults: {id}
+    }).then(([chat, isBuilt]) => {
+      return chat;
     });
   }
 
@@ -185,6 +187,8 @@ class Db {
     return this.model.Channel.findOrCreate({
       where: id,
       defaults: Object.assign({}, rawChannel, {id, service})
+    }).then(([channel, isCreated]) => {
+      return channel;
     });
   }
 
@@ -195,7 +199,10 @@ class Db {
   }
 
   getChannelsByChatId(chatId) {
-    return this.model.Channel.findAll({
+    return this.model.ChatIdChannelId.findAll({
+      include: [
+        {model: this.model.Channel}
+      ],
       where: {chatId}
     });
   }

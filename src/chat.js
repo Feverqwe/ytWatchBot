@@ -250,7 +250,7 @@ class Chat {
     };
 
     const withChannels = (req, next) => {
-      if (!req.channels.length) {
+      if (req.channels.length) {
         next();
       } else {
         this.main.bot.sendMessage(req.chatId, this.main.locale.getMessage('emptyServiceList'));
@@ -436,28 +436,6 @@ class Chat {
       });
     });
 
-    this.router.callback_query(/\/options\/(?<key>[^\/]+)\/(?<value>.+)/, provideChat, (req) => {
-      const {key, value} = req.params;
-      return Promise.resolve().then(() => {
-        switch (key) {
-          case 'isHidePreview': {
-            req.chat.isHidePreview = value === 'true';
-            break;
-          }
-          case 'isMuted': {
-            req.chat.isMuted = value === 'true';
-            break;
-          }
-          default: {
-            throw new Error('Unknown option filed');
-          }
-        }
-        return req.chat.save();
-      }).catch((err) => {
-        debug('%j error %o', req.command, err);
-      });
-    });
-
     this.router.callback_query(/\/deleteChannel/, provideChat, (req) => {
       return Promise.resolve().then(() => {
         req.chat.isMuted = false;
@@ -516,7 +494,7 @@ class Chat {
           const message = this.main.locale.getMessage('telegramChannelSet').replace('{channelName}', channelId);
           return editOrSendNewMessage(req.chatId, messageId, message).then(() => {
             if (req.callback_query) {
-              this.main.bot.editMessageReplyMarkup(JSON.stringify({
+              return this.main.bot.editMessageReplyMarkup(JSON.stringify({
                 inline_keyboard: getOptions(req.chat)
               }), {
                 chat_id: req.chatId,
@@ -555,9 +533,43 @@ class Chat {
       });
     });
 
+    this.router.callback_query(/\/options\/(?<key>[^\/]+)\/(?<value>.+)/, provideChat, (req) => {
+      const {key, value} = req.params;
+      return Promise.resolve().then(() => {
+        switch (key) {
+          case 'isHidePreview': {
+            req.chat.isHidePreview = value === 'true';
+            break;
+          }
+          case 'isMuted': {
+            req.chat.isMuted = value === 'true';
+            break;
+          }
+          default: {
+            throw new Error('Unknown option filed');
+          }
+        }
+        return req.chat.save();
+      }).then(() => {
+        return this.main.bot.editMessageReplyMarkup(JSON.stringify({
+          inline_keyboard: getOptions(req.chat)
+        }), {
+          chat_id: req.chatId,
+          message_id: req.messageId
+        }).catch((err) => {
+          if (/message is not modified/.test(err.message)) {
+            return;
+          }
+          throw err;
+        });
+      }).catch((err) => {
+        debug('%j error %o', req.command, err);
+      });
+    });
+
     this.router.textOrCallbackQuery(/\/options/, provideChat, (req) => {
       return Promise.resolve().then(() => {
-        if (req.callback_query && !query.rel) {
+        if (req.callback_query && !req.query.rel) {
           return this.main.bot.editMessageReplyMarkup(JSON.stringify({
             inline_keyboard: getOptions(req.chat)
           }), {
@@ -633,7 +645,7 @@ class Chat {
       };
 
       return Promise.resolve().then(() => {
-        if (req.callback_query && !query.rel) {
+        if (req.callback_query && !req.query.rel) {
           return this.main.bot.editMessageText(pageText, Object.assign(options, {
             chat_id: req.chatId,
             message_id: req.messageId,
@@ -752,11 +764,9 @@ function getMenu(page) {
 }
 
 function getOptions(chat) {
-  const options = chat.options;
-
   const btnList = [];
 
-  if (options.isHidePreview) {
+  if (chat.isHidePreview) {
     btnList.push([{
       text: 'Show preview',
       callback_data: '/options/isHidePreview/false'
@@ -781,7 +791,7 @@ function getOptions(chat) {
   }
 
   if (chat.channelId) {
-    if (options.isMuted) {
+    if (chat.isMuted) {
       btnList.push([{
         text: 'Unmute',
         callback_data: '/options/isMuted/false'
