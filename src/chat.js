@@ -448,6 +448,18 @@ class Chat {
         req.chat.isMuted = false;
         req.chat.channelId = null;
         return req.chat.save();
+      }).then(() => {
+        return this.main.bot.editMessageReplyMarkup(JSON.stringify({
+          inline_keyboard: getOptions(req.chat)
+        }), {
+          chat_id: req.chatId,
+          message_id: req.messageId
+        }).catch((err) => {
+          if (/message is not modified/.test(err.message)) {
+            return;
+          }
+          throw err;
+        });
       }).catch((err) => {
         debug('%j error %o', req.command, err);
       });
