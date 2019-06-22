@@ -269,7 +269,7 @@ class Chat {
       });
     });
 
-    this.router.textOrCallbackQuery(/\/add(?:\s+(?<query>.+$))?/, (req) => {
+    this.router.textOrCallbackQuery(/\/add(?:\s+(?<query>.+$))?/, provideChat, (req) => {
       const serviceId = 'youtube';
       const query = req.params.query;
       let requestedData = null;
@@ -290,8 +290,14 @@ class Chat {
         const service = /**@type Youtube*/this.main[serviceId];
         return service.findChannel(query).then((rawChannel) => {
           return this.main.db.ensureChannel(serviceId, rawChannel).then((channel) => {
-            return this.main.db.putChatIdChannelId(req.chatId, channel.id).then((created) => {
-              return {channel, created};
+            return Promise.resolve().then(() => {
+              if (req.chat.isNewRecord) {
+                return req.chat.save();
+              }
+            }).then(() => {
+              return this.main.db.putChatIdChannelId(req.chatId, channel.id).then((created) => {
+                return {channel, created};
+              });
             });
           });
         }).then(({channel, created}) => {
@@ -302,10 +308,11 @@ class Chat {
             const {name, url} = channel;
             message = this.main.locale.getMessage('channelAdded')
               .replace('{channelName}', htmlSanitize('a', name, url))
-              .replace('{serviceName}', htmlSanitize(service.name));
+              .replace('{serviceName}', service.name);
           }
           return editOrSendNewMessage(req.chatId, messageId, message, {
-            disable_web_page_preview: true
+            disable_web_page_preview: true,
+            parse_mode: 'HTML'
           });
         }, async (err) => {
           let isResolved = false;

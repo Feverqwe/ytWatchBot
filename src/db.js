@@ -1,5 +1,4 @@
 import ErrorWithCode from "./tools/errorWithCode";
-import Channels from "./channels";
 
 const debug = require('debug')('app:db');
 const Sequelize = require('sequelize');
@@ -44,7 +43,7 @@ class Db {
     const Channel = this.sequelize.define('channels', {
       id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
       service: {type: Sequelize.STRING(191), allowNull: false},
-      title: {type: Sequelize.TEXT, allowNull: true},
+      name: {type: Sequelize.TEXT, allowNull: true},
       url: {type: Sequelize.TEXT, allowNull: false},
       publishedAfter: {type: Sequelize.TEXT, allowNull: true},
       subscribeExpire: {type: Sequelize.INTEGER, allowNull: true, defaultValue: 0},
@@ -185,7 +184,7 @@ class Db {
     const id = this.model.Channel.buildId(service, rawChannel.id);
 
     return this.model.Channel.findOrCreate({
-      where: id,
+      where: {id},
       defaults: Object.assign({}, rawChannel, {id, service})
     }).then(([channel, isCreated]) => {
       return channel;
@@ -203,7 +202,10 @@ class Db {
       include: [
         {model: this.model.Channel}
       ],
-      where: {chatId}
+      where: {chatId},
+      attributes: [],
+    }).then((chatIdChannelIdList) => {
+      return chatIdChannelIdList.map(chatIdChannelId => chatIdChannelId.channel);
     });
   }
 
