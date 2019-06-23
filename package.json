@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "scripts": {
     "clean": "del-cli ./dist",
-    "build": "npm run clean && rollup ./src/main.js -d ./dist --format cjs",
+    "build": "npm run clean && rollup -c ./rollup.config.js",
     "watch": "npm run build -- -w -m inline",
     "start": "node ./dist/main.js",
     "postinstall": "npm run build"
@@ -23,8 +23,11 @@
     "xmldoc": "^1.1.2"
   },
   "devDependencies": {
+    "@babel/core": "^7.4.5",
+    "@babel/plugin-proposal-class-properties": "^7.4.4",
     "del-cli": "^2.0.0",
     "rollup": "^1.15.6",
+    "rollup-plugin-babel": "^4.3.3",
     "tunnel": "0.0.6"
   }
 }
