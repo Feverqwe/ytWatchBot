@@ -5,12 +5,11 @@ import Channels from "./channels";
 import Youtube from "./services/youtube";
 import Users from "./users";
 import MsgStack from "./msgStack";
-import Daemon from "./daemon";
 import Tracker from "./tracker";
 import MsgSender from "./msgSender";
 import Chat from "./chat";
 import Checker from "./checker";
-import PushApi from "./pushApi";
+import YtPubSub from "./ytPubSub";
 import RateLimit from "./tools/rateLimit";
 
 process.env.NTBA_FIX_319 = true;
@@ -58,7 +57,6 @@ class Main extends Events {
     this.channels = new Channels(this);
     this.users = new Users(this);
     this.msgStack = new MsgStack(this);
-    this.daemon = new Daemon(this);
 
     this.services = ['youtube'];
     this.youtube = new Youtube(this);
@@ -67,16 +65,15 @@ class Main extends Events {
     this.msgSender = new MsgSender(this);
     this.checker = new Checker(this);
 
-    this.pushApi = new PushApi(this);
+    this.ytPubSub = new YtPubSub(this);
 
     this.bot = this.initBot();
     this.chat = new Chat(this);
 
     return this.db.init().then(() => {
       return Promise.all([
-        this.pushApi.init().then(() => {
-          this.daemon.start();
-        }),
+        this.ytPubSub.init(),
+        this.checker.init(),
         this.bot.getMe().then((user) => {
           this.botName = user.username;
           return this.bot.startPolling();

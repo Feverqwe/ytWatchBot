@@ -449,9 +449,10 @@ class Chat {
 
     this.router.callback_query(/\/deleteChannel/, provideChat, (req, res) => {
       return Promise.resolve().then(() => {
-        req.chat.isMuted = false;
-        req.chat.channelId = null;
-        return req.chat.save();
+        return req.chat.update({
+          isMuted: false,
+          channelId: null,
+        });
       }).then(() => {
         return this.main.bot.editMessageReplyMarkup(JSON.stringify({
           inline_keyboard: getOptions(req.chat)
@@ -505,9 +506,10 @@ class Chat {
                 if (chat.type !== 'channel') {
                   throw new ErrorWithCode('This chat type is not supported', 'INCORRECT_CHAT_TYPE');
                 }
-                req.chat.isMuted = false;
-                req.chat.channelId = '@' + chat.username;
-                return req.chat.save();
+                return req.chat.update({
+                  isMuted: false,
+                  channelId: '@' + chat.username,
+                });
               });
             });
           });
@@ -554,20 +556,21 @@ class Chat {
     this.router.callback_query(/\/options\/(?<key>[^\/]+)\/(?<value>.+)/, provideChat, (req, res) => {
       const {key, value} = req.params;
       return Promise.resolve().then(() => {
+        const changes = {};
         switch (key) {
           case 'isHidePreview': {
-            req.chat.isHidePreview = value === 'true';
+            changes.isHidePreview = value === 'true';
             break;
           }
           case 'isMuted': {
-            req.chat.isMuted = value === 'true';
+            changes.isMuted = value === 'true';
             break;
           }
           default: {
             throw new Error('Unknown option filed');
           }
         }
-        return req.chat.save();
+        return req.chat.update(changes);
       }).then(() => {
         return this.main.bot.editMessageReplyMarkup(JSON.stringify({
           inline_keyboard: getOptions(req.chat)

@@ -2,6 +2,7 @@ import ErrorWithCode from "./tools/errorWithCode";
 
 const debug = require('debug')('app:db');
 const Sequelize = require('sequelize');
+const {Op} = require('sequelize');
 
 class Db {
   constructor(/**Main*/main) {
@@ -33,6 +34,7 @@ class Db {
       isHidePreview: {type: Sequelize.BOOLEAN, defaultValue: false},
       isMuted: {type: Sequelize.BOOLEAN, defaultValue: false},
     }, {
+      timestamps: false,
       indexes: [{
         name: 'channelId_UNIQUE',
         unique: true,
@@ -45,12 +47,19 @@ class Db {
       service: {type: Sequelize.STRING(191), allowNull: false},
       name: {type: Sequelize.TEXT, allowNull: true},
       url: {type: Sequelize.TEXT, allowNull: false},
-      lastVideoPublishedAt: {type: Sequelize.DATE, allowNull: true},
+      hasChanges: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
+      lastSyncAt: {type: Sequelize.DATE, allowNull: true},
+      syncTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: 0},
       subscriptionExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: 0},
+      subscriptionTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: 0},
     }, {
+      timestamps: false,
       getterMethods: {
         rawId() {
-          return this.getDataValue('id').substr(3);
+          const id = this.getDataValue('id');
+          if (id) {
+            return id.substr(3);
+          }
         }
       },
       setterMethods: {
@@ -60,18 +69,40 @@ class Db {
         }
       },
       indexes: [{
-        name: 'service_idx',
-        fields: ['service']
+        name: 'hasChanges_idx',
+        fields: ['hasChanges']
+      }, {
+        name: 'lastSyncAt_idx',
+        fields: ['lastSyncAt']
+      }, {
+        name: 'syncTimeoutExpiresAt_idx',
+        fields: ['syncTimeoutExpiresAt']
+      }, {
+        name: 'subscriptionExpiresAt_subscriptionTimeoutExpiresAt_idx',
+        fields: ['subscriptionExpiresAt', 'subscriptionTimeoutExpiresAt']
       }]
     });
     Channel.buildId = (service, serviceId) => {
       return [service.substr(0, 2), JSON.stringify(serviceId)].join(':');
     };
 
+    const YtPubSub = this.sequelize.define('ytPubSub', {
+      videoId: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
+      lastPushAt: {type: Sequelize.DATE, allowNull: false, primaryKey: true},
+    }, {
+      timestamps: false,
+      indexes: [{
+        name: 'lastPushAt_idx',
+        fields: ['lastPushAt']
+      }]
+    });
+
     const ChatIdChannelId = this.sequelize.define('chatIdChannelId', {
       chatId: {type: Sequelize.STRING(191), allowNull: false},
       channelId: {type: Sequelize.STRING(191), allowNull: false},
     }, {
+      tableName: 'chatIdChannelId',
+      timestamps: false,
       getterMethods: {
         serviceId() {
           let result = null;
@@ -91,7 +122,10 @@ class Db {
         name: 'chatId_idx',
         fields: ['chatId']
       }, {
-        name: 'chatIdChannelId_UNIQUE',
+        name: 'channelId_idx',
+        fields: ['channelId']
+      }, {
+        name: 'chatId_ChannelId_UNIQUE',
         unique: true,
         fields: ['chatId', 'channelId']
       }]
@@ -106,6 +140,7 @@ class Db {
       data: {type: Sequelize.TEXT, allowNull: false},
       imageFileId: {type: Sequelize.TEXT, allowNull: true},
     }, {
+      timestamps: false,
       indexes: [{
         name: 'publishedAt_idx',
         fields: ['publishedAt']
@@ -118,6 +153,8 @@ class Db {
       messageId: {type: Sequelize.STRING(191), allowNull: false},
       timeout: {type: Sequelize.INTEGER, allowNull: true, defaultValue: 0},
     }, {
+      tableName: 'chatIdMessageId',
+      timestamps: false,
       indexes: [{
         name: 'chatIdMessageId_UNIQUE',
         unique: true,
@@ -133,6 +170,7 @@ class Db {
       ChatIdChannelId,
       Message,
       ChatIdMessageId,
+      YtPubSub,
     };
   }
 
@@ -200,7 +238,7 @@ class Db {
   getChannelsByChatId(chatId) {
     return this.model.ChatIdChannelId.findAll({
       include: [
-        {model: this.model.Channel}
+        {model: this.model.Channel, required: true}
       ],
       where: {chatId},
       attributes: [],
@@ -231,6 +269,86 @@ class Db {
   deleteChatIdChannelId(chatId, channelId) {
     return this.model.ChatIdChannelId.destroy({
       where: {chatId, channelId}
+    });
+  }
+
+  getChannelsWithExpiresSubscription() {
+    const date = new Date();
+    date.setMinutes(date.getMinutes() - 30);
+    return this.model.Channel.findAll({
+      where: {
+        subscriptionExpiresAt: {[Op.lt]: date},
+        subscriptionTimeoutExpiresAt: {[Op.lt]: new Date()}
+      }
+    });
+  }
+
+  getChannelsForSync() {
+    const date = new Date();
+    date.setMinutes(date.getMinutes() - this.main.config.interval);
+    return this.model.Channel.findAll({
+      where: {
+        syncTimeoutExpiresAt: {[Op.lt]: new Date()},
+        [Op.or]: [
+          {hasChanges: true},
+          {lastSyncAt: {[Op.or]: [
+            null,
+            {[Op.lt]: date}
+          ]}}
+        ],
+      }
+    });
+  }
+
+  setChannelsHasChangesById(ids) {
+    return this.model.Channel.update({
+      hasChanges: true
+    }, {
+      where: {id: ids}
+    });
+  }
+
+  setChannelsSyncTimeoutExpiresAt(ids, minutes = 5) {
+    const date = new Date();
+    date.setMinutes(date.getMinutes() + minutes);
+    return this.model.Channel.update({syncTimeoutExpiresAt: date}, {
+      where: {id: ids}
+    });
+  }
+
+  setChannelsSubscriptionTimeoutExpiresAt(ids, minutes = 5) {
+    const date = new Date();
+    date.setMinutes(date.getMinutes() + minutes);
+    return this.model.Channel.update({subscriptionTimeoutExpiresAt: date}, {
+      where: {id: ids}
+    });
+  }
+
+  cleanUnusedChannels() {
+    return this.model.Channel.destroy({
+      where: {
+        id: {[Op.notIn]: Sequelize.literal(`(SELECT DISTINCT channelId FROM chatIdChannelId)`)}
+      }
+    });
+  }
+
+  /**
+   * @param {string} videoId
+   * @return {Promise<boolean>}
+   */
+  putYtPubSubVideoId(videoId) {
+    return this.model.YtPubSub.upsert({
+      videoId, lastPushAt: new Date()
+    });
+  }
+
+  cleanYtPubSubVideoIds() {
+    const date = new Date();
+    date.setDate(date.getDate() - 7);
+    return this.model.YtPubSub.destroy({
+      where: {
+        lastPushAt: {[Op.lt]: date}
+      }
     });
   }
 }
