@@ -45,8 +45,8 @@ class Db {
       service: {type: Sequelize.STRING(191), allowNull: false},
       name: {type: Sequelize.TEXT, allowNull: true},
       url: {type: Sequelize.TEXT, allowNull: false},
-      publishedAfter: {type: Sequelize.TEXT, allowNull: true},
-      subscribeExpire: {type: Sequelize.INTEGER, allowNull: true, defaultValue: 0},
+      lastVideoPublishedAt: {type: Sequelize.DATE, allowNull: true},
+      subscriptionExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: 0},
     }, {
       getterMethods: {
         rawId() {
