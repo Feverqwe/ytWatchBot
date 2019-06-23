@@ -10,20 +10,24 @@ const parallel = (limit, items, callback) => {
   let canceled = false;
   const results = new Array(items.length);
 
-  const runThread = async () => {
+  const runThread = () => {
     if (canceled || index >= items.length) return;
 
     const idx = index++;
     const item = items[idx];
 
     try {
-      results[idx] = await callback(item, idx, items);
+      return Promise.resolve(callback(item, idx, items)).then((result) => {
+        results[idx] = result;
+        return runThread();
+      }, (err) => {
+        canceled = true;
+        throw err;
+      });
     } catch (err) {
       canceled = true;
-      throw err;
+      return Promise.reject(err);
     }
-
-    return runThread();
   };
 
   const threads = new Array(limit);
