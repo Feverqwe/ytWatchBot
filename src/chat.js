@@ -13,7 +13,7 @@ class Chat {
 
     this.router = new Router(main);
 
-    /**@type {function(RegExp, ...function(RouterReq, function()))}*/
+    /**@type {function(RegExp, ...function(RouterReq, RouterRes, function()))}*/
     this.router.textOrCallbackQuery = this.router.custom(['text', 'callback_query']);
 
     this.main.bot.on('message', (message) => {
@@ -29,7 +29,7 @@ class Chat {
   }
 
   base() {
-    this.router.textOrCallbackQuery(/(.+)/, (/**RouterReq*/req, next) => {
+    this.router.textOrCallbackQuery(/(.+)/, (req, res, next) => {
       next();
       if (req.message) {
         this.main.tracker.track(req.chatId, {
@@ -57,17 +57,21 @@ class Chat {
       }
     });
 
-    this.router.text(/\/ping/, (req) => {
-      this.main.bot.sendMessage(req.chatId, 'pong').catch((err) => {
+    this.router.callback_query((req, res, next) => {
+      return this.main.bot.answerCallbackQuery(req.callback_query.id).then(next);
+    });
+
+    this.router.text(/\/ping/, (req, res) => {
+      return this.main.bot.sendMessage(req.chatId, 'pong').catch((err) => {
         debug('%j error %o', req.command, err);
       });
     });
   }
 
   menu() {
-    this.router.text(/\/(start|menu|help)/, (req) => {
+    this.router.text(/\/(start|menu|help)/, (req, res) => {
       const help = this.main.locale.getMessage('help');
-      this.main.bot.sendMessage(req.chatId, help, {
+      return this.main.bot.sendMessage(req.chatId, help, {
         disable_web_page_preview: true,
         reply_markup: JSON.stringify({
           inline_keyboard: getMenu(0)
@@ -77,8 +81,8 @@ class Chat {
       });
     });
 
-    this.router.callback_query(/\/menu(?:\/(?<page>\d+))?/, (req) => {
-      this.main.bot.editMessageReplyMarkup(JSON.stringify({
+    this.router.callback_query(/\/menu(?:\/(?<page>\d+))?/, (req, res) => {
+      return this.main.bot.editMessageReplyMarkup(JSON.stringify({
         inline_keyboard: getMenu(parseInt(req.params.page || 0, 10))
       }), {
         chat_id: req.chatId,
@@ -92,7 +96,7 @@ class Chat {
       });
     });
 
-    this.router.textOrCallbackQuery(/\/top/, (req) => {
+    this.router.textOrCallbackQuery(/\/top/, (req, res) => {
       return this.main.db.getChatIdChannelId().then((chatIdChannelIdList) => {
         const serviceIds = [];
         const serviceIdCount = {};
@@ -195,7 +199,7 @@ class Chat {
     });
 
     let liveTime = null;
-    this.router.textOrCallbackQuery(/\/about/, (req) => {
+    this.router.textOrCallbackQuery(/\/about/, (req, res) => {
       if (!liveTime) {
         try {
           liveTime = JSON.parse(fs.readFileSync('./liveTime.json', 'utf8'));
@@ -229,8 +233,8 @@ class Chat {
   }
 
   user() {
-    const provideChat = (/**RouterReq*/req, next) => {
-      this.main.db.ensureChat(req.chatId).then((chat) => {
+    const provideChat = (req, res, next) => {
+      return this.main.db.ensureChat(req.chatId).then((chat) => {
         req.chat = chat;
         next();
       }, (err) => {
@@ -239,8 +243,8 @@ class Chat {
       });
     };
 
-    const provideChannels = (/**RouterReq*/req, next) => {
-      this.main.db.getChannelsByChatId(req.chatId).then((channels) => {
+    const provideChannels = (req, res, next) => {
+      return this.main.db.getChannelsByChatId(req.chatId).then((channels) => {
         req.channels = channels;
         next();
       }, (err) => {
@@ -249,7 +253,7 @@ class Chat {
       });
     };
 
-    const withChannels = (req, next) => {
+    const withChannels = (req, res, next) => {
       if (req.channels.length) {
         next();
       } else {
@@ -257,7 +261,7 @@ class Chat {
       }
     };
 
-    this.router.callback_query(/\/cancel\/(?<command>[^\s]+)/, (req) => {
+    this.router.callback_query(/\/cancel\/(?<command>[^\s]+)/, (req, res) => {
       const command = req.params.command;
 
       const cancelText = this.main.locale.getMessage('commandCanceled').replace('{command}', command);
@@ -269,7 +273,7 @@ class Chat {
       });
     });
 
-    this.router.textOrCallbackQuery(/\/add(?:\s+(?<query>.+$))?/, provideChat, (req) => {
+    this.router.textOrCallbackQuery(/\/add(?:\s+(?<query>.+$))?/, provideChat, (req, res) => {
       const serviceId = 'youtube';
       const query = req.params.query;
       let requestedData = null;
@@ -343,7 +347,7 @@ class Chat {
       });
     });
 
-    this.router.callback_query(/\/clear\/confirmed/, (req) => {
+    this.router.callback_query(/\/clear\/confirmed/, (req, res) => {
       return this.main.db.deleteChatById(req.chatId).then(() => {
         debug(`Chat ${req.chatId} deleted by user`);
         return this.main.bot.editMessageText(this.main.locale.getMessage('cleared'), {
@@ -355,7 +359,7 @@ class Chat {
       });
     });
 
-    this.router.textOrCallbackQuery(/\/clear/, (req) => {
+    this.router.textOrCallbackQuery(/\/clear/, (req, res) => {
       return this.main.bot.sendMessage(req.chatId, this.main.locale.getMessage('clearSure'), {
         reply_markup: JSON.stringify({
           inline_keyboard: [[{
@@ -371,7 +375,7 @@ class Chat {
       });
     });
 
-    this.router.callback_query(/\/delete\/(?<channelId>.+)/, (req) => {
+    this.router.callback_query(/\/delete\/(?<channelId>.+)/, (req, res) => {
       const channelId = req.params.channelId;
 
       return this.main.db.getChannelById(channelId).then((channel) => {
@@ -404,7 +408,7 @@ class Chat {
       });
     });
 
-    this.router.textOrCallbackQuery(/\/delete/, provideChannels, withChannels, (req) => {
+    this.router.textOrCallbackQuery(/\/delete/, provideChannels, withChannels, (req, res) => {
       const channels = req.channels.map((channel) => {
         return [{
           text: channel.name,
@@ -443,7 +447,7 @@ class Chat {
       });
     });
 
-    this.router.callback_query(/\/deleteChannel/, provideChat, (req) => {
+    this.router.callback_query(/\/deleteChannel/, provideChat, (req, res) => {
       return Promise.resolve().then(() => {
         req.chat.isMuted = false;
         req.chat.channelId = null;
@@ -465,7 +469,7 @@ class Chat {
       });
     });
 
-    this.router.textOrCallbackQuery(/\/setChannel(?:\s+(?<channelId>.+))?/, provideChat, (req) => {
+    this.router.textOrCallbackQuery(/\/setChannel(?:\s+(?<channelId>.+))?/, provideChat, (req, res) => {
       const channelId = req.params.channelId;
       let requestedData = null;
 
@@ -535,10 +539,7 @@ class Chat {
           } else {
             message = 'Unexpected error';
           }
-          await this.main.bot.editMessageText(message, {
-            chat_id: req.chatId,
-            message_id: req.messageId
-          });
+          await editOrSendNewMessage(req.chatId, req.messageId, message);
           if (!isResolved) {
             throw err;
           }
@@ -552,7 +553,7 @@ class Chat {
       });
     });
 
-    this.router.callback_query(/\/options\/(?<key>[^\/]+)\/(?<value>.+)/, provideChat, (req) => {
+    this.router.callback_query(/\/options\/(?<key>[^\/]+)\/(?<value>.+)/, provideChat, (req, res) => {
       const {key, value} = req.params;
       return Promise.resolve().then(() => {
         switch (key) {
@@ -586,7 +587,7 @@ class Chat {
       });
     });
 
-    this.router.textOrCallbackQuery(/\/options/, provideChat, (req) => {
+    this.router.textOrCallbackQuery(/\/options/, provideChat, (req, res) => {
       return Promise.resolve().then(() => {
         if (req.callback_query && !req.query.rel) {
           return this.main.bot.editMessageReplyMarkup(JSON.stringify({
@@ -607,7 +608,7 @@ class Chat {
       });
     });
 
-    this.router.textOrCallbackQuery(/\/list/, provideChannels, withChannels, (req) => {
+    this.router.textOrCallbackQuery(/\/list/, provideChannels, withChannels, (req, res) => {
       const serviceIds = [];
       const serviceIdChannels = {};
       req.channels.forEach((channel) => {
@@ -694,7 +695,7 @@ class Chat {
           chatId: chatId,
           fromId: fromId,
           throwOnCommand: true
-        }, 3 * 60).then((req) => {
+        }, 3 * 60).then(({req, res, next}) => {
           return {req, msg};
         }, async (err) => {
           if (['RESPONSE_COMMAND', 'RESPONSE_TIMEOUT'].includes(err.code)) {
@@ -725,7 +726,7 @@ class Chat {
         }
         throw err;
       });
-    }
+    };
   }
 }
 

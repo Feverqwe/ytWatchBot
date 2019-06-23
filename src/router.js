@@ -18,10 +18,16 @@ class Router {
 
     this.handle = this.handle.bind(this);
 
+    /**
+     * @param {RegExp} [re]
+     * @param {...function(RouterReq, RouterRes, function())} callbacks
+     */
+    this.text = (re, ...callbacks) => {};
+
     messageTypes.forEach((type) => {
       /**
        * @param {RegExp} [re]
-       * @param {...function(RouterReq, function())} callbacks
+       * @param {...function(RouterReq, RouterRes, function())} callbacks
        */
       this[type] = (re, ...callbacks) => {
         const args = prepareArgs([re, ...callbacks]);
@@ -54,6 +60,7 @@ class Router {
     }
     commands.forEach((command) => {
       const req = new RouterReq(event, message);
+      const res = new RouterRes(this.main.bot, req);
       let index = 0;
       const next = () => {
         const route = this.stack[index++];
@@ -64,7 +71,7 @@ class Router {
         req.params = route.getParams(command);
 
         if (route.match(req)) {
-          return route.dispatch(req, next);
+          return route.dispatch(req, res, next);
         }
 
         next();
@@ -75,7 +82,7 @@ class Router {
 
   /**
    * @param {RegExp} [re]
-   * @param {...function(RouterReq, function())} callbacks
+   * @param {...function(RouterReq, RouterRes, function())} callbacks
    */
   all(re, ...callbacks) {
     const args = prepareArgs([re, ...callbacks]);
@@ -87,7 +94,7 @@ class Router {
 
   /**
    * @param {RegExp} [re]
-   * @param {...function(RouterReq, function())} [callbacks]
+   * @param {...function(RouterReq, RouterRes, function())} [callbacks]
    */
   message(re, ...callbacks) {
     const args = prepareArgs([re, ...callbacks]);
@@ -101,7 +108,7 @@ class Router {
 
   /**
    * @param {RegExp} [re]
-   * @param {...function(RouterReq, function())} [callbacks]
+   * @param {...function(RouterReq, RouterRes, function())} [callbacks]
    */
   callback_query(re, ...callbacks) {
     const args = prepareArgs([re, ...callbacks]);
@@ -115,7 +122,7 @@ class Router {
 
   /**
    * @param {String[]} methods
-   * @returns {function(RegExp, ...function(RouterReq, function()))}
+   * @returns {function(RegExp, ...function(RouterReq, RouterRes, function()))}
    */
   custom(methods) {
     return (re, ...callbacks) => {
@@ -134,7 +141,7 @@ class Router {
    * @param {String} details.fromId
    * @param {String} details.chatId
    * @param {number} timeoutSec
-   * @return {Promise.<RouterReq>}
+   * @return {Promise.<{req:RouterReq, res:RouterRes, next:function()}>}
    */
   waitResponse(re, details, timeoutSec) {
     if (!(re instanceof RegExp)) {
@@ -147,7 +154,7 @@ class Router {
         callback(new ErrorWithCode('ETIMEDOUT', 'RESPONSE_TIMEOUT'));
       }, timeoutSec * 1000);
 
-      const callback = (err, req) => {
+      const callback = (err, result) => {
         const pos = this.stack.indexOf(route);
         if (pos !== -1) {
           this.stack.splice(pos, 1);
@@ -155,20 +162,20 @@ class Router {
 
         clearTimeout(timeoutTimer);
 
-        err ? reject(err) : resolve(req);
+        err ? reject(err) : resolve(result);
       };
 
-      const route = new RouterRoute(details, re, (/*Req*/req, next) => {
+      const route = new RouterRoute(details, re, (/*RouterReq*/req, /*RouterRes*/res, next) => {
         if (details.throwOnCommand) {
           const entities = req.entities;
           if (entities.bot_command) {
             callback(new ErrorWithCode('BOT_COMMAND', 'RESPONSE_COMMAND'));
             next();
           } else {
-            callback(null, req);
+            callback(null, {req, res, next});
           }
         } else {
-          callback(null, req);
+          callback(null, {req, res, next});
         }
       });
 
@@ -194,9 +201,9 @@ class RouterRoute {
     this.type = details.type;
     this.fromId = details.fromId;
     this.chatId = details.chatId;
-    this.dispatch = (req, next) => {
+    this.dispatch = (req, res, next) => {
       try {
-        callback(req, next);
+        callback(req, res, next);
       } catch (err) {
         debug('Dispatch error', err);
       }
@@ -362,6 +369,13 @@ class RouterReq {
       cache.value = fn();
     }
     return cache.value;
+  }
+}
+
+class RouterRes {
+  constructor(bot, req) {
+    this.bot = bot;
+    this.req = req;
   }
 }
 
