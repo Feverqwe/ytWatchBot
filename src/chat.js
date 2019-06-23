@@ -492,29 +492,27 @@ class Chat {
           }
 
           return this.main.db.getChatByChannelId(channelId).then((chat) => {
-            if (chat) {
-              throw new ErrorWithCode('Channel already used', 'CHANNEL_ALREADY_USED');
-            }
+            throw new ErrorWithCode('Channel already used', 'CHANNEL_ALREADY_USED');
           }, (err) => {
-            if (err.code !== 'CHAR_IS_NOT_FOUND') {
+            if (err.code === 'CHAT_IS_NOT_FOUND') {
+              // pass
+            } else {
               throw err;
             }
-
+          }).then(() => {
             return this.main.bot.sendChatAction(channelId, 'typing').then(() => {
               return this.main.bot.getChat(channelId).then((chat) => {
                 if (chat.type !== 'channel') {
                   throw new ErrorWithCode('This chat type is not supported', 'INCORRECT_CHAT_TYPE');
                 }
                 req.chat.isMuted = false;
-                req.chat.channelId = channelId;
-                return req.chat.save().then(() => {
-                  return '@' + chat.username;
-                });
+                req.chat.channelId = '@' + chat.username;
+                return req.chat.save();
               });
             });
           });
-        }).then((channelId) => {
-          const message = this.main.locale.getMessage('telegramChannelSet').replace('{channelName}', channelId);
+        }).then(() => {
+          const message = this.main.locale.getMessage('telegramChannelSet').replace('{channelName}', req.chat.channelId);
           return editOrSendNewMessage(req.chatId, messageId, message).then(() => {
             if (req.callback_query) {
               return this.main.bot.editMessageReplyMarkup(JSON.stringify({
