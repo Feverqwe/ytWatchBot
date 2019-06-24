@@ -198,15 +198,6 @@ class Db {
     });
   }
 
-  getChatById(id) {
-    return this.model.Chat.findByPk(id).then((chat) => {
-      if (!chat) {
-        throw new ErrorWithCode('Chat is not found', 'CHAT_IS_NOT_FOUND');
-      }
-      return chat;
-    });
-  }
-
   getChatByChannelId(channelId) {
     return this.model.Chat.findOne({
       where: {channelId}
@@ -306,18 +297,16 @@ class Db {
     });
   }
 
-  setChannelsHasChangesById(ids) {
-    return this.model.Channel.update({
-      hasChanges: true
-    }, {
-      where: {id: ids}
-    });
-  }
-
   setChannelsSyncTimeoutExpiresAt(ids, minutes = 5) {
     const date = new Date();
     date.setMinutes(date.getMinutes() + minutes);
     return this.model.Channel.update({syncTimeoutExpiresAt: date}, {
+      where: {id: ids}
+    });
+  }
+
+  setChannelsSubscriptionExpiresAt(ids, expiresAt) {
+    return this.model.Channel.update({subscriptionExpiresAt: expiresAt}, {
       where: {id: ids}
     });
   }
@@ -330,12 +319,6 @@ class Db {
     });
   }
 
-  setChannelsChanges(changes, updateOnDuplicate) {
-    return this.model.Channel.bulkCreate(changes, {
-      updateOnDuplicate
-    });
-  }
-
   cleanUnusedChannels() {
     return this.model.Channel.destroy({
       where: {
@@ -344,13 +327,36 @@ class Db {
     });
   }
 
-  /**
-   * @param {string} videoId
-   * @return {Promise<boolean>}
-   */
-  putYtPubSubVideoId(videoId) {
-    return this.model.YtPubSub.upsert({
-      videoId, lastPushAt: new Date()
+  putYtPubSub(existsVideoIds, ytPubSubItems, channelIds) {
+    return this.sequelize.transaction({
+      isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
+    }, async (transaction) => {
+      await Promise.all([
+        this.model.YtPubSub.bulkCreate(ytPubSubItems, {
+          transaction
+        }),
+        this.model.Channel.update({
+          hasChanges: true
+        }, {
+          transaction,
+          where: {id: channelIds}
+        }),
+        this.model.YtPubSub.update({
+          lastPushAt: new Date()
+        }, {
+          transaction,
+          where: {id: existsVideoIds}
+        }),
+      ]);
+    });
+  }
+
+  getExistsYtPubSubVideoIds(ids) {
+    return this.model.YtPubSub.findAll({
+      where: {videoId: ids},
+      attributes: ['videoId']
+    }).then((items) => {
+      return items.map(item => item.videoId);
     });
   }
 

@@ -1,5 +1,6 @@
 import parallel from "./tools/parallel";
 import ErrorWithCode from "./tools/errorWithCode";
+import arrayDifferent from "./tools/arrayDifferent";
 
 const debug = require('debug')('app:YtPubSub');
 const path = require('path');
@@ -49,20 +50,19 @@ class YtPubSub {
       return this.main.db.getChannelsWithExpiresSubscription().then((channels) => {
         const channelIds = channels.map(channel => channel.id);
         return this.main.db.setChannelsSubscriptionTimeoutExpiresAt(channelIds, 5).then(() => {
-          const channelsChanges = [];
+          const expiresAt = new Date();
+          expiresAt.setSeconds(expiresAt.getSeconds() + this.main.config.push.leaseSeconds);
+
+          const subscribedChannelIds = [];
           return parallel(10, channels, (channel) => {
-            const id = channel.rawId;
-            return this.subscribe(id).then(() => {
-              const date = new Date();
-              date.setSeconds(date.getSeconds() + this.main.config.push.leaseSeconds);
-              channelsChanges.push(Object.assign({}, channel.get({plain: true}), {
-                subscriptionExpiresAt: date
-              }));
+            const rawId = channel.rawId;
+            return this.subscribe(rawId).then(() => {
+              subscribedChannelIds.push(channel.id);
             }).catch((err) => {
-              debug('subscribe error! %s %o', id, err);
+              debug('subscribe channel %s skip, cause error! %o', channel.id, err);
             });
           }).then(() => {
-            return this.main.db.setChannelsChanges(channelsChanges, ['subscriptionExpiresAt']);
+            return this.main.db.setChannelsSubscriptionExpiresAt(subscribedChannelIds, expiresAt);
           });
         });
       }).then(() => true);
@@ -124,24 +124,43 @@ class YtPubSub {
     this.pubsub.listen(this.main.config.push.port);
   }
 
-  changedChannelIds = [];
-  emitChannelsChanges = () => {
-    return this.main.db.setChannelsHasChangesById(this.changedChannelIds.splice(0));
+  feeds = [];
+  emitFeedsChanges = () => {
+    const videoIdChannelId = {};
+    const videoIds = [];
+    this.feeds.forEach(({videoId, channelId}) => {
+      if (!videoIds.includes(videoId)) {
+        videoIds.push(videoId);
+        videoIdChannelId[videoId] = channelId;
+      }
+    });
+
+    return this.main.db.getExistsYtPubSubVideoIds(videoIds).then((existsVideoIds) => {
+      const newVideoIds = arrayDifferent(videoIds, existsVideoIds);
+
+      const channelIds = [];
+      const ytPubSubItems = [];
+      newVideoIds.forEach((videoId) => {
+        const rawChannelId = videoIdChannelId[videoId];
+        const channelId = this.main.db.model.Channel.buildId('youtube', rawChannelId);
+        if (!channelIds.includes(channelId)) {
+          channelIds.push(channelId);
+        }
+        ytPubSubItems.push({videoId, lastPushAt: new Date()});
+      });
+
+      return this.main.db.putYtPubSub(existsVideoIds, ytPubSubItems, channelIds);
+    }).catch((err) => {
+      debug('emitFeedsChanges error %o', err);
+    });
   };
-  emitChannelsChangesThrottled = throttle(this.emitChannelsChanges, 60 * 1000, {
+  emitFeedsChangesThrottled = throttle(this.emitFeedsChanges, 60 * 1000, {
     leading: false
   });
 
   handleFeed({videoId, channelId}) {
-    return this.main.db.putYtPubSubVideoId(videoId).then((created) => {
-      if (created) {
-        const id = this.main.db.model.Channel.buildId('youtube', channelId);
-        this.changedChannelIds.push(id);
-        this.emitChannelsChangesThrottled();
-      }
-    }).catch((err) => {
-      debug('handleFeed %s %s error %o', videoId, channelId, err);
-    });
+    this.feeds.push({videoId, channelId});
+    this.emitFeedsChangesThrottled();
   }
 }
 
