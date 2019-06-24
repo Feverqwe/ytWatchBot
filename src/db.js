@@ -126,7 +126,7 @@ class Db {
         name: 'channelId_idx',
         fields: ['channelId']
       }, {
-        name: 'chatId_ChannelId_UNIQUE',
+        name: 'chatId_channelId_UNIQUE',
         unique: true,
         fields: ['chatId', 'channelId']
       }]
@@ -134,12 +134,14 @@ class Db {
     ChatIdChannelId.belongsTo(Chat, {foreignKey: 'chatId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
     ChatIdChannelId.belongsTo(Channel, {foreignKey: 'channelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
 
-    const Message = this.sequelize.define('messages', {
+    const Video = this.sequelize.define('videos', {
       id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
+      title: {type: Sequelize.STRING(191), allowNull: false},
+      previews: {type: Sequelize.JSON, allowNull: false},
+      duration: {type: Sequelize.STRING(191), allowNull: true},
       channelId: {type: Sequelize.STRING(191), allowNull: false},
-      publishedAt: {type: Sequelize.STRING(191), allowNull: false},
-      data: {type: Sequelize.TEXT, allowNull: false},
-      imageFileId: {type: Sequelize.TEXT, allowNull: true},
+      publishedAt: {type: Sequelize.DATE, allowNull: false},
+      telegramPreviewFileId: {type: Sequelize.TEXT, allowNull: true},
     }, {
       timestamps: false,
       indexes: [{
@@ -147,30 +149,30 @@ class Db {
         fields: ['publishedAt']
       }]
     });
-    Message.belongsTo(Channel, {foreignKey: 'channelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
+    Video.belongsTo(Channel, {foreignKey: 'channelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
 
-    const ChatIdMessageId = this.sequelize.define('chatIdMessageId', {
+    const ChatIdVideoId = this.sequelize.define('chatIdVideoId', {
       chatId: {type: Sequelize.STRING(191), allowNull: false},
-      messageId: {type: Sequelize.STRING(191), allowNull: false},
-      timeout: {type: Sequelize.INTEGER, allowNull: true, defaultValue: 0},
+      videoId: {type: Sequelize.STRING(191), allowNull: false},
+      sendTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: true},
     }, {
-      tableName: 'chatIdMessageId',
+      tableName: 'chatIdVideoId',
       timestamps: false,
       indexes: [{
-        name: 'chatIdMessageId_UNIQUE',
+        name: 'chatId_videoId_UNIQUE',
         unique: true,
-        fields: ['chatId', 'messageId']
+        fields: ['chatId', 'videoId']
       }]
     });
-    ChatIdMessageId.belongsTo(Chat, {foreignKey: 'chatId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
-    ChatIdMessageId.belongsTo(Message, {foreignKey: 'messageId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
+    ChatIdVideoId.belongsTo(Chat, {foreignKey: 'chatId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
+    ChatIdVideoId.belongsTo(Video, {foreignKey: 'videoId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
 
     this.model = {
       Channel,
       Chat,
       ChatIdChannelId,
-      Message,
-      ChatIdMessageId,
+      Video,
+      ChatIdVideoId,
       YtPubSub,
     };
   }
@@ -377,6 +379,7 @@ class Db {
       });
 
       await this.model.Video.bulkCreate(videos, {
+        // fields: ['id', 'title', 'previews', 'duration', 'channelId', 'publishedAt'],
         transaction
       });
 

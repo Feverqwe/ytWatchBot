@@ -65,7 +65,7 @@ class Checker {
             video.channelId = this.main.db.Channel.buildId('youtube', video.channelId);
 
             if (!channelIdChannel.has(video.channelId)) {
-              debug('Video %s skip, cause: Channel $s is not exists', video.id, video.channelId);
+              debug('Video %s skip, cause: Channel %s is not exists', video.id, video.channelId);
               return;
             }
 

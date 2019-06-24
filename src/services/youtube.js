@@ -126,11 +126,18 @@ class Youtube {
               return a.width > b.width ? -1 : 1;
             }).map(thumbnail => thumbnail.url);
 
+            let duration = null;
+            try {
+              duration = formatDuration(video.contentDetails.duration);
+            } catch (err) {
+              debug('formatDuration %s error', video.id, err);
+            }
+
             const result = {
               id: video.id,
               title: video.snippet.title,
               previews: previews,
-              duration: formatDuration(video.contentDetails.duration),
+              duration: duration,
               channelId: video.snippet.channelId,
               channelTitle: video.snippet.channelTitle,
               publishedAt: new Date(video.snippet.publishedAt),

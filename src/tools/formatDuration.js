@@ -9,7 +9,7 @@ const parseIso = (inp) => {
 const formatDuration = (str) => {
   const match = isoRegex.exec(str);
   if (!match) {
-    throw new Error(`Incorrect duration format! ${str}`);
+    throw new Error(`Incorrect format! ${str}`);
   }
 
   const parts = [
