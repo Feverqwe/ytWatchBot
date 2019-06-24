@@ -322,7 +322,7 @@ class Db {
     });
   }
 
-  cleanUnusedChannels() {
+  cleanChannels() {
     return this.model.Channel.destroy({
       where: {
         id: {[Op.notIn]: Sequelize.literal(`(SELECT DISTINCT channelId FROM chatIdChannelId)`)}
@@ -363,9 +363,9 @@ class Db {
     });
   }
 
-  cleanYtPubSubVideoIds() {
+  cleanYtPubSub() {
     const date = new Date();
-    date.setDate(date.getDate() - 14);
+    date.setDate(date.getDate() - 30);
     return this.model.YtPubSub.destroy({
       where: {
         lastPushAt: {[Op.lt]: date}
@@ -385,6 +385,16 @@ class Db {
   getChatIdChannelIdByChannelIds(channelIds) {
     return this.model.ChatIdChannelId.findAll({
       where: {channelId: channelIds}
+    });
+  }
+
+  cleanVideos() {
+    const date = new Date();
+    date.setDate(date.getDate() - 30);
+    return this.model.Video.destroy({
+      where: {
+        publishedAt: {[Op.lt]: date}
+      }
     });
   }
 

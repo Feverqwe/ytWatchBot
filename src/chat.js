@@ -743,9 +743,19 @@ class Chat {
       }
     };
 
+    const commands = [
+      {name: 'Check channels', method: 'checker.check'},
+      {name: 'Clean channels & videos', method: 'checker.clean'},
+      {name: 'Update pubsub', method: 'ytPubSub.updateSubscribes'},
+      {name: 'Clean pubsub', method: 'ytPubSub.clean'},
+    ];
+
     this.router.callback_query(/\/admin\/(?<command>.+)/, isAdmin, (req, res) => {
       const command = req.params.command;
       return Promise.resolve().then(() => {
+        if (!commands.some(({method}) => method === command)) {
+          throw new ErrorWithCode('Method is not found', 'METHOD_IS_NOT_FOUND');
+        }
         const {scope, endPoint} = resolvePath(this.main, command);
         return scope[endPoint].call(scope);
       }).then((result) => {
@@ -764,28 +774,15 @@ class Chat {
     this.router.textOrCallbackQuery(/\/admin/, isAdmin, (req, res) => {
       return this.main.bot.sendMessage(req.chatId, 'Admin menu', {
         reply_markup: JSON.stringify({
-          inline_keyboard: [
-            [
-              {
-                text: 'checker.check',
-                callback_data: '/admin/checker.check'
-              },
-              {
-                text: 'checker.clean',
-                callback_data: '/admin/checker.clean'
-              },
-            ],
-            [
-              {
-                text: 'ytPubSub.updateSubscribes',
-                callback_data: '/admin/ytPubSub.updateSubscribes'
-              },
-              {
-                text: 'ytPubSub.clean',
-                callback_data: '/admin/ytPubSub.clean'
-              },
-            ],
-          ]
+          inline_keyboard: commands.reduce((menu, {name, method}, index) => {
+            const buttons = index % 2 ? menu.pop() : [];
+            buttons.push({
+              text: name || method,
+              callback_data: `/admin/${method}`
+            });
+            menu.push(buttons);
+            return menu;
+          }, [])
         })
       }).catch((err) => {
         debug('%j error %o', req.command, err);

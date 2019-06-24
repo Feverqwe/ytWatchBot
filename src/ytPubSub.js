@@ -62,16 +62,20 @@ class YtPubSub {
               debug('subscribe channel %s skip, cause error! %o', channel.id, err);
             });
           }).then(() => {
-            return this.main.db.setChannelsSubscriptionExpiresAt(subscribedChannelIds, expiresAt);
+            return this.main.db.setChannelsSubscriptionExpiresAt(subscribedChannelIds, expiresAt).then((affectedRows) => {
+              return {affectedRows};
+            });
           });
         });
-      }).then(() => true);
+      });
     });
   }
 
   clean() {
     return oneLimit(() => {
-      return this.main.db.cleanYtPubSubVideoIds();
+      return this.main.db.cleanYtPubSub().then((count) => {
+        return {removedVideoIds: count};
+      });
     });
   }
 

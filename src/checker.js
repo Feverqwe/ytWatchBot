@@ -137,16 +137,27 @@ class Checker {
 
             const channelsChanges = Object.values(channelIdsChanges);
 
-            return this.main.db.putVideos(channelsChanges, videos, chatIdVideoIdChanges);
+            return this.main.db.putVideos(channelsChanges, videos, chatIdVideoIdChanges).then(() => {
+              return {
+                channelsChangesCount: channelsChanges.length,
+                videosCount: videos.length,
+                chatIdVideoIdChangesCount: chatIdVideoIdChanges.length,
+              };
+            });
           });
         });
-      }).then(() => true);
+      });
     });
   }
 
   clean() {
     return oneLimit(() => {
-      return this.main.db.cleanUnusedChannels();
+      return Promise.all([
+        this.main.db.cleanChannels(),
+        this.main.db.cleanVideos()
+      ]).then(([removedChannels, removedVideos]) => {
+        return {removedChannels, removedVideos};
+      });
     });
   }
 }
