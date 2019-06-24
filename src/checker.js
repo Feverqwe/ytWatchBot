@@ -138,6 +138,10 @@ class Checker {
             const channelsChanges = Object.values(channelIdsChanges);
 
             return this.main.db.putVideos(channelsChanges, videos, chatIdVideoIdChanges).then(() => {
+              if (videos.length) {
+                this.main.sender.check();
+              }
+
               return {
                 channelsChangesCount: channelsChanges.length,
                 videosCount: videos.length,

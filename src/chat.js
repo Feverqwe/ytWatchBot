@@ -746,6 +746,7 @@ class Chat {
     const commands = [
       {name: 'Check channels', method: 'checker.check'},
       {name: 'Clean channels & videos', method: 'checker.clean'},
+      {name: 'Sender check', method: 'sender.check'},
       {name: 'Update pubsub', method: 'ytPubSub.updateSubscribes'},
       {name: 'Clean pubsub', method: 'ytPubSub.clean'},
     ];

@@ -152,6 +152,7 @@ class Db {
     Video.belongsTo(Channel, {foreignKey: 'channelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
 
     const ChatIdVideoId = this.sequelize.define('chatIdVideoId', {
+      id: {type: Sequelize.INTEGER, allowNull: false, primaryKey: true, autoIncrement: true},
       chatId: {type: Sequelize.STRING(191), allowNull: false},
       videoId: {type: Sequelize.STRING(191), allowNull: false},
       sendTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: 0},
@@ -162,6 +163,9 @@ class Db {
         name: 'chatId_videoId_UNIQUE',
         unique: true,
         fields: ['chatId', 'videoId']
+      },{
+        name: 'chatId_idx',
+        fields: ['chatId']
       },{
         name: 'sendTimeoutExpiresAt_idx',
         fields: ['sendTimeoutExpiresAt']
@@ -415,6 +419,27 @@ class Db {
       await this.model.ChatIdVideoId.bulkCreate(chatIdVideoIdChanges, {
         transaction
       });
+    });
+  }
+
+  async getDistinctChatIdVideoIdChatIds() {
+    return this.model.ChatIdVideoId.aggregate('chatId', 'DISTINCT', {plain: false}).then((results) => {
+      return results.map(result => result.DISTINCT);
+    });
+  }
+
+  async getVideoIdsByChatId(chatId, limit = 10, offset) {
+    return this.model.ChatIdVideoId.findAll({
+      where: {chatId},
+      include: [
+        {model: this.model.Video, attributes: ['publishedAt']}
+      ],
+      order: [Sequelize.literal('video.publishedAt')],
+      attributes: ['videoId'],
+      offset: offset,
+      limit: limit,
+    }).then((results) => {
+      return results.map(chatIdVideoId => chatIdVideoId.videoId);
     });
   }
 }

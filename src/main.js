@@ -6,7 +6,7 @@ import Youtube from "./services/youtube";
 import Users from "./users";
 import MsgStack from "./msgStack";
 import Tracker from "./tracker";
-import MsgSender from "./msgSender";
+import Sender from "./sender";
 import Chat from "./chat";
 import Checker from "./checker";
 import YtPubSub from "./ytPubSub";
@@ -63,7 +63,7 @@ class Main extends Events {
     this.youtube = new Youtube(this);
 
     this.tracker = new Tracker(this);
-    this.msgSender = new MsgSender(this);
+    this.sender = new Sender(this);
     this.checker = new Checker(this);
 
     this.ytPubSub = new YtPubSub(this);
@@ -75,6 +75,7 @@ class Main extends Events {
       return Promise.all([
         this.ytPubSub.init(),
         this.checker.init(),
+        this.sender.init(),
         this.bot.getMe().then((user) => {
           this.botName = user.username;
           return this.bot.startPolling();
