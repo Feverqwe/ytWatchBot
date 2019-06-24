@@ -2,7 +2,8 @@ import ErrorWithCode from "./tools/errorWithCode";
 
 const debug = require('debug')('app:db');
 const Sequelize = require('sequelize');
-const {Op} = require('sequelize');
+const {Op} = Sequelize;
+const ISOLATION_LEVELS = Sequelize.Transaction.ISOLATION_LEVELS;
 
 class Db {
   constructor(/**Main*/main) {
@@ -349,6 +350,39 @@ class Db {
       where: {
         lastPushAt: {[Op.lt]: date}
       }
+    });
+  }
+
+  getExistsVideoIds(ids) {
+    return this.model.Video.findAll({
+      where: {id: ids},
+      attributes: ['id']
+    }).then((videos) => {
+      return videos.map(video => video.id);
+    });
+  }
+
+  getChatIdChannelIdByChannelIds(channelIds) {
+    return this.model.ChatIdChannelId.findAll({
+      where: {channelId: channelIds}
+    });
+  }
+
+  putVideos(channelsChanges, videos, chatIdVideoIdChanges) {
+    return this.sequelize.transaction({
+      isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
+    }, async (transaction) => {
+      await this.model.Channel.bulkCreate(channelsChanges, {
+        transaction
+      });
+
+      await this.model.Video.bulkCreate(videos, {
+        transaction
+      });
+
+      await this.model.ChatIdVideoId.bulkCreate(chatIdVideoIdChanges, {
+        transaction
+      });
     });
   }
 }

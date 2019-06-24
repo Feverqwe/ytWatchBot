@@ -6,6 +6,7 @@ import parallel from "../tools/parallel";
 import formatDuration from "../tools/formatDuration";
 import withRetry from "../tools/withRetry";
 
+const debug = require('debug')('app:Youtube');
 const got = require('got');
 
 const rateLimit = new RateLimit(1000);
@@ -94,8 +95,10 @@ class Youtube {
   }
 
   getVideos(channels) {
-    return this.getVideoIds(channels).then((videoIds) => {
-      return this.getVideosByIds(videoIds);
+    return this.getVideoIds(channels).then(({videoIds, skippedChannelIds}) => {
+      return this.getVideosByIds(videoIds).then((videos) => {
+        return {videos, skippedChannelIds};
+      });
     });
   }
 
@@ -149,6 +152,7 @@ class Youtube {
   }
 
   getVideoIds(channels) {
+    const resultSkippedChannelIds = [];
     const resultVideoIds = [];
     return parallel(10, channels, ({id: channelId, publishedAfter}) => {
       let pageLimit = 100;
@@ -181,8 +185,16 @@ class Youtube {
           }
         });
       };
-      return getPage();
-    }).then(() => resultVideoIds);
+      return getPage().catch((err) => {
+        debug(`getVideoIds %s skip, cause: error %o`, channelId, err);
+        resultSkippedChannelIds.push(channelId);
+      });
+    }).then(() => {
+      return {
+        videoIds: resultVideoIds,
+        skippedChannelIds: resultSkippedChannelIds
+      };
+    });
   }
 
   async requestChannelIdByQuery(query) {

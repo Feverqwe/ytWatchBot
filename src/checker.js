@@ -1,4 +1,4 @@
-import parallel from "./tools/parallel";
+import arrayDifferent from "./tools/arrayDifferent";
 
 const debug = require('debug')('app:Checker');
 const promiseLimit = require('promise-limit');
@@ -34,10 +34,12 @@ class Checker {
   check() {
     oneLimit(() => {
       return this.main.db.getChannelsForSync().then((channels) => {
+        const channelIdChannel = new Map();
         const channelIds = [];
         const rawChannels = [];
         channels.forEach(channel => {
           channelIds.push(channel.id);
+          channelIdChannel.set(channel.id, channel);
 
           let publishedAfter = channel.lastSyncAt;
           if (publishedAfter === null) {
@@ -51,8 +53,92 @@ class Checker {
             publishedAfter: publishedAfter
           });
         });
+
+        const syncAt = new Date();
         return this.main.db.setChannelsSyncTimeoutExpiresAt(channelIds, 5).then(() => {
           return this.main.youtube.getVideos(rawChannels);
+        }).then(({videos: rawVideos, skippedChannelIds: skippedRawChannelIds}) => {
+          const videoIdVideo = new Map();
+          const videoIds = [];
+          rawVideos.forEach((video) => {
+            video.id = this.main.db.Channel.buildId('youtube', video.id);
+            video.channelId = this.main.db.Channel.buildId('youtube', video.channelId);
+
+            if (!channelIdChannel.has(video.channelId)) {
+              debug('Video %s skip, cause: Channel $s is not exists', video.id, video.channelId);
+              return;
+            }
+
+            videoIdVideo.set(video.id, video);
+            videoIds.push(video.id);
+          });
+
+          const checkedChannelIds = channelIds.slice(0);
+          skippedRawChannelIds.forEach((rawId) => {
+            const id = this.main.db.Channel.buildId('youtube', rawId);
+            const pos = checkedChannelIds.indexOf(id);
+            if (pos !== -1) {
+              checkedChannelIds.splice(pos, 1);
+            }
+          });
+
+          return this.main.db.getExistsVideoIds(videoIds).then((existsVideoIds) => {
+            const videos = arrayDifferent(videoIds, existsVideoIds).map(id => videoIdVideo.get(id));
+            return {
+              videos,
+              channelIds: checkedChannelIds
+            }
+          });
+        }).then(({videos, channelIds}) => {
+          const channelIdsChanges = {};
+          const channelIdVideoIds = new Map();
+
+          channelIds.forEach((id) => {
+            channelIdsChanges[id] = {
+              id: id,
+              lastSyncAt: syncAt
+            };
+          });
+
+          videos.forEach((video) => {
+            const channel = channelIdChannel.get(video.channelId);
+            if (channel.title !== video.channelTitle) {
+              channelIdsChanges[channel.id].title = video.channelTitle;
+            }
+
+            let channelVideoIds = channelIdVideoIds.get(video.channelId);
+            if (!channelVideoIds) {
+              channelIdVideoIds.set(video.channelId, channelVideoIds = []);
+            }
+            channelVideoIds.push(video.id);
+          });
+
+          return this.main.db.getChatIdChannelIdByChannelIds(channelIds).then((chatIdChannelIdList) => {
+            const channelIdChatIds = new Map();
+            chatIdChannelIdList.forEach((chatIdChannelId) => {
+              let chatIds = channelIdChatIds.get(chatIdChannelId.channelId);
+              if (!chatIds) {
+                channelIdChatIds.set(chatIdChannelId.channelId, chatIds = []);
+              }
+              chatIds.push(chatIdChannelId.chatId);
+            });
+
+            const chatIdVideoIdChanges = [];
+            for (const [channelId, chatIds] of channelIdChatIds.entries()) {
+              const videoIds = channelIdVideoIds.get(channelId);
+              if (videoIds) {
+                videoIds.forEach((videoId) => {
+                  chatIds.forEach((chatId) => {
+                    chatIdVideoIdChanges.push({chatId, videoId});
+                  });
+                });
+              }
+            }
+
+            const channelsChanges = Object.values(channelIdsChanges);
+
+            return this.main.db.putVideos(channelsChanges, videos, chatIdVideoIdChanges);
+          });
         });
       });
     });
