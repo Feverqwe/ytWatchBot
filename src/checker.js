@@ -32,7 +32,7 @@ class Checker {
   }
 
   check() {
-    oneLimit(() => {
+    return oneLimit(() => {
       return this.main.db.getChannelsForSync().then((channels) => {
         const channelIdChannel = new Map();
         const channelIds = [];
@@ -49,7 +49,7 @@ class Checker {
           }
 
           rawChannels.push({
-            id: channel.id,
+            id: channel.rawId,
             publishedAfter: publishedAfter
           });
         });
@@ -61,8 +61,8 @@ class Checker {
           const videoIdVideo = new Map();
           const videoIds = [];
           rawVideos.forEach((video) => {
-            video.id = this.main.db.Channel.buildId('youtube', video.id);
-            video.channelId = this.main.db.Channel.buildId('youtube', video.channelId);
+            video.id = this.main.db.model.Channel.buildId('youtube', video.id);
+            video.channelId = this.main.db.model.Channel.buildId('youtube', video.channelId);
 
             if (!channelIdChannel.has(video.channelId)) {
               debug('Video %s skip, cause: Channel %s is not exists', video.id, video.channelId);
@@ -75,7 +75,7 @@ class Checker {
 
           const checkedChannelIds = channelIds.slice(0);
           skippedRawChannelIds.forEach((rawId) => {
-            const id = this.main.db.Channel.buildId('youtube', rawId);
+            const id = this.main.db.model.Channel.buildId('youtube', rawId);
             const pos = checkedChannelIds.indexOf(id);
             if (pos !== -1) {
               checkedChannelIds.splice(pos, 1);
@@ -140,13 +140,13 @@ class Checker {
             return this.main.db.putVideos(channelsChanges, videos, chatIdVideoIdChanges);
           });
         });
-      });
+      }).then(() => true);
     });
   }
 
   clean() {
-    oneLimit(() => {
-      this.main.db.cleanUnusedChannels();
+    return oneLimit(() => {
+      return this.main.db.cleanUnusedChannels();
     });
   }
 }

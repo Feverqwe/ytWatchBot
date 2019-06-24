@@ -107,7 +107,7 @@ class Youtube {
     return parallel(10, arrayByPart(videoIds, 50), (videoIds) => {
       let pageLimit = 100;
       const getPage = (pageToken) => {
-        return withRetry(3, () => {
+        return withRetry({count: 3, timeout: 250}, () => {
           return gotLimited('https://www.googleapis.com/youtube/v3/videos', {
             query: {
               part: 'snippet,contentDetails',
@@ -164,7 +164,7 @@ class Youtube {
     return parallel(10, channels, ({id: channelId, publishedAfter}) => {
       let pageLimit = 100;
       const getPage = (pageToken) => {
-        return withRetry(3, () => {
+        return withRetry({count: 3, timeout: 250}, () => {
           return gotLimited('https://www.googleapis.com/youtube/v3/activities', {
             query: {
               part: 'contentDetails',
@@ -193,7 +193,7 @@ class Youtube {
         });
       };
       return getPage().catch((err) => {
-        debug(`getVideoIds %s skip, cause: error %o`, channelId, err);
+        debug(`getVideoIds for channel (%s) skip, cause: error %o`, channelId, err);
         resultSkippedChannelIds.push(channelId);
       });
     }).then(() => {

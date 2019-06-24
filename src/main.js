@@ -38,7 +38,8 @@ const config = {
     database: 'ytWatchBot',
     user: '',
     password: ''
-  }
+  },
+  adminIds: []
 };
 
 loadConfig(path.join(__dirname, '..', 'config.json'), config);

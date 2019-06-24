@@ -59,7 +59,7 @@ class Db {
         rawId() {
           const id = this.getDataValue('id');
           if (id) {
-            return id.substr(3);
+            return JSON.parse(id.substr(3));
           }
         }
       },
@@ -154,7 +154,7 @@ class Db {
     const ChatIdVideoId = this.sequelize.define('chatIdVideoId', {
       chatId: {type: Sequelize.STRING(191), allowNull: false},
       videoId: {type: Sequelize.STRING(191), allowNull: false},
-      sendTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: true},
+      sendTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: 0},
     }, {
       tableName: 'chatIdVideoId',
       timestamps: false,
@@ -162,6 +162,10 @@ class Db {
         name: 'chatId_videoId_UNIQUE',
         unique: true,
         fields: ['chatId', 'videoId']
+      },{
+        name: 'sendTimeoutExpiresAt_idx',
+        unique: true,
+        fields: ['sendTimeoutExpiresAt']
       }]
     });
     ChatIdVideoId.belongsTo(Chat, {foreignKey: 'chatId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
@@ -325,6 +329,10 @@ class Db {
     return this.model.Channel.update({subscriptionTimeoutExpiresAt: date}, {
       where: {id: ids}
     });
+  }
+
+  setChannelsChanges(changes) {
+    return this.model.Channel.bulkCreate(changes);
   }
 
   cleanUnusedChannels() {

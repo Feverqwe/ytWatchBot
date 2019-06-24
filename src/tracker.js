@@ -1,3 +1,5 @@
+import withRetry from "./tools/withRetry";
+
 const debug = require('debug')('app:tracker');
 const got = require('got');
 const uuidV4 = require('uuid/v4');
@@ -8,31 +10,26 @@ class Tracker {
     this.main = main;
     this.tid = main.config.gaId;
     this.lru = new QuickLRU({maxSize: 100});
-  }
 
-  async track(chatId, params) {
-    const cid = this.getUuid(chatId);
-
-    const defaultParams = {
+    this.defaultParams = {
       v: 1,
       tid: this.tid,
       an: 'bot',
       aid: 'bot'
-    };
-
-    let lastError = null;
-    for (let i = 0; i < 5; i++) {
-      try {
-        return await got.post('https://www.google-analytics.com/collect', {
-          body: Object.assign({cid}, defaultParams, params),
-          form: true,
-        });
-      } catch (err) {
-        lastError = err;
-        await new Promise(r => setTimeout(r, 250));
-      }
     }
-    debug('track error: %o', lastError);
+  }
+
+  track(chatId, params) {
+    const cid = this.getUuid(chatId);
+
+    return withRetry({count: 3, timeout: 250}, () => {
+      return got.post('https://www.google-analytics.com/collect', {
+        body: Object.assign({cid}, this.defaultParams, params),
+        form: true,
+      });
+    }).catch((err) => {
+      debug('track error: %o', err);
+    });
   }
 
   getUuid(chatId) {

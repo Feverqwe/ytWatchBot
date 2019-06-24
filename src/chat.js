@@ -3,8 +3,10 @@ import htmlSanitize from "./tools/htmlSanitize";
 import ErrorWithCode from "./tools/errorWithCode";
 import pageBtnList from "./tools/pageBtnList";
 import splitTextByPages from "./tools/splitTextByPages";
+import resolvePath from "./tools/resolvePath";
 
 const debug = require('debug')('app:Chat');
+const jsonStringifyPretty = require("json-stringify-pretty-compact");
 const fs = require('fs');
 
 class Chat {
@@ -26,6 +28,7 @@ class Chat {
     this.base();
     this.menu();
     this.user();
+    this.admin();
   }
 
   base() {
@@ -728,6 +731,66 @@ class Chat {
         throw err;
       });
     };
+  }
+
+  admin() {
+    const isAdmin = (req, res, next) => {
+      const adminIds = this.main.config.adminIds || [];
+      if (adminIds.includes(req.chatId)) {
+        next();
+      } else {
+        this.main.bot.sendMessage(req.chatId, `Access denied for you (${req.chatId})`);
+      }
+    };
+
+    this.router.callback_query(/\/admin\/(?<command>.+)/, isAdmin, (req, res) => {
+      const command = req.params.command;
+      return Promise.resolve().then(() => {
+        const {scope, endPoint} = resolvePath(this.main, command);
+        return scope[endPoint].call(scope);
+      }).then((result) => {
+        const resultStr = jsonStringifyPretty({result}, {
+          indent: 2
+        });
+        return this.main.bot.sendMessage(req.chatId, `${command} complete!\n${resultStr}`);
+      }, async (err) => {
+        await this.main.bot.sendMessage(req.chatId, `${command} error!`);
+        throw err;
+      }).catch((err) => {
+        debug('%j error %o', req.command, err);
+      });
+    });
+
+    this.router.textOrCallbackQuery(/\/admin/, isAdmin, (req, res) => {
+      return this.main.bot.sendMessage(req.chatId, 'Admin menu', {
+        reply_markup: JSON.stringify({
+          inline_keyboard: [
+            [
+              {
+                text: 'checker.check',
+                callback_data: '/admin/checker.check'
+              },
+              {
+                text: 'checker.clean',
+                callback_data: '/admin/checker.clean'
+              },
+            ],
+            [
+              {
+                text: 'ytPubSub.updateSubscribes',
+                callback_data: '/admin/ytPubSub.updateSubscribes'
+              },
+              {
+                text: 'ytPubSub.clean',
+                callback_data: '/admin/ytPubSub.clean'
+              },
+            ],
+          ]
+        })
+      }).catch((err) => {
+        debug('%j error %o', req.command, err);
+      });
+    });
   }
 }
 

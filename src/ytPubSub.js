@@ -49,25 +49,29 @@ class YtPubSub {
       return this.main.db.getChannelsWithExpiresSubscription().then((channels) => {
         const channelIds = channels.map(channel => channel.id);
         return this.main.db.setChannelsSubscriptionTimeoutExpiresAt(channelIds, 5).then(() => {
+          const channelsChanges = [];
           return parallel(10, channels, (channel) => {
             const id = channel.rawId;
             return this.subscribe(id).then(() => {
               const date = new Date();
               date.setSeconds(date.getSeconds() + this.main.config.push.leaseSeconds);
-              return channel.update({
+              channelsChanges.push({
+                id: channel.id,
                 subscriptionExpiresAt: date
               });
             }).catch((err) => {
               debug('subscribe error! %s %o', id, err);
             });
+          }).then(() => {
+            return this.main.db.setChannelsChanges(channelsChanges);
           });
         });
-      });
+      }).then(() => true);
     });
   }
 
   clean() {
-    oneLimit(() => {
+    return oneLimit(() => {
       return this.main.db.cleanYtPubSubVideoIds();
     });
   }

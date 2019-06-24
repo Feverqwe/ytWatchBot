@@ -1,9 +1,10 @@
-async function withRetry(count, callback, ...errorHandlers) {
-  if (typeof count !== 'number') {
+async function withRetry(params, callback, ...errorHandlers) {
+  if (typeof params === 'function') {
     errorHandlers.unshift(callback);
-    callback = count;
-    count = 3;
+    callback = params;
+    params = undefined;
   }
+  const {count = 3, timeout = 0} = params || {};
   let lastError = null;
   for (let i = 0; i < count; i++) {
     try {
@@ -12,6 +13,9 @@ async function withRetry(count, callback, ...errorHandlers) {
       lastError = err;
       if (errorHandlers.some(handle => handle(err))) {
         break;
+      }
+      if (timeout) {
+        await new Promise(r => setTimeout(r, timeout));
       }
     }
   }
