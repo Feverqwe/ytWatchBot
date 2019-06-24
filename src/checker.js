@@ -94,10 +94,10 @@ class Checker {
           const channelIdVideoIds = new Map();
 
           channelIds.forEach((id) => {
-            channelIdsChanges[id] = {
-              id: id,
+            const channel = channelIdChannel.get(id);
+            channelIdsChanges[id] = Object.assign({}, channel.get({plain: true}), {
               lastSyncAt: syncAt
-            };
+            });
           });
 
           videos.forEach((video) => {

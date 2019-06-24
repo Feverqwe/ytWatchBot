@@ -164,7 +164,6 @@ class Db {
         fields: ['chatId', 'videoId']
       },{
         name: 'sendTimeoutExpiresAt_idx',
-        unique: true,
         fields: ['sendTimeoutExpiresAt']
       }]
     });
@@ -331,8 +330,10 @@ class Db {
     });
   }
 
-  setChannelsChanges(changes) {
-    return this.model.Channel.bulkCreate(changes);
+  setChannelsChanges(changes, updateOnDuplicate) {
+    return this.model.Channel.bulkCreate(changes, {
+      updateOnDuplicate
+    });
   }
 
   cleanUnusedChannels() {
@@ -384,6 +385,7 @@ class Db {
     }, async (transaction) => {
       await Promise.all([
         this.model.Channel.bulkCreate(channelsChanges, {
+          updateOnDuplicate: ['lastSyncAt', 'title'],
           transaction
         }),
         this.model.Video.bulkCreate(videos, {

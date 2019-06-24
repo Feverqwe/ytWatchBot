@@ -55,15 +55,14 @@ class YtPubSub {
             return this.subscribe(id).then(() => {
               const date = new Date();
               date.setSeconds(date.getSeconds() + this.main.config.push.leaseSeconds);
-              channelsChanges.push({
-                id: channel.id,
+              channelsChanges.push(Object.assign({}, channel.get({plain: true}), {
                 subscriptionExpiresAt: date
-              });
+              }));
             }).catch((err) => {
               debug('subscribe error! %s %o', id, err);
             });
           }).then(() => {
-            return this.main.db.setChannelsChanges(channelsChanges);
+            return this.main.db.setChannelsChanges(channelsChanges, ['subscriptionExpiresAt']);
           });
         });
       }).then(() => true);
