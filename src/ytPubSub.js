@@ -58,7 +58,7 @@ class YtPubSub {
             const rawId = channel.rawId;
             return this.subscribe(rawId).then(() => {
               subscribedChannelIds.push(channel.id);
-            }).catch((err) => {
+            }, (err) => {
               debug('subscribe channel %s skip, cause error! %o', channel.id, err);
             });
           }).then(() => {
