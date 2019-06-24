@@ -34,33 +34,25 @@ class Checker {
   check() {
     oneLimit(() => {
       return this.main.db.getChannelsForSync().then((channels) => {
-        const channelIds = channels.map(channel => channel.id);
-        return this.main.db.setChannelsSyncTimeoutExpiresAt(channelIds, 5).then(() => {
-          const videoIds = [];
-          return parallel(10, channels, (channel) => {
-            const rawChannelId = channel.rawId;
+        const channelIds = [];
+        const rawChannels = [];
+        channels.forEach(channel => {
+          channelIds.push(channel.id);
 
-            let publishedAfter = channel.lastSyncAt;
-            if (publishedAfter === null) {
-              const date = new Date();
-              date.setDate(date.getDate() - 7);
-              publishedAfter = date;
-            }
+          let publishedAfter = channel.lastSyncAt;
+          if (publishedAfter === null) {
+            const date = new Date();
+            date.setDate(date.getDate() - 7);
+            publishedAfter = date;
+          }
 
-            return this.main.youtube.getVideoIds(rawChannelId, {
-              publishedAfter: publishedAfter
-            }).then((_videoIds) => {
-              videoIds.push(..._videoIds);
-            });
-          }).then(() => {
-            return this.main.youtube.getVideos(videoIds).then((videos) => {
-              videos.forEach((video) => {
-                video.id = this.main.db.Channel.buildId('youtube', video.id);
-                video.channelId = this.main.db.Channel.buildId('youtube', video.channelId);
-              });
-              return videos;
-            });
+          rawChannels.push({
+            id: channel.id,
+            publishedAfter: publishedAfter
           });
+        });
+        return this.main.db.setChannelsSyncTimeoutExpiresAt(channelIds, 5).then(() => {
+          return this.main.youtube.getVideos(rawChannels);
         });
       });
     });
@@ -72,6 +64,5 @@ class Checker {
     });
   }
 }
-
 
 export default Checker;

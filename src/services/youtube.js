@@ -4,6 +4,7 @@ import RateLimit from "../tools/rateLimit";
 import arrayByPart from "../tools/arrayByPart";
 import parallel from "../tools/parallel";
 import formatDuration from "../tools/formatDuration";
+import withRetry from "../tools/withRetry";
 
 const got = require('got');
 
@@ -92,13 +93,18 @@ class Youtube {
     this.name = 'Youtube';
   }
 
-  getVideos(videoIds) {
+  getVideos(channels) {
+    return this.getVideoIds(channels).then((videoIds) => {
+      return this.getVideosByIds(videoIds);
+    });
+  }
+
+  getVideosByIds(videoIds) {
+    const resultVideos = [];
     return parallel(10, arrayByPart(videoIds, 50), (videoIds) => {
-      const resultVideos = [];
       let pageLimit = 100;
       const getPage = (pageToken) => {
-        let retryLimit = 3;
-        const requestPage = () => {
+        return withRetry(3, () => {
           return gotLimited('https://www.googleapis.com/youtube/v3/videos', {
             query: {
               part: 'snippet,contentDetails',
@@ -108,16 +114,8 @@ class Youtube {
               key: this.main.config.ytToken
             },
             json: true,
-          }).catch((err) => {
-            const isDailyLimitExceeded = isDailyLimitExceeded(err);
-            if (!isDailyLimitExceeded && retryLimit-- > 0) {
-              return new Promise(r => setTimeout(r, 250)).then(() => requestPage());
-            }
-            throw err;
           });
-        };
-
-        return requestPage().then(({body}) => {
+        }, isDailyLimitExceeded).then(({body}) => {
           const videos = VideosResponse(body);
 
           videos.items.forEach((video) => {
@@ -143,61 +141,48 @@ class Youtube {
               throw new ErrorWithCode(`Page limit reached `, 'PAGE_LIMIT_REACHED');
             }
             return getPage(videos.nextPageToken);
-          } else {
-            return resultVideos;
           }
         });
       };
       return getPage();
-    });
+    }).then(() => resultVideos);
   }
 
-  getVideoIds(channelId, {publishedAfter}) {
+  getVideoIds(channels) {
     const resultVideoIds = [];
-    let pageLimit = 100;
-    const getPage = (pageToken) => {
-      let retryLimit = 3;
-      const requestPage = () => {
-        return gotLimited('https://www.googleapis.com/youtube/v3/activities', {
-          query: {
-            part: 'contentDetails',
-            channelId: channelId,
-            maxResults: 50,
-            pageToken: pageToken,
-            fields: 'items/contentDetails/upload/videoId,nextPageToken',
-            publishedAfter: publishedAfter.toISOString(),
-            key: this.main.config.ytToken
-          },
-          json: true,
-        }).catch((err) => {
-          const isDailyLimitExceeded = isDailyLimitExceeded(err);
-          if (!isDailyLimitExceeded && retryLimit-- > 0) {
-            return new Promise(r => setTimeout(r, 250)).then(() => requestPage());
+    return parallel(10, channels, ({id: channelId, publishedAfter}) => {
+      let pageLimit = 100;
+      const getPage = (pageToken) => {
+        return withRetry(3, () => {
+          return gotLimited('https://www.googleapis.com/youtube/v3/activities', {
+            query: {
+              part: 'contentDetails',
+              channelId: channelId,
+              maxResults: 50,
+              pageToken: pageToken,
+              fields: 'items/contentDetails/upload/videoId,nextPageToken',
+              publishedAfter: publishedAfter.toISOString(),
+              key: this.main.config.ytToken
+            },
+            json: true,
+          });
+        }, isDailyLimitExceeded).then(({body}) => {
+          const activities = ActivitiesResponse(body);
+          activities.items.forEach((item) => {
+            const videoId = item.contentDetails.upload.videoId;
+            resultVideoIds.push(videoId);
+          });
+
+          if (activities.nextPageToken) {
+            if (--pageLimit < 0) {
+              throw new ErrorWithCode(`Page limit reached ${channelId}`, 'PAGE_LIMIT_REACHED');
+            }
+            return getPage(activities.nextPageToken);
           }
-          throw err;
         });
       };
-
-      return requestPage().then(({body}) => {
-        const activities = ActivitiesResponse(body);
-        activities.items.forEach((item) => {
-          const videoId = item.contentDetails.upload.videoId;
-          if (!resultVideoIds.includes(videoId)) {
-            resultVideoIds.push(videoId);
-          }
-        });
-
-        if (activities.nextPageToken) {
-          if (--pageLimit < 0) {
-            throw new ErrorWithCode(`Page limit reached ${channelId}`, 'PAGE_LIMIT_REACHED');
-          }
-          return getPage(activities.nextPageToken);
-        } else {
-          return resultVideoIds;
-        }
-      });
-    };
-    return getPage();
+      return getPage();
+    }).then(() => resultVideoIds);
   }
 
   async requestChannelIdByQuery(query) {
