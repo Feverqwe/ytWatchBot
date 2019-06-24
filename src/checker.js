@@ -55,7 +55,7 @@ class Checker {
         });
 
         const syncAt = new Date();
-        return this.main.db.setChannelsSyncTimeoutExpiresAt(channelIds, 5).then(() => {
+        return this.main.db.setChannelsSyncTimeoutExpiresAtAndUncheckChanges(channelIds, 5).then(() => {
           return this.main.youtube.getVideos(rawChannels);
         }).then(({videos: rawVideos, skippedChannelIds: skippedRawChannelIds}) => {
           const videoIdVideo = new Map();

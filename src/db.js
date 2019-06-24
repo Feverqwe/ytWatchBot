@@ -297,10 +297,13 @@ class Db {
     });
   }
 
-  setChannelsSyncTimeoutExpiresAt(ids, minutes = 5) {
+  setChannelsSyncTimeoutExpiresAtAndUncheckChanges(ids, minutes = 5) {
     const date = new Date();
     date.setMinutes(date.getMinutes() + minutes);
-    return this.model.Channel.update({syncTimeoutExpiresAt: date}, {
+    return this.model.Channel.update({
+      syncTimeoutExpiresAt: date,
+      hasChanges: false
+    }, {
       where: {id: ids}
     });
   }
