@@ -374,14 +374,14 @@ class Db {
     return this.sequelize.transaction({
       isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
     }, async (transaction) => {
-      await this.model.Channel.bulkCreate(channelsChanges, {
-        transaction
-      });
-
-      await this.model.Video.bulkCreate(videos, {
-        // fields: ['id', 'title', 'previews', 'duration', 'channelId', 'publishedAt'],
-        transaction
-      });
+      await Promise.all([
+        this.model.Channel.bulkCreate(channelsChanges, {
+          transaction
+        }),
+        this.model.Video.bulkCreate(videos, {
+          transaction
+        })
+      ]);
 
       await this.model.ChatIdVideoId.bulkCreate(chatIdVideoIdChanges, {
         transaction
