@@ -345,7 +345,7 @@ class Db {
           lastPushAt: new Date()
         }, {
           transaction,
-          where: {id: existsVideoIds}
+          where: {videoId: existsVideoIds}
         }),
       ]);
     });
