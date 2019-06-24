@@ -362,7 +362,7 @@ class Db {
 
   cleanYtPubSubVideoIds() {
     const date = new Date();
-    date.setDate(date.getDate() - 7);
+    date.setDate(date.getDate() - 14);
     return this.model.YtPubSub.destroy({
       where: {
         lastPushAt: {[Op.lt]: date}
