@@ -123,7 +123,7 @@ class Sender {
 
         if (!videoIds.length) break;
 
-        yield self.provideVideo(videoIds.shift(), (video) => {
+        yield self.provideVideo(videoIds.shift(), async (video) => {
           console.log(chat.id, video.id);
         }).catch((err) => {
           if (err.code === 'VIDEO_IS_NOT_FOUND') {
