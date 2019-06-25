@@ -27,9 +27,7 @@ class Sender {
   runGenerators() {
     return oneLimit(() => {
       return new Promise(((resolve, reject) => {
-        const chatIdGenerator = this.chatIdGenerator;
-        const suspendedGenerators = this.suspendedGenerators;
-        const threads = this.threads;
+        const {chatIdGenerator, suspendedGenerators, threads} = this;
         const threadLimit = 10;
         let canceled = false;
 
