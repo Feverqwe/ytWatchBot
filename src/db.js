@@ -202,6 +202,12 @@ class Db {
     });
   }
 
+  getChatsByIds(ids) {
+    return this.model.Chat.findAll({
+      where: {id: ids}
+    });
+  }
+
   getChatByChannelId(channelId) {
     return this.model.Chat.findOne({
       where: {channelId}
@@ -430,7 +436,7 @@ class Db {
     });
   }
 
-  async getDistinctChatIdVideoIdChatIds() {
+  getDistinctChatIdVideoIdChatIds() {
     return this.sequelize.query(`
       SELECT DISTINCT chatId FROM chatIdVideoId
       INNER JOIN chats ON chatIdVideoId.chatId = chats.id
@@ -440,7 +446,7 @@ class Db {
     });
   }
 
-  async getVideoIdsByChatId(chatId, limit = 10, offest = 0) {
+  getVideoIdsByChatId(chatId, limit = 10, offest = 0) {
     return this.model.ChatIdVideoId.findAll({
       where: {chatId},
       include: [{
@@ -454,6 +460,15 @@ class Db {
       limit: limit,
     }).then((results) => {
       return results.map(chatIdVideoId => chatIdVideoId.videoId);
+    });
+  }
+
+  getVideoById(id) {
+    return this.model.Video.findByPk(id).then((video) => {
+      if (!video) {
+        throw new ErrorWithCode('Video is not found', 'VIDEO_IS_NOT_FOUND');
+      }
+      return video;
     });
   }
 }

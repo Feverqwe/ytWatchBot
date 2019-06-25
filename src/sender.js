@@ -1,3 +1,6 @@
+import promiseFinally from "./tools/promiseFinally";
+import getProvider from "./tools/getProvider";
+
 const debug = require('debug')('app:Sender');
 const promiseLimit = require('promise-limit');
 
@@ -22,21 +25,33 @@ class Sender {
 
   check() {
     return this.main.db.getDistinctChatIdVideoIdChatIds().then((chatIds) => {
+      chatIds = chatIds.filter(chatId => !this.chatIdGenerator.has(chatId));
       return this.main.db.setChatSubscriptionTimeoutExpiresAt(chatIds).then(() => {
-        let addedCount = 0;
-        chatIds.forEach((chatId) => {
-          if (!this.chatIdGenerator.has(chatId)) {
+        return this.main.db.getChatsByIds(chatIds).then((chats) => {
+          const chatIdChat = new Map();
+          chats.forEach((chat) => {
+            chatIdChat.set(chat.id, chat);
+          });
+
+          let addedCount = 0;
+          chatIds.forEach((chatId) => {
+            const chat = chatIdChat.get(chatId);
+            if (!chat) {
+              debug('check chat %s skip, cause chat not found!', chatId);
+              return;
+            }
+
             addedCount++;
-            const gen = this.getChatSenderGenerator(chatId);
+            const gen = this.getChatSenderGenerator(this, chat);
             gen.chatId = chatId;
             this.chatIdGenerator.set(chatId, gen);
             this.suspendedGenerators.push(gen);
-          }
+          });
+
+          this.runGenerators();
+
+          return {addedCount: addedCount};
         });
-
-        this.runGenerators();
-
-        return {addedCount: addedCount};
       });
     });
   }
@@ -104,12 +119,12 @@ class Sender {
     });
   }
 
-  getChatSenderGenerator = function* (chatId) {
+  getChatSenderGenerator = function* (self, chat) {
     let offset = 0;
     const getVideoIds = () => {
       const prevOffset = offset;
       offset += 10;
-      return this.main.db.getVideoIdsByChatId(chatId, 10, prevOffset);
+      return self.main.db.getVideoIdsByChatId(chat.id, 10, prevOffset);
     };
 
     let videoIds = null;
@@ -118,14 +133,17 @@ class Sender {
         videoIds = yield getVideoIds();
       }
 
-      if (videoIds.length) {
-        const videoId = videoIds.shift();
-        yield new Promise(r => setTimeout(r, 150)).then(() => {
-          console.log(chatId, videoId);
-        });
-      }
+      if (!videoIds.length) break;
+
+      yield self.provideVideo(videoIds.shift(), (video) => {
+        console.log(chat.id, video.id);
+      });
     }
-  }.bind(this);
+  };
+
+  provideVideo = getProvider((id) => {
+    return this.main.db.getVideoById(id);
+  });
 }
 
 export default Sender;
