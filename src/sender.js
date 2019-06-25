@@ -37,15 +37,13 @@ class Sender {
 
         function fillThreads() {
           for (let i = 0; i < threadLimit; i++) {
-            if (threads.length < threadLimit) {
-              runThread();
-            }
+            runThread();
           }
         }
 
         function runThread() {
           if (!suspendedGenerators.length && !threads.length || canceled) return resolve();
-          if (!suspendedGenerators.length) return;
+          if (!suspendedGenerators.length || threads.length < threadLimit) return;
 
           const gen = suspendedGenerators.shift();
           threads.push(gen);
