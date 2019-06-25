@@ -219,7 +219,7 @@ class Db {
     });
   }
 
-  setChatSubscriptionTimeoutExpiresAt(ids, minutes = 5) {
+  setChatSendTimeoutExpiresAt(ids, minutes = 5) {
     const date = new Date();
     date.setMinutes(date.getMinutes() + minutes);
     return this.model.Chat.update({sendTimeoutExpiresAt: date}, {

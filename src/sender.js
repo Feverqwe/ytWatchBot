@@ -25,7 +25,7 @@ class Sender {
   check() {
     return this.main.db.getDistinctChatIdVideoIdChatIds().then((chatIds) => {
       chatIds = chatIds.filter(chatId => !this.chatIdGenerator.has(chatId));
-      return this.main.db.setChatSubscriptionTimeoutExpiresAt(chatIds).then(() => {
+      return this.main.db.setChatSendTimeoutExpiresAt(chatIds).then(() => {
         return this.main.db.getChatsByIds(chatIds).then((chats) => {
           const chatIdChat = new Map();
           chats.forEach((chat) => {
