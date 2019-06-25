@@ -135,7 +135,7 @@ class Youtube {
 
             const result = {
               id: video.id,
-              url: `https://youtu.be/${encodeURIComponent(video.id)}`,
+              url: getVideoUrl(video.id),
               title: video.snippet.title,
               previews: previews,
               duration: duration,
@@ -370,6 +370,10 @@ class Youtube {
       });
     });
   }
+}
+
+function getVideoUrl(videoId) {
+  return 'https://youtu.be/' + encodeURIComponent(videoId);
 }
 
 function getChannelUrl(channelId) {
