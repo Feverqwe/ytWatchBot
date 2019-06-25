@@ -1,6 +1,6 @@
 import promiseFinally from "./promiseFinally";
 
-const getProvider = (requestDataById) => {
+const getProvider = (requestDataById, keepAlive = 5 * 1000) => {
   const idCacheMap = new Map();
   const inflightCache = {};
 
@@ -28,9 +28,12 @@ const getProvider = (requestDataById) => {
       cache.useCount++;
       return Promise.resolve(callback(cache.result)).then(...promiseFinally(() => {
         cache.useCount--;
-        if (!cache.useCount) {
-          idCacheMap.delete(id);
-        }
+        clearTimeout(cache.timerId);
+        cache.timerId = setTimeout(() => {
+          if (!cache.useCount) {
+            idCacheMap.delete(id);
+          }
+        }, keepAlive);
       }));
     });
   }
