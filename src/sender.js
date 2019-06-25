@@ -1,4 +1,5 @@
 import getProvider from "./tools/getProvider";
+import ChatSender from "./chatSender";
 
 const debug = require('debug')('app:Sender');
 const promiseLimit = require('promise-limit');
@@ -24,17 +25,16 @@ class Sender {
 
   check() {
     return this.main.db.getDistinctChatIdVideoIdChatIds().then((chatIds) => {
-      const newChatIds = chatIds.filter(chatId => !this.chatIdGenerator.has(chatId));
+      const newChatIds = chatIds.filter(chatId => !this.chatIdChatSender.has(chatId));
       return this.main.db.setChatSendTimeoutExpiresAt(newChatIds).then(() => {
         return this.main.db.getChatsByIds(newChatIds).then((chats) => {
           chats.forEach((chat) => {
-            const gen = this.getChatSenderGenerator(chat);
-            gen.chatId = chat.id;
-            this.chatIdGenerator.set(chat.id, gen);
-            this.suspendedGenerators.push(gen);
+            const chatSender = new ChatSender(this.main, chat);
+            this.chatIdChatSender.set(chat.id, chatSender);
+            this.suspended.push(chatSender);
           });
 
-          this.runGenerators();
+          this.run();
 
           return {addedCount: chats.length};
         });
@@ -42,16 +42,15 @@ class Sender {
     });
   }
 
-  suspendedGenerators = [];
-  chatIdGenerator = new Map();
+  chatIdChatSender = new Map();
+  suspended = [];
   threads = [];
 
-  runGenerators() {
+  run() {
     return oneLimit(() => {
       return new Promise(((resolve, reject) => {
-        const {chatIdGenerator, suspendedGenerators, threads} = this;
+        const {chatIdChatSender, suspended, threads} = this;
         const threadLimit = 10;
-        let canceled = false;
 
         return fillThreads();
 
@@ -62,83 +61,35 @@ class Sender {
         }
 
         function runThread() {
-          if (!suspendedGenerators.length && !threads.length || canceled) return resolve();
-          if (!suspendedGenerators.length || threads.length === threadLimit) return;
+          if (!suspended.length && !threads.length) return resolve();
+          if (!suspended.length || threads.length === threadLimit) return;
 
-          const gen = suspendedGenerators.shift();
-          threads.push(gen);
+          const chatSender = suspended.shift();
+          threads.push(chatSender);
 
-          let ret = null;
+          return chatSender.next().then(() => {
+            onFinish(chatSender);
+          }, (err) => {
+            debug('chatSender %s stopped, cause error', this.chat.id, err);
+            onFinish(chatSender, true);
+          });
+        }
 
-          try {
-            const {lastError: err, lastResult: result} = gen;
-            gen.lastResult = gen.lastError = undefined;
-
-            ret = err ? gen.throw(err) : gen.next(result);
-
-            if (ret.done) return onFinish();
-
-            ret.value.then((result) => {
-              gen.lastResult = result;
-            }, (err) => {
-              gen.lastError = err;
-            }).then(onFinish);
-          } catch (err) {
-            canceled = true;
-            return reject(err);
+        function onFinish(chatSender, isError) {
+          const pos = threads.indexOf(chatSender);
+          if (pos !== -1) {
+            threads.splice(pos, 1);
           }
-
-          function onFinish() {
-            const pos = threads.indexOf(gen);
-            if (pos !== -1) {
-              threads.splice(pos, 1);
-            }
-            if (!ret.done) {
-              suspendedGenerators.push(gen);
-            } else {
-              chatIdGenerator.delete(gen.chatId);
-            }
-            fillThreads();
+          if (chatSender.done || isError) {
+            chatIdChatSender.delete(chatSender.chat.id);
+          } else {
+            suspended.push(chatSender);
           }
+          fillThreads();
         }
       }));
     });
   }
-
-  getChatSenderGenerator = function* (chat) {
-    const self = this;
-    let offset = 0;
-    const getVideoIds = () => {
-      const prevOffset = offset;
-      offset += 10;
-      return this.main.db.getVideoIdsByChatId(chat.id, 10, prevOffset);
-    };
-
-    try {
-      let videoIds = null;
-      while (true) {
-        if (!videoIds || !videoIds.length) {
-          videoIds = yield getVideoIds();
-        }
-
-        if (!videoIds.length) break;
-
-        yield self.provideVideo(videoIds.shift(), async (video) => {
-          console.log(chat.id, video.id);
-        }).catch((err) => {
-          if (err.code === 'VIDEO_IS_NOT_FOUND') {
-            // pass
-          } else {
-            throw err;
-          }
-        }).then(() => {
-          // return this.main.db.deleteChatIdVideoId(chat.id, video.id);
-        });
-      }
-    } catch (err) {
-      debug('chatSenderGenerator %s stopped, cause error', chat.id, err);
-    }
-  }.bind(this);
 
   provideVideo = getProvider((id) => {
     return this.main.db.getVideoById(id);
