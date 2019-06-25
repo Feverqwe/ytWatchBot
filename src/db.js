@@ -471,6 +471,12 @@ class Db {
       return video;
     });
   }
+
+  deleteChatIdVideoId(chatId, videoId) {
+    return this.model.ChatIdVideoId.destroy({
+      where: {chatId, videoId}
+    });
+  }
 }
 
 export default Db;

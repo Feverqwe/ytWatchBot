@@ -42,7 +42,7 @@ class Sender {
             }
 
             addedCount++;
-            const gen = this.getChatSenderGenerator(this, chat);
+            const gen = this.getChatSenderGenerator(chat);
             gen.chatId = chatId;
             this.chatIdGenerator.set(chatId, gen);
             this.suspendedGenerators.push(gen);
@@ -119,12 +119,13 @@ class Sender {
     });
   }
 
-  getChatSenderGenerator = function* (self, chat) {
+  getChatSenderGenerator = function* (chat) {
+    const self = this;
     let offset = 0;
     const getVideoIds = () => {
       const prevOffset = offset;
       offset += 10;
-      return self.main.db.getVideoIdsByChatId(chat.id, 10, prevOffset);
+      return this.main.db.getVideoIdsByChatId(chat.id, 10, prevOffset);
     };
 
     let videoIds = null;
@@ -137,9 +138,10 @@ class Sender {
 
       yield self.provideVideo(videoIds.shift(), (video) => {
         console.log(chat.id, video.id);
+        // return this.main.db.deleteChatIdVideoId(chat.id, video.id);
       });
     }
-  };
+  }.bind(this);
 
   provideVideo = getProvider((id) => {
     return this.main.db.getVideoById(id);
