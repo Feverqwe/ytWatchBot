@@ -32,7 +32,6 @@ class Sender {
             chatIdChat.set(chat.id, chat);
           });
 
-          let addedCount = 0;
           chatIds.forEach((chatId) => {
             const chat = chatIdChat.get(chatId);
             if (!chat) {
@@ -40,7 +39,6 @@ class Sender {
               return;
             }
 
-            addedCount++;
             const gen = this.getChatSenderGenerator(chat);
             gen.chatId = chatId;
             this.chatIdGenerator.set(chatId, gen);
@@ -49,7 +47,7 @@ class Sender {
 
           this.runGenerators();
 
-          return {addedCount: addedCount};
+          return {addedCount: chatIds.length};
         });
       });
     });
