@@ -20,6 +20,27 @@ class Sender {
     }, 5 * 60 * 1000);
   }
 
+  check() {
+    return this.main.db.getDistinctChatIdVideoIdChatIds().then((chatIds) => {
+      return this.main.db.setChatSubscriptionTimeoutExpiresAt(chatIds).then(() => {
+        let addedCount = 0;
+        chatIds.forEach((chatId) => {
+          if (!this.chatIdGenerator.has(chatId)) {
+            addedCount++;
+            const gen = this.getChatSenderGenerator(chatId);
+            gen.chatId = chatId;
+            this.chatIdGenerator.set(chatId, gen);
+            this.suspendedGenerators.push(gen);
+          }
+        });
+
+        this.runGenerators();
+
+        return {addedCount: addedCount};
+      });
+    });
+  }
+
   suspendedGenerators = [];
   chatIdGenerator = new Map();
   threads = [];
@@ -83,28 +104,7 @@ class Sender {
     });
   }
 
-  check() {
-    return this.main.db.getDistinctChatIdVideoIdChatIds().then((chatIds) => {
-      let addedCount = 0;
-      chatIds.forEach((chatId) => {
-        if (!this.chatIdGenerator.has(chatId)) {
-          addedCount++;
-          const gen = this.getChatSenderGenerator(chatId);
-          gen.chatId = chatId;
-          this.chatIdGenerator.set(chatId, gen);
-          this.suspendedGenerators.push(gen);
-        }
-      });
-
-      this.runGenerators();
-
-      return {addedCount: addedCount};
-    });
-  }
-
   getChatSenderGenerator = function* (chatId) {
-    yield this.main.db.setChatSubscriptionTimeoutExpiresAt([chatId]);
-
     let offset = 0;
     const getVideoIds = () => {
       const prevOffset = offset;
