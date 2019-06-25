@@ -67,20 +67,20 @@ class Sender {
           const chatSender = suspended.shift();
           threads.push(chatSender);
 
-          return chatSender.next().then(() => {
-            onFinish(chatSender);
+          return chatSender.next().then((isDone) => {
+            onFinish(chatSender, isDone);
           }, (err) => {
             debug('chatSender %s stopped, cause error', this.chat.id, err);
             onFinish(chatSender, true);
           });
         }
 
-        function onFinish(chatSender, isError) {
+        function onFinish(chatSender, isDone) {
           const pos = threads.indexOf(chatSender);
           if (pos !== -1) {
             threads.splice(pos, 1);
           }
-          if (chatSender.done || isError) {
+          if (isDone) {
             chatIdChatSender.delete(chatSender.chat.id);
           } else {
             suspended.push(chatSender);

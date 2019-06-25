@@ -5,7 +5,6 @@ class ChatSender {
     this.chatId = chat.id;
 
     this.videoIds = null;
-    this.done = false;
   }
 
   offset = 0;
@@ -21,8 +20,7 @@ class ChatSender {
     }
 
     if (!this.videoIds.length) {
-      this.done = true;
-      return;
+      return true;
     }
 
     return this.main.sender.provideVideo(this.videoIds.shift(), async (video) => {
@@ -35,7 +33,7 @@ class ChatSender {
       }
     }).then(() => {
       // return this.main.db.deleteChatIdVideoId(chat.id, video.id);
-    });
+    }).then((() => {}));
   }
 }
 
