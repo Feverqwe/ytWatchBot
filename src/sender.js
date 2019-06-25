@@ -1,4 +1,3 @@
-import promiseFinally from "./tools/promiseFinally";
 import getProvider from "./tools/getProvider";
 
 const debug = require('debug')('app:Sender');
@@ -128,18 +127,29 @@ class Sender {
       return this.main.db.getVideoIdsByChatId(chat.id, 10, prevOffset);
     };
 
-    let videoIds = null;
-    while (true) {
-      if (!videoIds || !videoIds.length) {
-        videoIds = yield getVideoIds();
+    try {
+      let videoIds = null;
+      while (true) {
+        if (!videoIds || !videoIds.length) {
+          videoIds = yield getVideoIds();
+        }
+
+        if (!videoIds.length) break;
+
+        yield self.provideVideo(videoIds.shift(), (video) => {
+          console.log(chat.id, video.id);
+        }).catch((err) => {
+          if (err.code === 'VIDEO_IS_NOT_FOUND') {
+            // pass
+          } else {
+            throw err;
+          }
+        }).then(() => {
+          // return this.main.db.deleteChatIdVideoId(chat.id, video.id);
+        });
       }
-
-      if (!videoIds.length) break;
-
-      yield self.provideVideo(videoIds.shift(), (video) => {
-        console.log(chat.id, video.id);
-        // return this.main.db.deleteChatIdVideoId(chat.id, video.id);
-      });
+    } catch (err) {
+      debug('chatSenderGenerator %s stopped, cause error', chat.id, err);
     }
   }.bind(this);
 
