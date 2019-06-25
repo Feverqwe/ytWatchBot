@@ -135,6 +135,7 @@ class Youtube {
 
             const result = {
               id: video.id,
+              url: `https://youtu.be/${encodeURIComponent(video.id)}`,
               title: video.snippet.title,
               previews: previews,
               duration: duration,

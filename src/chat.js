@@ -315,7 +315,7 @@ class Chat {
             const {name, url} = channel;
             message = this.main.locale.getMessage('channelAdded')
               .replace('{channelName}', htmlSanitize('a', name, url))
-              .replace('{serviceName}', service.name);
+              .replace('{serviceName}', htmlSanitize(service.name));
           }
           return editOrSendNewMessage(req.chatId, messageId, message, {
             disable_web_page_preview: true,

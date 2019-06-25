@@ -140,6 +140,7 @@ class Db {
 
     const Video = this.sequelize.define('videos', {
       id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
+      url: {type: Sequelize.STRING(191), allowNull: false},
       title: {type: Sequelize.STRING(191), allowNull: false},
       previews: {type: Sequelize.JSON, allowNull: false},
       duration: {type: Sequelize.STRING(191), allowNull: true},
@@ -199,6 +200,12 @@ class Db {
       defaults: {id}
     }).then(([chat, isBuilt]) => {
       return chat;
+    });
+  }
+
+  changeChatId(id, newId) {
+    return this.model.Chat.update({id: newId}, {
+      where: {id}
     });
   }
 
@@ -463,8 +470,13 @@ class Db {
     });
   }
 
-  getVideoById(id) {
-    return this.model.Video.findByPk(id).then((video) => {
+  getVideoWithChannelById(id) {
+    return this.model.Video.findOne({
+      where: {id},
+      include: [
+        {model: this.model.Channel, required: true}
+      ]
+    }).then((video) => {
       if (!video) {
         throw new ErrorWithCode('Video is not found', 'VIDEO_IS_NOT_FOUND');
       }

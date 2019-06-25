@@ -70,7 +70,7 @@ class Sender {
           return chatSender.next().then((isDone) => {
             onFinish(chatSender, isDone);
           }, (err) => {
-            debug('chatSender %s stopped, cause error', this.chat.id, err);
+            debug('chatSender %s stopped, cause: error %o', chatSender.chat.id, err);
             onFinish(chatSender, true);
           });
         }
@@ -92,7 +92,7 @@ class Sender {
   }
 
   provideVideo = getProvider((id) => {
-    return this.main.db.getVideoById(id);
+    return this.main.db.getVideoWithChannelById(id);
   }, 60 * 1000);
 }
 
