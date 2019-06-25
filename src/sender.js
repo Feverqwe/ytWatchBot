@@ -62,7 +62,7 @@ class Sender {
 
         function runThread() {
           if (!suspendedGenerators.length && !threads.length || canceled) return resolve();
-          if (!suspendedGenerators.length || threads.length < threadLimit) return;
+          if (!suspendedGenerators.length || threads.length === threadLimit) return;
 
           const gen = suspendedGenerators.shift();
           threads.push(gen);
@@ -112,16 +112,17 @@ class Sender {
       return this.main.db.getVideoIdsByChatId(chatId, 10, prevOffset);
     };
 
-    let videoIds = yield getVideoIds();
-    while (videoIds.length) {
-      const videoId = videoIds.shift();
-
-      yield new Promise(r => setTimeout(r, 150)).then(() => {
-        console.log(chatId, videoId);
-      });
-
-      if (!videoIds.length) {
+    let videoIds = null;
+    while (true) {
+      if (!videoIds || !videoIds.length) {
         videoIds = yield getVideoIds();
+      }
+
+      if (videoIds.length) {
+        const videoId = videoIds.shift();
+        yield new Promise(r => setTimeout(r, 150)).then(() => {
+          console.log(chatId, videoId);
+        });
       }
     }
   }.bind(this);
