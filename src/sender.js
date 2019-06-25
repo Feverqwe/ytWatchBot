@@ -27,27 +27,16 @@ class Sender {
       chatIds = chatIds.filter(chatId => !this.chatIdGenerator.has(chatId));
       return this.main.db.setChatSendTimeoutExpiresAt(chatIds).then(() => {
         return this.main.db.getChatsByIds(chatIds).then((chats) => {
-          const chatIdChat = new Map();
           chats.forEach((chat) => {
-            chatIdChat.set(chat.id, chat);
-          });
-
-          chatIds.forEach((chatId) => {
-            const chat = chatIdChat.get(chatId);
-            if (!chat) {
-              debug('check chat %s skip, cause chat not found!', chatId);
-              return;
-            }
-
             const gen = this.getChatSenderGenerator(chat);
-            gen.chatId = chatId;
-            this.chatIdGenerator.set(chatId, gen);
+            gen.chatId = chat.id;
+            this.chatIdGenerator.set(chat.id, gen);
             this.suspendedGenerators.push(gen);
           });
 
           this.runGenerators();
 
-          return {addedCount: chatIds.length};
+          return {addedCount: chats.length};
         });
       });
     });
