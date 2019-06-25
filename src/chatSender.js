@@ -33,7 +33,7 @@ class ChatSender {
       }
     }).then(() => {
       // return this.main.db.deleteChatIdVideoId(chat.id, video.id);
-    }).then((() => {}));
+    }).then(() => {});
   }
 }
 
