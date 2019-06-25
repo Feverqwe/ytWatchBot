@@ -142,7 +142,7 @@ class Sender {
 
   provideVideo = getProvider((id) => {
     return this.main.db.getVideoById(id);
-  });
+  }, 60 * 1000);
 }
 
 export default Sender;

@@ -1,6 +1,6 @@
 import promiseFinally from "./promiseFinally";
 
-const getProvider = (requestDataById, keepAlive = 5 * 1000) => {
+const getProvider = (requestDataById, keepAlive = 0) => {
   const idCacheMap = new Map();
   const inflightCache = {};
 
