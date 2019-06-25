@@ -34,13 +34,17 @@ class Db {
       channelId: {type: Sequelize.STRING(191), allowNull: true},
       isHidePreview: {type: Sequelize.BOOLEAN, defaultValue: false},
       isMuted: {type: Sequelize.BOOLEAN, defaultValue: false},
+      sendTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: 0},
     }, {
       timestamps: false,
       indexes: [{
         name: 'channelId_UNIQUE',
         unique: true,
         fields: ['channelId']
-      },]
+      },{
+        name: 'sendTimeoutExpiresAt_idx',
+        fields: ['sendTimeoutExpiresAt']
+      }]
     });
 
     const Channel = this.sequelize.define('channels', {
@@ -155,7 +159,6 @@ class Db {
       id: {type: Sequelize.INTEGER, allowNull: false, primaryKey: true, autoIncrement: true},
       chatId: {type: Sequelize.STRING(191), allowNull: false},
       videoId: {type: Sequelize.STRING(191), allowNull: false},
-      sendTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: 0},
     }, {
       tableName: 'chatIdVideoId',
       timestamps: false,
@@ -166,9 +169,6 @@ class Db {
       },{
         name: 'chatId_idx',
         fields: ['chatId']
-      },{
-        name: 'sendTimeoutExpiresAt_idx',
-        fields: ['sendTimeoutExpiresAt']
       }]
     });
     ChatIdVideoId.belongsTo(Chat, {foreignKey: 'chatId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
@@ -210,6 +210,14 @@ class Db {
         throw new ErrorWithCode('Chat is not found', 'CHAT_IS_NOT_FOUND');
       }
       return chat;
+    });
+  }
+
+  setChatSubscriptionTimeoutExpiresAt(ids, minutes = 5) {
+    const date = new Date();
+    date.setMinutes(date.getMinutes() + minutes);
+    return this.model.Chat.update({sendTimeoutExpiresAt: date}, {
+      where: {id: ids}
     });
   }
 
@@ -423,20 +431,26 @@ class Db {
   }
 
   async getDistinctChatIdVideoIdChatIds() {
-    return this.model.ChatIdVideoId.aggregate('chatId', 'DISTINCT', {plain: false}).then((results) => {
-      return results.map(result => result.DISTINCT);
+    return this.sequelize.query(`
+      SELECT DISTINCT chatId FROM chatIdVideoId
+      INNER JOIN chats ON chatIdVideoId.chatId = chats.id
+      WHERE chats.sendTimeoutExpiresAt < "${new Date().toISOString()}"
+    `,  { type: Sequelize.QueryTypes.SELECT}).then((results) => {
+      return results.map(result => result.chatId);
     });
   }
 
-  async getVideoIdsByChatId(chatId, limit = 10, offset) {
+  async getVideoIdsByChatId(chatId, limit = 10, offest = 0) {
     return this.model.ChatIdVideoId.findAll({
       where: {chatId},
-      include: [
-        {model: this.model.Video, attributes: ['publishedAt']}
-      ],
+      include: [{
+        model: this.model.Video,
+        attributes: ['publishedAt'],
+        required: true,
+      }],
       order: [Sequelize.literal('video.publishedAt')],
       attributes: ['videoId'],
-      offset: offset,
+      offset: offest,
       limit: limit,
     }).then((results) => {
       return results.map(chatIdVideoId => chatIdVideoId.videoId);

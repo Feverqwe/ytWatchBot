@@ -1,4 +1,4 @@
-const debug = require('debug')('app:Checker');
+const debug = require('debug')('app:Sender');
 const promiseLimit = require('promise-limit');
 
 const oneLimit = promiseLimit(1);
@@ -20,70 +20,95 @@ class Sender {
     }, 5 * 60 * 1000);
   }
 
-  check() {
+  suspendedGenerators = [];
+  chatIdGenerator = new Map();
+  threads = [];
+
+  runGenerators() {
     return oneLimit(() => {
-      return this.main.db.getDistinctChatIdVideoIdChatIds().then((chatIds) => {
-        return new Promise(((resolve, reject) => {
-          const suspendedGenerators = chatIds.map((chatId) => {
-            return this.chatSenderGenerator(chatId);
-          });
-          const threadLimit = 10;
-          const threads = [];
-          let canceled = false;
-          const next = () => {
-            if (!suspendedGenerators.length && !threads.length || canceled) return resolve();
-            if (!suspendedGenerators.length) return;
-            const generator = suspendedGenerators.shift();
+      return new Promise(((resolve, reject) => {
+        const chatIdGenerator = this.chatIdGenerator;
+        const suspendedGenerators = this.suspendedGenerators;
+        const threads = this.threads;
+        const threadLimit = 10;
+        let canceled = false;
 
-            const onFinish = () => {
-              const pos = threads.indexOf(generator);
-              if (pos !== -1) {
-                threads.splice(pos, 1);
-              }
-              if (!ret.done) {
-                suspendedGenerators.push(generator);
-              }
-              if (suspendedGenerators.length) {
-                next();
-              }
-            };
+        return fillThreads();
 
-            threads.push(generator);
-
-            let ret = null;
-            try {
-              const {lastError: err, lastResult: result} = generator;
-              generator.lastResult = generator.lastError = undefined;
-              if (err) {
-                ret = generator.throw(err);
-              } else {
-                ret = generator.next(result);
-              }
-            } catch (err) {
-              canceled = true;
-              return reject(err);
+        function fillThreads() {
+          for (let i = 0; i < threadLimit; i++) {
+            if (threads.length < threadLimit) {
+              runThread();
             }
+          }
+        }
 
-            if (ret.done) {
-              return setImmediate(onFinish);
-            }
+        function runThread() {
+          if (!suspendedGenerators.length && !threads.length || canceled) return resolve();
+          if (!suspendedGenerators.length) return;
+
+          const gen = suspendedGenerators.shift();
+          threads.push(gen);
+
+          let ret = null;
+
+          try {
+            const {lastError: err, lastResult: result} = gen;
+            gen.lastResult = gen.lastError = undefined;
+
+            ret = err ? gen.throw(err) : gen.next(result);
+
+            if (ret.done) return onFinish();
 
             ret.value.then((result) => {
-              generator.lastResult = result;
+              gen.lastResult = result;
             }, (err) => {
-              generator.lastError = err;
+              gen.lastError = err;
             }).then(onFinish);
-          };
-
-          for (let i = 0; i < threadLimit; i++) {
-            next();
+          } catch (err) {
+            canceled = true;
+            return reject(err);
           }
-        }));
-      });
+
+          function onFinish() {
+            const pos = threads.indexOf(gen);
+            if (pos !== -1) {
+              threads.splice(pos, 1);
+            }
+            if (!ret.done) {
+              suspendedGenerators.push(gen);
+            } else {
+              chatIdGenerator.delete(gen.chatId);
+            }
+            fillThreads();
+          }
+        }
+      }));
     });
   }
 
-  chatSenderGenerator = function* (chatId) {
+  check() {
+    return this.main.db.getDistinctChatIdVideoIdChatIds().then((chatIds) => {
+      let addedCount = 0;
+      chatIds.forEach((chatId) => {
+        if (!this.chatIdGenerator.has(chatId)) {
+          addedCount++;
+          const gen = this.getChatSenderGenerator(chatId);
+          gen.chatId = chatId;
+          this.chatIdGenerator.set(chatId, gen);
+          this.suspendedGenerators.push(gen);
+        }
+      });
+
+      this.runGenerators();
+
+      return {addedCount: addedCount};
+    });
+  }
+
+  getChatSenderGenerator = function* (chatId) {
+    yield this.main.db.setChatSubscriptionTimeoutExpiresAt([chatId]);
+
     let offset = 0;
     const getVideoIds = () => {
       const prevOffset = offset;
@@ -95,7 +120,7 @@ class Sender {
     while (videoIds.length) {
       const videoId = videoIds.shift();
 
-      yield new Promise(r => setTimeout(r, 500)).then(() => {
+      yield new Promise(r => setTimeout(r, 150)).then(() => {
         console.log(chatId, videoId);
       });
 
