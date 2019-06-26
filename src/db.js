@@ -265,11 +265,17 @@ class Db {
 
       const channels = [];
       for (const oldChannel of oldChannels) {
+        let publishedAfter = new Date(oldChannel.publishedAfter);
+        if (isNaN(publishedAfter.getTime())) {
+          publishedAfter = null;
+        }
+
         channels.push({
           id: oldChannel.id,
           service: oldChannel.service,
           title: oldChannel.title,
           url: oldChannel.url,
+          lastSyncAt: publishedAfter
         });
       }
       await bulk(channels, (channels) => {
