@@ -99,9 +99,9 @@ class Db {
     const YtPubSub = this.sequelize.define('ytPubSub', {
       videoId: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
       lastPushAt: {type: Sequelize.DATE, allowNull: false, primaryKey: true},
-      createdAt: {type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW},
     }, {
-      timestamps: false,
+      timestamps: true,
+      updatedAt: false,
       indexes: [{
         name: 'lastPushAt_idx',
         fields: ['lastPushAt']
@@ -111,10 +111,10 @@ class Db {
     const ChatIdChannelId = this.sequelize.define('chatIdChannelId', {
       chatId: {type: Sequelize.STRING(191), allowNull: false},
       channelId: {type: Sequelize.STRING(191), allowNull: false},
-      createdAt: {type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW},
     }, {
       tableName: 'chatIdChannelId',
-      timestamps: false,
+      timestamps: true,
+      updatedAt: false,
       getterMethods: {
         serviceId() {
           let result = null;
@@ -154,10 +154,10 @@ class Db {
       channelId: {type: Sequelize.STRING(191), allowNull: false},
       publishedAt: {type: Sequelize.DATE, allowNull: false},
       telegramPreviewFileId: {type: Sequelize.TEXT, allowNull: true},
-      createdAt: {type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW},
     }, {
       tableName: 'videos',
-      timestamps: false,
+      timestamps: true,
+      updatedAt: false,
       indexes: [{
         name: 'publishedAt_idx',
         fields: ['publishedAt']
@@ -169,10 +169,10 @@ class Db {
       id: {type: Sequelize.INTEGER, allowNull: false, primaryKey: true, autoIncrement: true},
       chatId: {type: Sequelize.STRING(191), allowNull: false},
       videoId: {type: Sequelize.STRING(191), allowNull: false},
-      createdAt: {type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW},
     }, {
       tableName: 'chatIdVideoId',
-      timestamps: false,
+      timestamps: true,
+      updatedAt: false,
       indexes: [{
         name: 'chatId_videoId_UNIQUE',
         unique: true,
