@@ -35,7 +35,7 @@ class Db {
       channelId: {type: Sequelize.STRING(191), allowNull: true},
       isHidePreview: {type: Sequelize.BOOLEAN, defaultValue: false},
       isMuted: {type: Sequelize.BOOLEAN, defaultValue: false},
-      sendTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: true},
+      sendTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: new Date(new Date('1970-01-01 00:00:00'))},
       parentChatId: {type: Sequelize.STRING(191), allowNull: true},
     }, {
       tableName: 'chats',
@@ -59,9 +59,9 @@ class Db {
       url: {type: Sequelize.TEXT, allowNull: false},
       hasChanges: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
       lastSyncAt: {type: Sequelize.DATE, allowNull: true},
-      syncTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: true},
-      subscriptionExpiresAt: {type: Sequelize.DATE, allowNull: true},
-      subscriptionTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: true},
+      syncTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: new Date('1970-01-01 00:00:00')},
+      subscriptionExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: new Date('1970-01-01 00:00:00')},
+      subscriptionTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: new Date('1970-01-01 00:00:00')},
     }, {
       tableName: 'channels',
       timestamps: true,
@@ -469,14 +469,8 @@ class Db {
     date.setMinutes(date.getMinutes() - 30);
     return this.model.Channel.findAll({
       where: {
-        subscriptionExpiresAt: {[Op.or]: [
-          {[Op.lt]: date},
-          null
-        ]},
-        subscriptionTimeoutExpiresAt: {[Op.or]: [
-          {[Op.lt]: new Date()},
-          null
-        ]}
+        subscriptionExpiresAt: {[Op.lt]: date},
+        subscriptionTimeoutExpiresAt: {[Op.lt]: new Date()}
       }
     });
   }
@@ -486,10 +480,7 @@ class Db {
     date.setMinutes(date.getMinutes() - this.main.config.interval);
     return this.model.Channel.findAll({
       where: {
-        syncTimeoutExpiresAt: {[Op.or]: [
-          {[Op.lt]: new Date()},
-          null
-        ]},
+        syncTimeoutExpiresAt: {[Op.lt]: new Date()},
         [Op.or]: [
           {hasChanges: true},
           {lastSyncAt: {[Op.or]: [
@@ -639,7 +630,7 @@ class Db {
     return this.sequelize.query(`
       SELECT DISTINCT chatId FROM chatIdVideoId
       INNER JOIN chats ON chatIdVideoId.chatId = chats.id
-      WHERE chats.sendTimeoutExpiresAt IS NULL OR chats.sendTimeoutExpiresAt < "${new Date().toISOString()}"
+      WHERE chats.sendTimeoutExpiresAt < "${new Date().toISOString()}"
     `,  { type: Sequelize.QueryTypes.SELECT}).then((results) => {
       return results.map(result => result.chatId);
     });
