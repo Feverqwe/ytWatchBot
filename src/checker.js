@@ -54,7 +54,7 @@ class Checker {
             if (!publishedAfter && channel.lastSyncAt) {
               publishedAfter = channel.lastSyncAt;
             }
-            if (publishedAfter.getTime() < defaultDate.getTime()) {
+            if (publishedAfter && publishedAfter.getTime() < defaultDate.getTime()) {
               publishedAfter = null;
             }
             if (publishedAfter) {
