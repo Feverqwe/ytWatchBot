@@ -267,7 +267,7 @@ class Db {
       for (const oldChannel of oldChannels) {
         let publishedAfter = new Date(oldChannel.publishedAfter);
         if (!publishedAfter.getTime()) {
-          publishedAfter = null;
+          publishedAfter = new Date();
         }
 
         channels.push({
