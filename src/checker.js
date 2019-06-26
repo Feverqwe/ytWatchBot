@@ -144,7 +144,7 @@ class Checker {
                 if (!chatIds) {
                   channelIdChatIds.set(chatIdChannelId.channelId, chatIds = []);
                 }
-                if (!chatIdChannelId.chat.isMuted) {
+                if (!chatIdChannelId.chat.channelId || !chatIdChannelId.chat.isMuted) {
                   chatIds.push(chatIdChannelId.chat.id);
                 }
                 if (chatIdChannelId.chat.channelId) {
