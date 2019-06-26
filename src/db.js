@@ -100,7 +100,7 @@ class Db {
 
     const YtPubSub = this.sequelize.define('ytPubSub', {
       videoId: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
-      lastPushAt: {type: Sequelize.DATE, allowNull: false, primaryKey: true},
+      lastPushAt: {type: Sequelize.DATE, allowNull: false},
     }, {
       timestamps: true,
       updatedAt: false,
