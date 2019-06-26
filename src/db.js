@@ -36,6 +36,7 @@ class Db {
       isMuted: {type: Sequelize.BOOLEAN, defaultValue: false},
       sendTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: 0},
     }, {
+      tableName: 'chats',
       timestamps: false,
       indexes: [{
         name: 'channelId_UNIQUE',
@@ -59,6 +60,7 @@ class Db {
       subscriptionExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: 0},
       subscriptionTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: 0},
     }, {
+      tableName: 'channels',
       timestamps: false,
       getterMethods: {
         rawId() {
@@ -149,6 +151,7 @@ class Db {
       publishedAt: {type: Sequelize.DATE, allowNull: false},
       telegramPreviewFileId: {type: Sequelize.TEXT, allowNull: true},
     }, {
+      tableName: 'videos',
       timestamps: false,
       indexes: [{
         name: 'publishedAt_idx',
