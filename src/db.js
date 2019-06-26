@@ -268,6 +268,7 @@ class Db {
         let publishedAfter = new Date(oldChannel.publishedAfter);
         if (!publishedAfter.getTime()) {
           publishedAfter = new Date();
+          publishedAfter.setSeconds(publishedAfter.getSeconds() + 1);
         }
 
         channels.push({
