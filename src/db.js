@@ -38,7 +38,7 @@ class Db {
       parentChatId: {type: Sequelize.STRING(191), allowNull: true},
     }, {
       tableName: 'chats',
-      timestamps: false,
+      timestamps: true,
       indexes: [{
         name: 'channelId_UNIQUE',
         unique: true,
@@ -63,7 +63,7 @@ class Db {
       subscriptionTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: 0},
     }, {
       tableName: 'channels',
-      timestamps: false,
+      timestamps: true,
       getterMethods: {
         rawId() {
           const id = this.getDataValue('id');
@@ -99,6 +99,7 @@ class Db {
     const YtPubSub = this.sequelize.define('ytPubSub', {
       videoId: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
       lastPushAt: {type: Sequelize.DATE, allowNull: false, primaryKey: true},
+      createdAt: {type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW},
     }, {
       timestamps: false,
       indexes: [{
@@ -110,6 +111,7 @@ class Db {
     const ChatIdChannelId = this.sequelize.define('chatIdChannelId', {
       chatId: {type: Sequelize.STRING(191), allowNull: false},
       channelId: {type: Sequelize.STRING(191), allowNull: false},
+      createdAt: {type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW},
     }, {
       tableName: 'chatIdChannelId',
       timestamps: false,
@@ -152,6 +154,7 @@ class Db {
       channelId: {type: Sequelize.STRING(191), allowNull: false},
       publishedAt: {type: Sequelize.DATE, allowNull: false},
       telegramPreviewFileId: {type: Sequelize.TEXT, allowNull: true},
+      createdAt: {type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW},
     }, {
       tableName: 'videos',
       timestamps: false,
@@ -166,6 +169,7 @@ class Db {
       id: {type: Sequelize.INTEGER, allowNull: false, primaryKey: true, autoIncrement: true},
       chatId: {type: Sequelize.STRING(191), allowNull: false},
       videoId: {type: Sequelize.STRING(191), allowNull: false},
+      createdAt: {type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW},
     }, {
       tableName: 'chatIdVideoId',
       timestamps: false,
