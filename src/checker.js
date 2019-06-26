@@ -47,10 +47,16 @@ class Checker {
             channelIdChannel.set(channel.id, channel);
 
             let publishedAfter = channel.lastSyncAt;
+
+
+            const defaultDate = new Date();
+            defaultDate.setDate(defaultDate.getDate() - 7);
+
+            if (publishedAfter && new Date(publishedAfter).getTime() < defaultDate.getTime()) {
+              publishedAfter = null;
+            }
             if (publishedAfter === null) {
-              const date = new Date();
-              date.setDate(date.getDate() - 7);
-              publishedAfter = date;
+              publishedAfter = defaultDate;
             }
 
             rawChannels.push({
