@@ -398,7 +398,7 @@ class Db {
     });
   }
 
-  setChatSendTimeoutExpiresAt(ids, minutes = 5) {
+  setChatSendTimeoutExpiresAt(ids, minutes = 1) {
     const date = new Date();
     date.setMinutes(date.getMinutes() + minutes);
     return this.model.Chat.update({sendTimeoutExpiresAt: date}, {
