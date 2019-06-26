@@ -1,6 +1,7 @@
 import parallel from "./tools/parallel";
 import ErrorWithCode from "./tools/errorWithCode";
 import arrayDifferent from "./tools/arrayDifferent";
+import arrayByPart from "./tools/arrayByPart";
 
 const debug = require('debug')('app:YtPubSub');
 const path = require('path');
@@ -48,22 +49,24 @@ class YtPubSub {
   updateSubscribes() {
     return oneLimit(() => {
       return this.main.db.getChannelsWithExpiresSubscription().then((channels) => {
-        const channelIds = channels.map(channel => channel.id);
-        return this.main.db.setChannelsSubscriptionTimeoutExpiresAt(channelIds, 5).then(() => {
-          const expiresAt = new Date();
-          expiresAt.setSeconds(expiresAt.getSeconds() + this.main.config.push.leaseSeconds);
+        return parallel(1, arrayByPart(channels, 50), (channels) => {
+          const channelIds = channels.map(channel => channel.id);
+          return this.main.db.setChannelsSubscriptionTimeoutExpiresAt(channelIds, 5).then(() => {
+            const expiresAt = new Date();
+            expiresAt.setSeconds(expiresAt.getSeconds() + this.main.config.push.leaseSeconds);
 
-          const subscribedChannelIds = [];
-          return parallel(10, channels, (channel) => {
-            const rawId = channel.rawId;
-            return this.subscribe(rawId).then(() => {
-              subscribedChannelIds.push(channel.id);
-            }, (err) => {
-              debug('subscribe channel %s skip, cause: error %o', channel.id, err);
-            });
-          }).then(() => {
-            return this.main.db.setChannelsSubscriptionExpiresAt(subscribedChannelIds, expiresAt).then(([affectedRows]) => {
-              return {affectedRows};
+            const subscribedChannelIds = [];
+            return parallel(10, channels, (channel) => {
+              const rawId = channel.rawId;
+              return this.subscribe(rawId).then(() => {
+                subscribedChannelIds.push(channel.id);
+              }, (err) => {
+                debug('subscribe channel %s skip, cause: error %o', channel.id, err);
+              });
+            }).then(() => {
+              return this.main.db.setChannelsSubscriptionExpiresAt(subscribedChannelIds, expiresAt).then(([affectedRows]) => {
+                return {affectedRows};
+              });
             });
           });
         });
