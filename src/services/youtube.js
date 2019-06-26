@@ -363,10 +363,10 @@ class Youtube {
         }
 
         const snippet = searchItemsSnippet.items[0].snippet;
-        const name = snippet.channelTitle;
+        const title = snippet.channelTitle;
         const id = snippet.channelId;
         const url = getChannelUrl(channelId);
-        return {id, name, url};
+        return {id, title, url};
       });
     });
   }

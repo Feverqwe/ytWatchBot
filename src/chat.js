@@ -191,7 +191,7 @@ class Chat {
 
           serviceIdTop[serviceId].forEach((channelId, index) => {
             const channel = channelIdChannelMap[channelId];
-            lines.push((index + 1) + '. ' + channel.name);
+            lines.push((index + 1) + '. ' + channel.title);
           });
         });
 
@@ -314,9 +314,9 @@ class Chat {
           if (!created) {
             message = this.main.locale.getMessage('channelExists');
           } else {
-            const {name, url} = channel;
+            const {title, url} = channel;
             message = this.main.locale.getMessage('channelAdded')
-              .replace('{channelName}', htmlSanitize('a', name, url))
+              .replace('{channelName}', htmlSanitize('a', title, url))
               .replace('{serviceName}', htmlSanitize(service.name));
           }
           return editOrSendNewMessage(req.chatId, messageId, message, {
@@ -388,7 +388,7 @@ class Chat {
           return {channel, deleted: !!count};
         });
       }).then(({channel, deleted}) => {
-        return this.main.bot.editMessageText(this.main.locale.getMessage('channelDeleted').replace('{channelName}', channel.name), {
+        return this.main.bot.editMessageText(this.main.locale.getMessage('channelDeleted').replace('{channelName}', channel.title), {
           chat_id: req.chatId,
           message_id: req.messageId
         });
@@ -416,7 +416,7 @@ class Chat {
     this.router.textOrCallbackQuery(/\/delete/, provideChannels, withChannels, (req, res) => {
       const channels = req.channels.map((channel) => {
         return [{
-          text: channel.name,
+          text: channel.title,
           callback_data: `/delete/${channel.id}`
         }];
       });
@@ -648,7 +648,7 @@ class Chat {
         const channelLines = [];
         channelLines.push(htmlSanitize('b', this.main[serviceId].name + ':'));
         serviceIdChannels[serviceId].forEach((channel) => {
-          channelLines.push(htmlSanitize('a', channel.name, channel.url));
+          channelLines.push(htmlSanitize('a', channel.title, channel.url));
         });
         lines.push(channelLines.join('\n'));
       });

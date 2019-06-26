@@ -54,7 +54,7 @@ class Db {
     const Channel = this.sequelize.define('channel', {
       id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
       service: {type: Sequelize.STRING(191), allowNull: false},
-      name: {type: Sequelize.TEXT, allowNull: true},
+      title: {type: Sequelize.TEXT, allowNull: true},
       url: {type: Sequelize.TEXT, allowNull: false},
       hasChanges: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
       lastSyncAt: {type: Sequelize.DATE, allowNull: true},

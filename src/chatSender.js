@@ -215,7 +215,7 @@ function getDescription(video) {
   const lines = [];
 
   const firstLine = [
-    htmlSanitize(video.title), '—', htmlSanitize(video.channel.name)
+    htmlSanitize(video.title), '—', htmlSanitize(video.channel.title)
   ];
 
   const secondLine = [video.url];
@@ -233,7 +233,7 @@ function getCaption(video) {
   const lines = [];
 
   const firstLine = [
-    video.title, '—', video.channel.name
+    video.title, '—', video.channel.title
   ];
 
   const secondLine = [video.url];
