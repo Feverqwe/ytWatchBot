@@ -2,6 +2,7 @@ import parallel from "./tools/parallel";
 import ErrorWithCode from "./tools/errorWithCode";
 import arrayDifferent from "./tools/arrayDifferent";
 import arrayByPart from "./tools/arrayByPart";
+import roundStartInterval from "./tools/roundStartInterval";
 
 const debug = require('debug')('app:YtPubSub');
 const path = require('path');
@@ -33,9 +34,12 @@ class YtPubSub {
   updateIntervalId = null;
   startUpdateInterval() {
     clearInterval(this.updateIntervalId);
-    this.updateIntervalId = setInterval(() => {
+    this.updateIntervalId = roundStartInterval(() => {
+      this.updateIntervalId = setInterval(() => {
+        this.updateSubscribes();
+      }, 5 * 60 * 1000);
       this.updateSubscribes();
-    }, 5 * 60 * 1000);
+    });
   }
 
   cleanIntervalId = null;

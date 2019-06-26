@@ -1,6 +1,7 @@
 import getProvider from "./tools/getProvider";
 import ChatSender from "./chatSender";
 import LogFile from "./logFile";
+import roundStartInterval from "./tools/roundStartInterval";
 
 const debug = require('debug')('app:Sender');
 const promiseLimit = require('promise-limit');
@@ -21,9 +22,12 @@ class Sender {
   checkIntervalId = null;
   startCheckInterval() {
     clearInterval(this.checkIntervalId);
-    this.checkIntervalId = setInterval(() => {
+    this.checkIntervalId = roundStartInterval(() => {
+      this.checkIntervalId = setInterval(() => {
+        this.check();
+      }, 5 * 60 * 1000);
       this.check();
-    }, 5 * 60 * 1000);
+    });
   }
 
   check = () => {

@@ -2,6 +2,7 @@ import arrayDifferent from "./tools/arrayDifferent";
 import LogFile from "./logFile";
 import arrayByPart from "./tools/arrayByPart";
 import parallel from "./tools/parallel";
+import roundStartInterval from "./tools/roundStartInterval";
 
 const debug = require('debug')('app:Checker');
 const promiseLimit = require('promise-limit');
@@ -22,9 +23,12 @@ class Checker {
   updateIntervalId = null;
   startUpdateInterval() {
     clearInterval(this.updateIntervalId);
-    this.updateIntervalId = setInterval(() => {
+    this.updateIntervalId = roundStartInterval(() => {
+      this.updateIntervalId = setInterval(() => {
+        this.check();
+      }, 5 * 60 * 1000);
       this.check();
-    }, 5 * 60 * 1000);
+    });
   }
 
   cleanIntervalId = null;
