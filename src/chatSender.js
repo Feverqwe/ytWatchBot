@@ -132,7 +132,7 @@ class ChatSender {
   }
 
   ensureTelegramPreviewFileId(video) {
-    const previews = JSON.parse(video.previews);
+    const previews = !Array.isArray(video.previews) ? JSON.parse(video.previews) : video.previews;
     return getValidPreviewUrl(previews).then(({url, contentType}) => {
       const caption = getCaption(video);
       return this.main.bot.sendPhoto(this.chat.id, url, {caption}).then((result) => {
