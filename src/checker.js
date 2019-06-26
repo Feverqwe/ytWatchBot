@@ -120,7 +120,9 @@ class Checker {
               if (!chatIds) {
                 channelIdChatIds.set(chatIdChannelId.channelId, chatIds = []);
               }
-              chatIds.push(chatIdChannelId.chatId);
+              if (!chatIdChannelId.chat.isMuted) {
+                chatIds.push(chatIdChannelId.chat.id);
+              }
               if (chatIdChannelId.chat.channelId) {
                 chatIds.push(chatIdChannelId.chat.channelId);
               }

@@ -35,6 +35,7 @@ class Db {
       isHidePreview: {type: Sequelize.BOOLEAN, defaultValue: false},
       isMuted: {type: Sequelize.BOOLEAN, defaultValue: false},
       sendTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: 0},
+      parentChatId: {type: Sequelize.STRING(191), allowNull: true},
     }, {
       tableName: 'chats',
       timestamps: false,
@@ -48,6 +49,7 @@ class Db {
       }]
     });
     Chat.belongsTo(Chat, {foreignKey: 'channelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'SET NULL', as: 'channel'});
+    Chat.belongsTo(Chat, {foreignKey: 'parentChatId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE', as: 'parentChat'});
 
     const Channel = this.sequelize.define('channel', {
       id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
@@ -218,12 +220,14 @@ class Db {
     }, async (transaction) => {
       await this.model.Chat.create({
         id: channelId,
+        parentChatId: chatId,
+      }, {
         transaction
       });
-      await this.model.Chat.update({
+      await this.model.Chat.upsert({
+        id: chatId,
         channelId: channelId
       }, {
-        where: {id: chatId},
         transaction
       })
     });
@@ -436,7 +440,7 @@ class Db {
       where: {channelId: channelIds},
       include: [{
         model: this.model.Chat,
-        attributes: ['channelId'],
+        attributes: ['id', 'channelId', 'isMuted'],
         required: true
       }]
     });

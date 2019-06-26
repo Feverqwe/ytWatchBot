@@ -511,13 +511,14 @@ class Chat {
                     return req.chat.save();
                   }
                 }).then(() => {
-                  return this.main.db.createChatChannel(chat.id, '@' + chat.username);
+                  const channelId = '@' + chat.username;
+                  return this.main.db.createChatChannel(req.chat.id, channelId).then(() => channelId);
                 });
               });
             });
           });
-        }).then(() => {
-          const message = this.main.locale.getMessage('telegramChannelSet').replace('{channelName}', req.chat.channelId);
+        }).then((channelId) => {
+          const message = this.main.locale.getMessage('telegramChannelSet').replace('{channelName}', channelId);
           return editOrSendNewMessage(req.chatId, messageId, message).then(() => {
             if (req.callback_query) {
               return this.main.bot.editMessageReplyMarkup(JSON.stringify({
