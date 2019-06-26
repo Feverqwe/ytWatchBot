@@ -266,7 +266,7 @@ class Db {
       const channels = [];
       for (const oldChannel of oldChannels) {
         let publishedAfter = new Date(oldChannel.publishedAfter);
-        if (isNaN(publishedAfter.getTime())) {
+        if (!publishedAfter.getTime()) {
           publishedAfter = null;
         }
 
@@ -331,7 +331,7 @@ class Db {
         let createdAt = null;
         try {
           createdAt = new Date(time);
-          if (isNaN(createdAt.getTime())) {
+          if (!createdAt.getTime()) {
             throw new Error('Incorrect time');
           }
         } catch (err) {
