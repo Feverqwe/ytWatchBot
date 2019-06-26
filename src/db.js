@@ -35,7 +35,7 @@ class Db {
       channelId: {type: Sequelize.STRING(191), allowNull: true},
       isHidePreview: {type: Sequelize.BOOLEAN, defaultValue: false},
       isMuted: {type: Sequelize.BOOLEAN, defaultValue: false},
-      sendTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
+      sendTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: new Date(new Date('1970-01-01 00:00:00'))},
       parentChatId: {type: Sequelize.STRING(191), allowNull: true},
     }, {
       tableName: 'chats',
@@ -59,9 +59,9 @@ class Db {
       url: {type: Sequelize.TEXT, allowNull: false},
       hasChanges: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
       lastSyncAt: {type: Sequelize.DATE, allowNull: true},
-      syncTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
-      subscriptionExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
-      subscriptionTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
+      syncTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: new Date('1970-01-01 00:00:00')},
+      subscriptionExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: new Date('1970-01-01 00:00:00')},
+      subscriptionTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: new Date('1970-01-01 00:00:00')},
     }, {
       tableName: 'channels',
       timestamps: true,
