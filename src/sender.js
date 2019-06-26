@@ -3,6 +3,7 @@ import ChatSender from "./chatSender";
 
 const debug = require('debug')('app:Sender');
 const promiseLimit = require('promise-limit');
+const throttle = require('lodash.throttle');
 
 const oneLimit = promiseLimit(1);
 
@@ -23,7 +24,7 @@ class Sender {
     }, 5 * 60 * 1000);
   }
 
-  check() {
+  check = () => {
     return this.main.db.getDistinctChatIdVideoIdChatIds().then((chatIds) => {
       const newChatIds = chatIds.filter(chatId => !this.chatIdChatSender.has(chatId));
       return this.main.db.setChatSendTimeoutExpiresAt(newChatIds).then(() => {
@@ -40,7 +41,8 @@ class Sender {
         });
       });
     });
-  }
+  };
+  checkThrottled = throttle(this.check, 60 * 1000);
 
   chatIdChatSender = new Map();
   suspended = [];

@@ -144,7 +144,7 @@ class Checker {
 
             return this.main.db.putVideos(channelsChanges, videos, chatIdVideoIdChanges).then(() => {
               if (videos.length) {
-                this.main.sender.check();
+                this.main.sender.checkThrottled();
               }
 
               return {
