@@ -205,7 +205,7 @@ class RouterRoute {
       try {
         callback(req, res, next);
       } catch (err) {
-        debug('Dispatch error', err);
+        debug('Dispatch error %o', err);
       }
     };
   }

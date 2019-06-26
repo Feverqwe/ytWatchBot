@@ -1,4 +1,5 @@
 import arrayDifferent from "./tools/arrayDifferent";
+import LogFile from "./logFile";
 
 const debug = require('debug')('app:Checker');
 const promiseLimit = require('promise-limit');
@@ -8,6 +9,7 @@ const oneLimit = promiseLimit(1);
 class Checker {
   constructor(/**Main*/main) {
     this.main = main;
+    this.log = new LogFile('checker');
   }
 
   init() {
@@ -143,6 +145,10 @@ class Checker {
             const channelsChanges = Object.values(channelIdsChanges);
 
             return this.main.db.putVideos(channelsChanges, videos, chatIdVideoIdChanges).then(() => {
+              videos.forEach((video) => {
+                this.log.write(`[insert] ${video.channelId} ${video.id}`);
+              });
+
               if (videos.length) {
                 this.main.sender.checkThrottled();
               }

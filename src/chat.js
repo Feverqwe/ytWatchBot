@@ -4,6 +4,7 @@ import ErrorWithCode from "./tools/errorWithCode";
 import pageBtnList from "./tools/pageBtnList";
 import splitTextByPages from "./tools/splitTextByPages";
 import resolvePath from "./tools/resolvePath";
+import LogFile from "./logFile";
 
 const debug = require('debug')('app:Chat');
 const jsonStringifyPretty = require("json-stringify-pretty-compact");
@@ -12,6 +13,7 @@ const fs = require('fs');
 class Chat {
   constructor(/**Main*/main) {
     this.main = main;
+    this.log = new LogFile('chat');
 
     this.router = new Router(main);
 
@@ -352,7 +354,7 @@ class Chat {
 
     this.router.callback_query(/\/clear\/confirmed/, (req, res) => {
       return this.main.db.deleteChatById(req.chatId).then(() => {
-        debug(`Chat ${req.chatId} deleted by user`);
+        this.log.write(`[deleted] ${req.chatId}, cause: /clear`);
         return this.main.bot.editMessageText(this.main.locale.getMessage('cleared'), {
           chat_id: req.chatId,
           message_id: req.messageId

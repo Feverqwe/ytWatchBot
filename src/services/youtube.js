@@ -130,7 +130,7 @@ class Youtube {
             try {
               duration = formatDuration(video.contentDetails.duration);
             } catch (err) {
-              debug('formatDuration %s error', video.id, err);
+              debug('formatDuration %s error %o', video.id, err);
             }
 
             const result = {

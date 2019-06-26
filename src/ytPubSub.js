@@ -109,7 +109,7 @@ class YtPubSub {
     });
 
     this.pubsub.on('denied', (err) => {
-      debug('Denied', err);
+      debug('Denied %o', err);
     });
 
     this.pubsub.on('feed', (data) => {
@@ -120,7 +120,7 @@ class YtPubSub {
         if (err.code === 'ENTRY_IS_DELETED') {
           // pass
         } else {
-          debug('Parse xml error!', err);
+          debug('Parse xml error! %o', err);
         }
       }
     });

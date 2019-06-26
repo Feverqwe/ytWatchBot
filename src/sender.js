@@ -1,5 +1,6 @@
 import getProvider from "./tools/getProvider";
 import ChatSender from "./chatSender";
+import LogFile from "./logFile";
 
 const debug = require('debug')('app:Sender');
 const promiseLimit = require('promise-limit');
@@ -10,6 +11,7 @@ const oneLimit = promiseLimit(1);
 class Sender {
   constructor(/**Main*/main) {
     this.main = main;
+    this.log = new LogFile('sender');
   }
 
   init() {

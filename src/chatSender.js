@@ -46,14 +46,14 @@ class ChatSender {
 
           if (isBlocked) {
             return this.main.db.deleteChatById(this.chat.id).then(() => {
-              debug('Chat %s deleted, cause: (%s) %s', this.chat.id, body.error_code, body.description);
+              this.main.chat.log.write(`[deleted] ${this.chat.id}, cause: (${body.error_code}) ${JSON.stringify(body.description)}`);
               throw new ErrorWithCode(`Chat ${this.chat.id} is deleted`, 'CHAT_IS_DELETED');
             });
           } else
           if (body.parameters && body.parameters.migrate_to_chat_id) {
             const newChatId = body.parameters.migrate_to_chat_id;
             return this.main.db.changeChatId(this.chat.id, newChatId).then(() => {
-              debug('Chat %s migrated to %s', this.chat.id, newChatId);
+              this.main.chat.log.write(`[migrate] ${this.chat.id} > ${newChatId}`);
               throw new ErrorWithCode(`Chat ${this.chat.id} is migrated to ${newChatId}`, 'CHAT_IS_MIGRATED');
             });
           }
@@ -72,9 +72,17 @@ class ChatSender {
     }).then(() => {});
   }
 
-  sendVideoAsText(video) {
+  sendVideoAsText(video, isFallback) {
     return this.main.bot.sendMessage(this.chat.id, getDescription(video), {
       parse_mode: 'HTML'
+    }).then(() => {
+      let type = null;
+      if (isFallback) {
+        type = 'send message as fallback';
+      } else {
+        type = 'send message';
+      }
+      this.main.sender.log.write(`[${type}] ${this.chat.id} ${video.channelId} ${video.id}`);
     });
   }
 
@@ -82,6 +90,9 @@ class ChatSender {
     if (video.telegramPreviewFileId) {
       return this.main.bot.sendPhotoQuote(this.chat.id, video.telegramPreviewFileId, {
         caption: getCaption(video)
+      }).then((result) => {
+        this.main.sender.log.write(`[send photo as id] ${this.chat.id} ${video.channelId} ${video.id}`);
+        return result;
       });
     } else {
       return this.requestAndSendPhoto(video);
@@ -100,7 +111,7 @@ class ChatSender {
         if (err.code === 'ETELEGRAM' && /not enough rights to send photos/.test(err.response.body.description)) {
           throw err;
         }
-        return this.sendVideoAsText(video).then((result) => {
+        return this.sendVideoAsText(video, true).then((result) => {
           debug('ensureTelegramPreviewFileId %s error: %o', this.chat.id, err);
           return result;
         });
@@ -110,7 +121,7 @@ class ChatSender {
         return this.sendVideoAsPhoto(video);
       }, (err) => {
         if (['INVALID_PREVIEWS', 'FILE_ID_IS_NOT_FOUND'].includes(err.code)) {
-          return this.sendVideoAsText(video);
+          return this.sendVideoAsText(video, true);
         } else {
           return this.sendVideoAsPhoto(video);
         }
@@ -124,7 +135,10 @@ class ChatSender {
     const previews = JSON.parse(video.previews);
     return getValidPreviewUrl(previews).then(({url, contentType}) => {
       const caption = getCaption(video);
-      return this.main.bot.sendPhoto(this.chat.id, url, {caption}).catch((err) => {
+      return this.main.bot.sendPhoto(this.chat.id, url, {caption}).then((result) => {
+        this.main.sender.log.write(`[send photo as url] ${this.chat.id} ${video.channelId} ${video.id}`);
+        return result;
+      }).catch((err) => {
         let isSendUrlError = sendUrlErrors.some(re => re.test(err.message));
         if (!isSendUrlError) {
           isSendUrlError = err.response && err.response.statusCode === 504;
@@ -132,10 +146,13 @@ class ChatSender {
 
         if (isSendUrlError) {
           if (!contentType) {
-            debug('Content-type is empty, set default content-type', url);
+            debug('Content-type is empty, set default content-type %s', url);
             contentType = 'image/jpeg';
           }
-          return this.main.bot.sendPhoto(this.chat.id, got.stream(url), {caption}, {contentType});
+          return this.main.bot.sendPhoto(this.chat.id, got.stream(url), {caption}, {contentType}).then((result) => {
+            this.main.sender.log.write(`[send photo as file] ${this.chat.id} ${video.channelId} ${video.id}`);
+            return result;
+          });
         }
 
         throw err;
