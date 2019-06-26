@@ -15,11 +15,8 @@ class ChatSender {
     this.videoIds = null;
   }
 
-  offset = 0;
   getVideoIds() {
-    const prevOffset = this.offset;
-    this.offset += 10;
-    return this.main.db.getVideoIdsByChatId(this.chat.id, 10, prevOffset);
+    return this.main.db.getVideoIdsByChatId(this.chat.id, 10);
   }
 
   async next() {

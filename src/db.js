@@ -486,7 +486,7 @@ class Db {
     });
   }
 
-  getVideoIdsByChatId(chatId, limit = 10, offest = 0) {
+  getVideoIdsByChatId(chatId, limit = 10) {
     return this.model.ChatIdVideoId.findAll({
       where: {chatId},
       include: [{
@@ -496,7 +496,6 @@ class Db {
       }],
       order: [Sequelize.literal('video.publishedAt')],
       attributes: ['videoId'],
-      offset: offest,
       limit: limit,
     }).then((results) => {
       return results.map(chatIdVideoId => chatIdVideoId.videoId);
