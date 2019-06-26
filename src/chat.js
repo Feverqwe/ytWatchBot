@@ -506,12 +506,12 @@ class Chat {
                 if (chat.type !== 'channel') {
                   throw new ErrorWithCode('This chat type is not supported', 'INCORRECT_CHAT_TYPE');
                 }
-                return this.main.db.createChat({
-                  id: '@' + chat.username,
-                }).then((channelChat) => {
-                  return req.chat.update({
-                    channelId: channelChat.id,
-                  });
+                return Promise.resolve().then(() => {
+                  if (req.chat.isNewRecord) {
+                    return req.chat.save();
+                  }
+                }).then(() => {
+                  return this.main.db.createChatChannel(chat.id, '@' + chat.username);
                 });
               });
             });

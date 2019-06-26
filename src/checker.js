@@ -121,6 +121,9 @@ class Checker {
                 channelIdChatIds.set(chatIdChannelId.channelId, chatIds = []);
               }
               chatIds.push(chatIdChannelId.chatId);
+              if (chatIdChannelId.chat.channelId) {
+                chatIds.push(chatIdChannelId.chat.channelId);
+              }
             });
 
             const chatIdVideoIdChanges = [];

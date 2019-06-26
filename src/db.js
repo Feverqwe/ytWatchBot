@@ -29,7 +29,7 @@ class Db {
       }
     });
 
-    const Chat = this.sequelize.define('chats', {
+    const Chat = this.sequelize.define('chat', {
       id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
       channelId: {type: Sequelize.STRING(191), allowNull: true},
       isHidePreview: {type: Sequelize.BOOLEAN, defaultValue: false},
@@ -46,9 +46,9 @@ class Db {
         fields: ['sendTimeoutExpiresAt']
       }]
     });
-    Chat.belongsTo(Chat, {foreignKey: 'channelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'SET NULL'});
+    Chat.belongsTo(Chat, {foreignKey: 'channelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'SET NULL', as: 'channel'});
 
-    const Channel = this.sequelize.define('channels', {
+    const Channel = this.sequelize.define('channel', {
       id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
       service: {type: Sequelize.STRING(191), allowNull: false},
       name: {type: Sequelize.TEXT, allowNull: true},
@@ -139,7 +139,7 @@ class Db {
     ChatIdChannelId.belongsTo(Chat, {foreignKey: 'chatId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
     ChatIdChannelId.belongsTo(Channel, {foreignKey: 'channelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
 
-    const Video = this.sequelize.define('videos', {
+    const Video = this.sequelize.define('video', {
       id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
       url: {type: Sequelize.STRING(191), allowNull: false},
       title: {type: Sequelize.STRING(191), allowNull: false},
@@ -203,13 +203,27 @@ class Db {
       ]
     }).then((chat) => {
       if (!chat) {
-        return this.model.Chat.build({id});
+        chat = this.model.Chat.build({id});
       }
+      return chat;
     });
   }
 
-  createChat(values) {
-    return this.model.Chat.create(values);
+  createChatChannel(chatId, channelId) {
+    return this.sequelize.transaction({
+      isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
+    }, async (transaction) => {
+      await this.model.Chat.create({
+        id: channelId,
+        transaction
+      });
+      await this.model.Chat.update({
+        channelId: channelId
+      }, {
+        where: {id: chatId},
+        transaction
+      })
+    });
   }
 
   changeChatId(id, newId) {
@@ -416,7 +430,12 @@ class Db {
 
   getChatIdChannelIdByChannelIds(channelIds) {
     return this.model.ChatIdChannelId.findAll({
-      where: {channelId: channelIds}
+      where: {channelId: channelIds},
+      include: [{
+        model: this.model.Chat,
+        attributes: ['channelId'],
+        required: true
+      }]
     });
   }
 
