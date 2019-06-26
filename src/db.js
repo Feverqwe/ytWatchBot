@@ -46,6 +46,7 @@ class Db {
         fields: ['sendTimeoutExpiresAt']
       }]
     });
+    Chat.belongsTo(Chat, {foreignKey: 'channelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'SET NULL'});
 
     const Channel = this.sequelize.define('channels', {
       id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
@@ -195,12 +196,20 @@ class Db {
   }
 
   ensureChat(id) {
-    return this.model.Chat.findOrBuild({
+    return this.model.Chat.findOne({
       where: {id},
-      defaults: {id}
-    }).then(([chat, isBuilt]) => {
-      return chat;
+      include: [
+        {model: this.model.Chat, as: 'channel'}
+      ]
+    }).then((chat) => {
+      if (!chat) {
+        return this.model.Chat.build({id});
+      }
     });
+  }
+
+  createChat(values) {
+    return this.model.Chat.create(values);
   }
 
   changeChatId(id, newId) {
@@ -209,20 +218,18 @@ class Db {
     });
   }
 
-  getChatsByIds(ids) {
-    return this.model.Chat.findAll({
-      where: {id: ids}
-    });
-  }
-
-  getChatByChannelId(channelId) {
-    return this.model.Chat.findOne({
-      where: {channelId}
-    }).then((chat) => {
+  getChatById(id) {
+    return this.model.Chat.findByPk(id).then((chat) => {
       if (!chat) {
         throw new ErrorWithCode('Chat is not found', 'CHAT_IS_NOT_FOUND');
       }
       return chat;
+    });
+  }
+
+  getChatsByIds(ids) {
+    return this.model.Chat.findAll({
+      where: {id: ids},
     });
   }
 

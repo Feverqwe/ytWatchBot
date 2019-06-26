@@ -452,10 +452,7 @@ class Chat {
 
     this.router.callback_query(/\/deleteChannel/, provideChat, (req, res) => {
       return Promise.resolve().then(() => {
-        return req.chat.update({
-          isMuted: false,
-          channelId: null,
-        });
+        return this.main.db.deleteChatById(req.chat.channelId);
       }).then(() => {
         return this.main.bot.editMessageReplyMarkup(JSON.stringify({
           inline_keyboard: getOptions(req.chat)
@@ -495,7 +492,7 @@ class Chat {
             throw new ErrorWithCode('Incorrect channel name', 'INCORRECT_CHANNEL_NAME');
           }
 
-          return this.main.db.getChatByChannelId(channelId).then((chat) => {
+          return this.main.db.getChatById(channelId).then((chat) => {
             throw new ErrorWithCode('Channel already used', 'CHANNEL_ALREADY_USED');
           }, (err) => {
             if (err.code === 'CHAT_IS_NOT_FOUND') {
@@ -509,9 +506,12 @@ class Chat {
                 if (chat.type !== 'channel') {
                   throw new ErrorWithCode('This chat type is not supported', 'INCORRECT_CHAT_TYPE');
                 }
-                return req.chat.update({
-                  isMuted: false,
-                  channelId: '@' + chat.username,
+                return this.main.db.createChat({
+                  id: '@' + chat.username,
+                }).then((channelChat) => {
+                  return req.chat.update({
+                    channelId: channelChat.id,
+                  });
                 });
               });
             });
@@ -556,8 +556,8 @@ class Chat {
       });
     });
 
-    this.router.callback_query(/\/options\/(?<key>[^\/]+)\/(?<value>.+)/, provideChat, (req, res) => {
-      const {key, value} = req.params;
+    this.router.callback_query(/\/(?<optionsType>options|channelOptions)\/(?<key>[^\/]+)\/(?<value>.+)/, provideChat, (req, res) => {
+      const {optionsType, key, value} = req.params;
       return Promise.resolve().then(() => {
         const changes = {};
         switch (key) {
@@ -566,6 +566,9 @@ class Chat {
             break;
           }
           case 'isMuted': {
+            if (optionsType === 'channelOptions') {
+              throw new ErrorWithCode('Option is not available for channel', 'UNAVAILABLE_CHANNEL_OPTION');
+            }
             changes.isMuted = value === 'true';
             break;
           }
@@ -573,7 +576,14 @@ class Chat {
             throw new Error('Unknown option filed');
           }
         }
-        return req.chat.update(changes);
+        switch (optionsType) {
+          case 'options': {
+            return req.chat.update(changes);
+          }
+          case 'channelOptions': {
+            return req.chat.channel.update(changes);
+          }
+        }
       }).then(() => {
         return this.main.bot.editMessageReplyMarkup(JSON.stringify({
           inline_keyboard: getOptions(req.chat)
@@ -875,13 +885,27 @@ function getOptions(chat) {
   if (chat.channelId) {
     if (chat.isMuted) {
       btnList.push([{
-        text: 'Unmute',
+        text: 'Unmute this chat',
         callback_data: '/options/isMuted/false'
       }]);
     } else {
       btnList.push([{
-        text: 'Mute',
+        text: 'Mute this chat',
         callback_data: '/options/isMuted/true'
+      }]);
+    }
+  }
+
+  if (chat.channel) {
+    if (chat.channel.isHidePreview) {
+      btnList.push([{
+        text: 'Show preview for channel',
+        callback_data: '/channelOptions/isHidePreview/false'
+      }]);
+    } else {
+      btnList.push([{
+        text: 'Hide preview for channel',
+        callback_data: '/channelOptions/isHidePreview/true'
       }]);
     }
   }
