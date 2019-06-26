@@ -1,4 +1,5 @@
 import ErrorWithCode from "./tools/errorWithCode";
+import arrayByPart from "./tools/arrayByPart";
 
 const debug = require('debug')('app:db');
 const Sequelize = require('sequelize');
@@ -204,6 +205,137 @@ class Db {
     });
   }
 
+  migrate() {
+    const qi = this.sequelize.getQueryInterface();
+    return Promise.resolve().then(async () => {
+      const oldChats = await this.sequelize.query("SELECT * FROM chats", { type: Sequelize.QueryTypes.SELECT});
+      const oldChannels = await this.sequelize.query("SELECT * FROM channels", { type: Sequelize.QueryTypes.SELECT});
+      const oldMessages = await this.sequelize.query("SELECT * FROM messages", { type: Sequelize.QueryTypes.SELECT});
+      const oldChatIdChannelIdList = await this.sequelize.query("SELECT * FROM chatIdChannelId", { type: Sequelize.QueryTypes.SELECT});
+      const oldChatIdMessageIdList = await this.sequelize.query("SELECT * FROM chatIdMessageId", { type: Sequelize.QueryTypes.SELECT});
+
+      await qi.dropTable('chatIdMessageId');
+      await qi.dropTable('chatIdChannelId');
+      await qi.dropTable('messages');
+      await qi.dropTable('channels');
+      await qi.dropTable('chats');
+
+      await this.sequelize.sync();
+
+      const chats = [];
+      for (const oldChat of oldChats) {
+        let options = {};
+        try {
+          options = JSON.parse(oldChat.optoins);
+        } catch (err) {
+          // pass
+        }
+
+        if (!oldChat.channelId) {
+          chats.push({
+            id: oldChat.id,
+            isHidePreview: !!options.hidePreview,
+            isMuted: !!options.mute,
+            createdAt: getCreatedAt(oldChat.insertTime)
+          });
+        } else {
+          await this.model.Chat.create({
+            id: oldChat.id,
+            isHidePreview: !!options.hidePreview,
+            isMuted: !!options.mute,
+            createdAt: getCreatedAt(oldChat.insertTime)
+          });
+
+          await this.model.Chat.create({
+            id: oldChat.channelId,
+            isHidePreview: !!options.hidePreview,
+            parentChatId: oldChat.id,
+            createdAt: getCreatedAt(oldChat.insertTime)
+          });
+
+          await this.model.Chat.upsert({
+            id: oldChat.id,
+            channelId: oldChat.channelId,
+          });
+        }
+      }
+      await bulk(chats, (chats) => {
+        return this.model.Chat.bulkCreate(chats);
+      });
+
+      const channels = [];
+      for (const oldChannel of oldChannels) {
+        channels.push({
+          id: oldChannel.id,
+          service: oldChannel.service,
+          title: oldChannel.title,
+          url: oldChannel.url,
+        });
+      }
+      await bulk(channels, (channels) => {
+        return this.model.Channel.bulkCreate(channels);
+      });
+
+      const videos = [];
+      for (const oldVideo of oldMessages) {
+        const data = JSON.parse(oldVideo.data);
+
+        videos.push({
+          id: oldVideo.id,
+          url: data.url,
+          title: data.title,
+          previews: data.preview,
+          duration: data.duration,
+          channelId: oldVideo.channelId,
+          publishedAt: oldVideo.publishedAt,
+          telegramPreviewFileId: oldVideo.imageFileId || null
+        });
+      }
+      await bulk(videos, (videos) => {
+        return this.model.Video.bulkCreate(videos);
+      });
+
+      const chatIdChannelIdList = [];
+      for (const oldChatIdChannelId of oldChatIdChannelIdList) {
+        chatIdChannelIdList.push({
+          chatId: oldChatIdChannelId.chatId,
+          channelId: oldChatIdChannelId.channelId,
+          createdAt: getCreatedAt(oldChatIdChannelId.insertTime)
+        });
+      }
+      await bulk(chatIdChannelIdList, (chatIdChannelIdList) => {
+        return this.model.ChatIdChannelId.bulkCreate(chatIdChannelIdList);
+      });
+
+      const chatIdVideoIdList = [];
+      for (const oldChatIdVideoId of oldChatIdMessageIdList) {
+        chatIdVideoIdList.push({
+          chatId: oldChatIdVideoId.chatId,
+          videoId: oldChatIdVideoId.messageId
+        });
+      }
+      await bulk(chatIdVideoIdList, (chatIdVideoIdList) => {
+        return this.model.ChatIdVideoId.bulkCreate(chatIdVideoIdList);
+      });
+
+      debug('Migrate complete!');
+      process.exit(0);
+
+      function getCreatedAt(time) {
+        let createdAt = null;
+        try {
+          createdAt = new Date(time);
+          if (isNaN(createdAt.getTime())) {
+            throw new Error('Incorrect time');
+          }
+        } catch (err) {
+          createdAt = new Date();
+        }
+        return createdAt;
+      }
+    });
+  }
+
   ensureChat(id) {
     return this.model.Chat.findOne({
       where: {id},
@@ -392,8 +524,10 @@ class Db {
       isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
     }, async (transaction) => {
       await Promise.all([
-        this.model.YtPubSub.bulkCreate(ytPubSubItems, {
-          transaction
+        bulk(ytPubSubItems, (ytPubSubItems) => {
+          return this.model.YtPubSub.bulkCreate(ytPubSubItems, {
+            transaction
+          });
         }),
         this.model.Channel.update({
           hasChanges: true
@@ -465,17 +599,23 @@ class Db {
       isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
     }, async (transaction) => {
       await Promise.all([
-        this.model.Channel.bulkCreate(channelsChanges, {
-          updateOnDuplicate: ['lastSyncAt', 'title'],
-          transaction
+        bulk(channelsChanges, (channelsChanges) => {
+          return this.model.Channel.bulkCreate(channelsChanges, {
+            updateOnDuplicate: ['lastSyncAt', 'title'],
+            transaction
+          });
         }),
-        this.model.Video.bulkCreate(videos, {
-          transaction
-        })
+        bulk(videos, (videos) => {
+          return this.model.Video.bulkCreate(videos, {
+            transaction
+          });
+        }),
       ]);
 
-      await this.model.ChatIdVideoId.bulkCreate(chatIdVideoIdChanges, {
-        transaction
+      await bulk(chatIdVideoIdChanges, (chatIdVideoIdChanges) => {
+        return this.model.ChatIdVideoId.bulkCreate(chatIdVideoIdChanges, {
+          transaction
+        });
       });
     });
   }
@@ -525,6 +665,11 @@ class Db {
       where: {chatId, videoId}
     });
   }
+}
+
+function bulk(results, callback) {
+  const resultsParts = arrayByPart(results, 100);
+  return Promise.all(resultsParts.map(results => callback(results)));
 }
 
 export default Db;

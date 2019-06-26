@@ -53,6 +53,10 @@ class Main extends Events {
     this.locale = new Locale();
     this.db = new Db(this);
 
+    if (process.argv.includes('--migrate')) {
+      return this.db.migrate();
+    }
+
     this.services = ['youtube'];
     this.youtube = new Youtube(this);
 
