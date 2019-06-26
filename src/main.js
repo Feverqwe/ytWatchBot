@@ -1,10 +1,7 @@
 import loadConfig from "./tools/loadConfig";
 import Locale from "./locale";
 import Db from "./db";
-import Channels from "./channels";
 import Youtube from "./services/youtube";
-import Users from "./users";
-import MsgStack from "./msgStack";
 import Tracker from "./tracker";
 import Sender from "./sender";
 import Chat from "./chat";
@@ -55,9 +52,6 @@ class Main extends Events {
     this.config = config;
     this.locale = new Locale();
     this.db = new Db(this);
-    this.channels = new Channels(this);
-    this.users = new Users(this);
-    this.msgStack = new MsgStack(this);
 
     this.services = ['youtube'];
     this.youtube = new Youtube(this);
