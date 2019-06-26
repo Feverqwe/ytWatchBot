@@ -52,11 +52,10 @@ class Checker {
 
             let publishedAfter = channel.lastVideoPublishedAt;
             if (!publishedAfter && channel.lastSyncAt) {
-              if (channel.lastSyncAt.getTime() < defaultDate.getTime()) {
-                publishedAfter = null;
-              } else {
-                publishedAfter = channel.lastSyncAt;
-              }
+              publishedAfter = channel.lastSyncAt;
+            }
+            if (publishedAfter.getTime() < defaultDate.getTime()) {
+              publishedAfter = null;
             }
             if (publishedAfter) {
               publishedAfter = new Date(publishedAfter.getTime());
