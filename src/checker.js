@@ -42,20 +42,26 @@ class Checker {
           const channelIdChannel = new Map();
           const channelIds = [];
           const rawChannels = [];
+
+          const defaultDate = new Date();
+          defaultDate.setDate(defaultDate.getDate() - 7);
+
           channels.forEach(channel => {
             channelIds.push(channel.id);
             channelIdChannel.set(channel.id, channel);
 
-            let publishedAfter = channel.lastSyncAt;
-
-
-            const defaultDate = new Date();
-            defaultDate.setDate(defaultDate.getDate() - 7);
-
-            if (publishedAfter && new Date(publishedAfter).getTime() < defaultDate.getTime()) {
-              publishedAfter = null;
+            let publishedAfter = channel.lastVideoPublishedAt;
+            if (!publishedAfter && channel.lastSyncAt) {
+              if (channel.lastSyncAt.getTime() < defaultDate.getTime()) {
+                publishedAfter = null;
+              } else {
+                publishedAfter = channel.lastSyncAt;
+              }
             }
-            if (publishedAfter === null) {
+            if (publishedAfter) {
+              publishedAfter = new Date(publishedAfter.getTime());
+              publishedAfter.setSeconds(publishedAfter.getSeconds() + 1);
+            } else {
               publishedAfter = defaultDate;
             }
 
@@ -113,8 +119,16 @@ class Checker {
 
             videos.forEach((video) => {
               const channel = channelIdChannel.get(video.channelId);
-              if (channel.title !== video.channelTitle) {
-                channelIdsChanges[channel.id].title = video.channelTitle;
+              const channelChanges = channelIdsChanges[channel.id];
+
+              const title = channelChanges.title || channel.title;
+              if (title !== video.channelTitle) {
+                channelChanges.title = video.channelTitle;
+              }
+
+              const lastVideoPublishedAt = channelChanges.lastVideoPublishedAt || channel.lastVideoPublishedAt;
+              if (!lastVideoPublishedAt || lastVideoPublishedAt.getTime() < video.publishedAt.getTime()) {
+                channelChanges.lastVideoPublishedAt = video.publishedAt;
               }
 
               let channelVideoIds = channelIdVideoIds.get(video.channelId);

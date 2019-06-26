@@ -58,7 +58,8 @@ class Db {
       title: {type: Sequelize.TEXT, allowNull: true},
       url: {type: Sequelize.TEXT, allowNull: false},
       hasChanges: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
-      lastSyncAt: {type: Sequelize.DATE, allowNull: true},
+      lastSyncAt: {type: Sequelize.DATE, allowNull: true, defaultValue: null},
+      lastVideoPublishedAt: {type: Sequelize.DATE, allowNull: true, defaultValue: null},
       syncTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
       subscriptionExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
       subscriptionTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
@@ -608,7 +609,7 @@ class Db {
       await Promise.all([
         bulk(channelsChanges, (channelsChanges) => {
           return this.model.Channel.bulkCreate(channelsChanges, {
-            updateOnDuplicate: ['lastSyncAt', 'title'],
+            updateOnDuplicate: ['lastSyncAt', 'lastVideoPublishedAt', 'title'],
             transaction
           });
         }),
