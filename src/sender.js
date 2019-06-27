@@ -48,7 +48,9 @@ class Sender {
       });
     });
   };
-  checkThrottled = throttle(this.check, 60 * 1000);
+  checkThrottled = throttle(this.check, 60 * 1000, {
+    leading: false
+  });
 
   chatIdChatSender = new Map();
   suspended = [];
