@@ -359,7 +359,7 @@ class Youtube {
       }).then(({body}) => {
         const searchItemsSnippet = SearchItemsSnippet(body);
         if (!searchItemsSnippet.items.length) {
-          throw new ErrorWithCode('Channel is not found', 'CHANNEL_IS_NOT_FOUND');
+          throw new ErrorWithCode('Channel is not found', 'CHANNEL_BY_ID_IS_NOT_FOUND');
         }
 
         const snippet = searchItemsSnippet.items[0].snippet;

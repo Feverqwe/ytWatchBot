@@ -10,6 +10,7 @@ import YtPubSub from "./ytPubSub";
 import RateLimit from "./tools/rateLimit";
 
 process.env.NTBA_FIX_319 = true;
+process.env.NTBA_FIX_350 = true;
 const TelegramBot = require('node-telegram-bot-api');
 const Events = require('events');
 const path = require('path');

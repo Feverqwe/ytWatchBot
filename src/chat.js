@@ -297,7 +297,12 @@ class Chat {
         });
       }).then(({query, messageId}) => {
         const service = /**@type Youtube*/this.main[serviceId];
-        return service.findChannel(query).then((rawChannel) => {
+        return this.main.db.getChannelCountByChatId(req.chatId).then((count) => {
+          if (count >= 100) {
+            throw new ErrorWithCode('Channels limit exceeded', 'CHANNELS_LIMIT');
+          }
+          return service.findChannel(query);
+        }).then((rawChannel) => {
           return this.main.db.ensureChannel(serviceId, rawChannel).then((channel) => {
             return Promise.resolve().then(() => {
               if (req.chat.isNewRecord) {
@@ -326,13 +331,19 @@ class Chat {
         }, async (err) => {
           let isResolved = false;
           let message = null;
-          if (['CHANNEL_BY_QUERY_IS_NOT_FOUND', 'CHANNEL_IS_NOT_FOUND'].includes(err.code)) {
+          if ([
+            'INCORRECT_CHANNEL_ID',
+            'CHANNEL_BY_VIDEO_ID_IS_NOT_FOUND',
+            'INCORRECT_USERNAME', 'CHANNEL_BY_USER_IS_NOT_FOUND',
+            'QUERY_IS_EMPTY', 'CHANNEL_BY_QUERY_IS_NOT_FOUND',
+            'CHANNEL_BY_ID_IS_NOT_FOUND'
+          ].includes(err.code)) {
             isResolved = true;
             message = this.main.locale.getMessage('channelIsNotFound').replace('{channelName}', query);
           } else
-          if (err.message === 'CHANNELS_LIMIT') {
+          if (err.err === 'CHANNELS_LIMIT') {
             isResolved = true;
-            message = 'Channels limit exceeded';
+            message = err.message;
           } else {
             message = 'Unexpected error';
           }
@@ -542,6 +553,12 @@ class Chat {
           if (['INCORRECT_CHANNEL_NAME', 'CHANNEL_ALREADY_USED', 'INCORRECT_CHAT_TYPE'].includes(err.code)) {
             isResolved = true;
             message = err.message;
+          } else
+          if (err.name === 'ETELEGRAM' && /chat not found/.test(err.message)) {
+            message = 'Telegram chat is not found!';
+          } else
+          if (err.name === 'ETELEGRAM' && /bot is not a member of the/.test(err.message)) {
+            message = 'Bot is not a member of the channel!';
           } else {
             message = 'Unexpected error';
           }

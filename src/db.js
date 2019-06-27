@@ -456,6 +456,12 @@ class Db {
     });
   }
 
+  getChannelCountByChatId(chatId) {
+    return this.model.ChatIdChannelId.count({
+      where: {chatId}
+    });
+  }
+
   putChatIdChannelId(chatId, channelId) {
     return this.model.ChatIdChannelId.upsert({chatId, channelId});
   }
