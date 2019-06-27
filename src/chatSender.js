@@ -82,6 +82,12 @@ class ChatSender {
       } else {
         type = 'send message';
       }
+      this.main.tracker.track(this.chat.id, {
+        ec: 'bot',
+        ea: 'sendMsg',
+        el: video.channelId,
+        t: 'event'
+      });
       this.main.sender.log.write(`[${type}] ${this.chat.id} ${video.channelId} ${video.id}`);
     });
   }
@@ -91,6 +97,12 @@ class ChatSender {
       return this.main.bot.sendPhotoQuote(this.chat.id, video.telegramPreviewFileId, {
         caption: getCaption(video)
       }).then((result) => {
+        this.main.tracker.track(this.chat.id, {
+          ec: 'bot',
+          ea: 'sendPhoto',
+          el: video.channelId,
+          t: 'event'
+        });
         this.main.sender.log.write(`[send photo as id] ${this.chat.id} ${video.channelId} ${video.id}`);
         return result;
       });
@@ -137,6 +149,12 @@ class ChatSender {
       const caption = getCaption(video);
       return this.main.bot.sendPhoto(this.chat.id, url, {caption}).then((result) => {
         this.main.sender.log.write(`[send photo as url] ${this.chat.id} ${video.channelId} ${video.id}`);
+        this.main.tracker.track(this.chat.id, {
+          ec: 'bot',
+          ea: 'sendPhoto',
+          el: video.channelId,
+          t: 'event'
+        });
         return result;
       }).catch((err) => {
         let isSendUrlError = sendUrlErrors.some(re => re.test(err.message));
@@ -151,6 +169,12 @@ class ChatSender {
           }
           return this.main.bot.sendPhoto(this.chat.id, got.stream(url), {caption}, {contentType}).then((result) => {
             this.main.sender.log.write(`[send photo as file] ${this.chat.id} ${video.channelId} ${video.id}`);
+            this.main.tracker.track(this.chat.id, {
+              ec: 'bot',
+              ea: 'sendPhoto',
+              el: video.channelId,
+              t: 'event'
+            });
             return result;
           });
         }

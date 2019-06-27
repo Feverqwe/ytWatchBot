@@ -41,6 +41,7 @@ class Chat {
           ec: 'command',
           ea: req.command,
           el: req.message.text,
+          t: 'event',
         });
       } else
       if (req.callback_query) {
@@ -58,6 +59,7 @@ class Chat {
           ec: 'command',
           ea: command,
           el: msg.text,
+          t: 'event',
         });
       }
     });
@@ -292,7 +294,12 @@ class Chat {
         const cancelText = this.main.locale.getMessage('commandCanceled').replace('{command}', 'add');
         return requestData(req.chatId, req.fromId, messageText, cancelText).then(({req, msg}) => {
           requestedData = req.message.text;
-          this.main.tracker.track(req.chatId, 'command', '/add', req.message.text);
+          this.main.tracker.track(req.chatId, {
+            ec: 'command',
+            ea: '/add',
+            el: req.message.text,
+            t: 'event'
+          });
           return {query: req.message.text.trim(), messageId: msg.message_id};
         });
       }).then(({query, messageId}) => {
@@ -496,7 +503,12 @@ class Chat {
         const cancelText = this.main.locale.getMessage('commandCanceled').replace('{command}', '\/setChannel');
         return requestData(req.chatId, req.fromId, messageText, cancelText).then(({req, msg}) => {
           requestedData = req.message.text;
-          this.main.tracker.track(req.chatId, 'command', '/setChannel', req.message.text);
+          this.main.tracker.track(req.chatId, {
+            ec: 'command',
+            ea: '/setChannel',
+            el: req.message.text,
+            t: 'event'
+          });
           return {channelId: req.message.text.trim(), messageId: msg.message_id};
         });
       }).then(({channelId, messageId}) => {
