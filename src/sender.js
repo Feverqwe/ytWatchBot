@@ -48,7 +48,7 @@ class Sender {
       });
     });
   };
-  checkThrottled = throttle(this.check, 30 * 1000, {
+  checkThrottled = throttle(this.check, 1000, {
     leading: false
   });
 
