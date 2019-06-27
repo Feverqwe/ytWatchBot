@@ -445,6 +445,7 @@ class Db {
       ],
       where: {chatId},
       attributes: [],
+      order: ['createdAt'],
     }).then((chatIdChannelIdList) => {
       return chatIdChannelIdList.map(chatIdChannelId => chatIdChannelId.channel);
     });
