@@ -142,12 +142,12 @@ class YtPubSub {
 
   feeds = [];
   emitFeedsChanges = () => {
-    const videoIdChannelId = {};
+    const videoIdChannelId = new Map();
     const videoIds = [];
-    this.feeds.forEach(({videoId, channelId}) => {
-      if (!videoIds.includes(videoId)) {
+    this.feeds.splice(0).forEach(({videoId, channelId}) => {
+      if (!videoIdChannelId.has(videoId)) {
+        videoIdChannelId.set(videoId, channelId);
         videoIds.push(videoId);
-        videoIdChannelId[videoId] = channelId;
       }
     });
 
@@ -157,7 +157,7 @@ class YtPubSub {
       const channelIds = [];
       const ytPubSubItems = [];
       newVideoIds.forEach((videoId) => {
-        const rawChannelId = videoIdChannelId[videoId];
+        const rawChannelId = videoIdChannelId.get(videoId);
         const channelId = this.main.db.model.Channel.buildId('youtube', rawChannelId);
         if (!channelIds.includes(channelId)) {
           channelIds.push(channelId);
