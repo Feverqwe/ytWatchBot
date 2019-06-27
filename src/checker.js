@@ -1,7 +1,7 @@
 import arrayDifferent from "./tools/arrayDifferent";
 import LogFile from "./logFile";
 import roundStartInterval from "./tools/roundStartInterval";
-import promiseFinally from "./tools/promiseFinally";
+import getInProgress from "./tools/getInProgress";
 
 const debug = require('debug')('app:Checker');
 const promiseLimit = require('promise-limit');
@@ -38,14 +38,7 @@ class Checker {
     }, 60 * 60 * 1000);
   }
 
-  isInProgress = false;
-  inProgress(callback) {
-    if (this.isInProgress) return Promise.resolve();
-    this.isInProgress = true;
-    return Promise.resolve(callback()).then(...promiseFinally(() => {
-      this.isInProgress = false;
-    }));
-  };
+  inProgress = getInProgress();
 
   check() {
     return this.inProgress(() => oneLimit(async () => {

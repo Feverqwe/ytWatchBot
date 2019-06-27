@@ -1,8 +1,8 @@
 import parallel from "./tools/parallel";
 import ErrorWithCode from "./tools/errorWithCode";
 import arrayDifferent from "./tools/arrayDifferent";
-import promiseFinally from "./tools/promiseFinally";
 import roundStartInterval from "./tools/roundStartInterval";
+import getInProgress from "./tools/getInProgress";
 
 const debug = require('debug')('app:YtPubSub');
 const path = require('path');
@@ -50,14 +50,7 @@ class YtPubSub {
     }, 60 * 60 * 1000);
   }
 
-  isInProgress = false;
-  inProgress(callback) {
-    if (this.isInProgress) return Promise.resolve();
-    this.isInProgress = true;
-    return Promise.resolve(callback()).then(...promiseFinally(() => {
-      this.isInProgress = false;
-    }));
-  };
+  inProgress = getInProgress();
 
   updateSubscribes() {
     return this.inProgress(() => oneLimit(async () => {
