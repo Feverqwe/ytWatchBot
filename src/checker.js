@@ -59,17 +59,14 @@ class Checker {
           channelIds.push(channel.id);
           channelIdChannel.set(channel.id, channel);
 
-          let publishedAfter = channel.lastVideoPublishedAt;
-          if (!publishedAfter && channel.lastSyncAt) {
+          let publishedAfter = null;
+          if (channel.lastVideoPublishedAt) {
+            publishedAfter = new Date(channel.lastVideoPublishedAt.getTime() + 1000);
+          }
+          if (!publishedAfter) {
             publishedAfter = channel.lastSyncAt;
           }
-          if (publishedAfter && publishedAfter.getTime() < defaultDate.getTime()) {
-            publishedAfter = null;
-          }
-          if (publishedAfter) {
-            publishedAfter = new Date(publishedAfter.getTime());
-            publishedAfter.setSeconds(publishedAfter.getSeconds() + 1);
-          } else {
+          if (!publishedAfter || publishedAfter.getTime() < defaultDate.getTime()) {
             publishedAfter = defaultDate;
           }
 
