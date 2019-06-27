@@ -194,7 +194,7 @@ class Youtube {
         });
       };
       return getPage().catch((err) => {
-        debug(`getVideoIds for channel (%s) skip, cause: error %o`, channelId, err);
+        debug(`getVideoIds for channel (%s) skip, cause: %o`, channelId, err);
         resultSkippedChannelIds.push(channelId);
       });
     }).then(() => {

@@ -71,7 +71,7 @@ class YtPubSub {
             return this.subscribe(rawId).then(() => {
               subscribedChannelIds.push(channel.id);
             }, (err) => {
-              debug('subscribe channel %s skip, cause: error %o', channel.id, err);
+              debug('subscribe channel %s skip, cause: %o', channel.id, err);
             });
           }).then(() => {
             return this.main.db.setChannelsSubscriptionExpiresAt(subscribedChannelIds, expiresAt).then(([affectedRows]) => {

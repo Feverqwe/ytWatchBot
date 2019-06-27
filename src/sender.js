@@ -80,7 +80,7 @@ class Sender {
           return chatSender.next().then((isDone) => {
             onFinish(chatSender, isDone);
           }, (err) => {
-            debug('chatSender %s stopped, cause: error %o', chatSender.chat.id, err);
+            debug('chatSender %s stopped, cause: %o', chatSender.chat.id, err);
             onFinish(chatSender, true);
           });
         }
