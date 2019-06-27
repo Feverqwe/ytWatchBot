@@ -95,9 +95,9 @@ class Youtube {
   }
 
   getVideos(channels) {
-    return this.getVideoIds(channels).then(({videoIds, skippedChannelIds}) => {
+    return this.getVideoIds(channels).then(({videoIds, videoIdChannelIds, skippedChannelIds}) => {
       return this.getVideosByIds(videoIds).then((videos) => {
-        return {videos, skippedChannelIds};
+        return {videos, videoIdChannelIds, skippedChannelIds};
       });
     });
   }
@@ -161,6 +161,7 @@ class Youtube {
 
   getVideoIds(channels) {
     const resultSkippedChannelIds = [];
+    const videoIdChannelIds = new Map();
     const resultVideoIds = [];
     return parallel(10, channels, ({id: channelId, publishedAfter}) => {
       let pageLimit = 100;
@@ -183,6 +184,12 @@ class Youtube {
           activities.items.forEach((item) => {
             const videoId = item.contentDetails.upload.videoId;
             resultVideoIds.push(videoId);
+
+            let channelIds = videoIdChannelIds.get(videoId);
+            if (!channelIds) {
+              videoIdChannelIds.set(videoId, channelIds = []);
+            }
+            channelIds.push(channelId);
           });
 
           if (activities.nextPageToken) {
@@ -200,7 +207,8 @@ class Youtube {
     }).then(() => {
       return {
         videoIds: resultVideoIds,
-        skippedChannelIds: resultSkippedChannelIds
+        videoIdChannelIds: videoIdChannelIds,
+        skippedChannelIds: resultSkippedChannelIds,
       };
     });
   }
