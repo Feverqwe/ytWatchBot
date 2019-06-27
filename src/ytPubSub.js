@@ -1,7 +1,7 @@
 import parallel from "./tools/parallel";
 import ErrorWithCode from "./tools/errorWithCode";
 import arrayDifferent from "./tools/arrayDifferent";
-import arrayByPart from "./tools/arrayByPart";
+import promiseFinally from "./tools/promiseFinally";
 import roundStartInterval from "./tools/roundStartInterval";
 
 const debug = require('debug')('app:YtPubSub');
@@ -50,32 +50,44 @@ class YtPubSub {
     }, 60 * 60 * 1000);
   }
 
-  updateSubscribes() {
-    return oneLimit(() => {
-      return this.main.db.getChannelsWithExpiresSubscription().then((channels) => {
-        return parallel(1, arrayByPart(channels, 50), (channels) => {
-          const channelIds = channels.map(channel => channel.id);
-          return this.main.db.setChannelsSubscriptionTimeoutExpiresAt(channelIds, 5).then(() => {
-            const expiresAt = new Date();
-            expiresAt.setSeconds(expiresAt.getSeconds() + this.main.config.push.leaseSeconds);
+  isInProgress = false;
+  inProgress(callback) {
+    if (this.isInProgress) return Promise.resolve();
+    this.isInProgress = true;
+    return Promise.resolve(callback()).then(...promiseFinally(() => {
+      this.isInProgress = false;
+    }));
+  };
 
-            const subscribedChannelIds = [];
-            return parallel(10, channels, (channel) => {
-              const rawId = channel.rawId;
-              return this.subscribe(rawId).then(() => {
-                subscribedChannelIds.push(channel.id);
-              }, (err) => {
-                debug('subscribe channel %s skip, cause: error %o', channel.id, err);
-              });
-            }).then(() => {
-              return this.main.db.setChannelsSubscriptionExpiresAt(subscribedChannelIds, expiresAt).then(([affectedRows]) => {
-                return {affectedRows};
-              });
+  updateSubscribes() {
+    return this.inProgress(() => oneLimit(async () => {
+      while (true) {
+        const channels = await this.main.db.getChannelsWithExpiresSubscription(50);
+        if (!channels.length) {
+          break;
+        }
+
+        const channelIds = channels.map(channel => channel.id);
+        await this.main.db.setChannelsSubscriptionTimeoutExpiresAt(channelIds, 5).then(() => {
+          const expiresAt = new Date();
+          expiresAt.setSeconds(expiresAt.getSeconds() + this.main.config.push.leaseSeconds);
+
+          const subscribedChannelIds = [];
+          return parallel(10, channels, (channel) => {
+            const rawId = channel.rawId;
+            return this.subscribe(rawId).then(() => {
+              subscribedChannelIds.push(channel.id);
+            }, (err) => {
+              debug('subscribe channel %s skip, cause: error %o', channel.id, err);
+            });
+          }).then(() => {
+            return this.main.db.setChannelsSubscriptionExpiresAt(subscribedChannelIds, expiresAt).then(([affectedRows]) => {
+              return {affectedRows};
             });
           });
         });
-      });
-    });
+      }
+    }));
   }
 
   clean() {

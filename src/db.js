@@ -412,6 +412,15 @@ class Db {
     });
   }
 
+  cleanChats() {
+    return this.model.Chat.destroy({
+      where: {
+        id: {[Op.notIn]: Sequelize.literal(`(SELECT DISTINCT chatId FROM chatIdChannelId)`)},
+        parentChatId: null
+      }
+    });
+  }
+
   ensureChannel(service, rawChannel) {
     const id = this.model.Channel.buildId(service, rawChannel.id);
 
@@ -472,18 +481,19 @@ class Db {
     });
   }
 
-  getChannelsWithExpiresSubscription() {
+  getChannelsWithExpiresSubscription(limit) {
     const date = new Date();
-    date.setMinutes(date.getMinutes() - 30);
+    date.setMinutes(date.getMinutes() - 10);
     return this.model.Channel.findAll({
       where: {
         subscriptionExpiresAt: {[Op.lt]: date},
         subscriptionTimeoutExpiresAt: {[Op.lt]: new Date()}
-      }
+      },
+      limit: limit
     });
   }
 
-  getChannelsForSync() {
+  getChannelsForSync(limit) {
     const date = new Date();
     date.setMinutes(date.getMinutes() - this.main.config.interval);
     return this.model.Channel.findAll({
@@ -496,7 +506,8 @@ class Db {
             {[Op.lt]: date}
           ]}}
         ],
-      }
+      },
+      limit: limit
     });
   }
 
