@@ -341,7 +341,7 @@ class Chat {
             isResolved = true;
             message = this.main.locale.getMessage('channelIsNotFound').replace('{channelName}', query);
           } else
-          if (err.err === 'CHANNELS_LIMIT') {
+          if (err.code === 'CHANNELS_LIMIT') {
             isResolved = true;
             message = err.message;
           } else {
@@ -555,9 +555,11 @@ class Chat {
             message = err.message;
           } else
           if (err.name === 'ETELEGRAM' && /chat not found/.test(err.message)) {
+            isResolved = true;
             message = 'Telegram chat is not found!';
           } else
           if (err.name === 'ETELEGRAM' && /bot is not a member of the/.test(err.message)) {
+            isResolved = true;
             message = 'Bot is not a member of the channel!';
           } else {
             message = 'Unexpected error';
