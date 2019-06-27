@@ -40,6 +40,7 @@ class Tracker {
     return oneLimit(async () => {
       while (this.queue.length) {
         const queue = this.queue.splice(0);
+        if (!queue.length) break;
         await parallel(10, arrayByPart(queue, 20), (queue) => {
           return withRetry({count: 3, timeout: 250}, () => {
             return got.post('https://www.google-analytics.com/batch', {
