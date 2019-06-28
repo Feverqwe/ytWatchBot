@@ -83,11 +83,12 @@ class Checker {
           const videoIdVideo = new Map();
           const videoIds = [];
           rawVideos.forEach((video) => {
+            const rawChannelIds = rawVideoIdRawChannelIds.get(video.id);
+
             video.id = this.main.db.model.Channel.buildId('youtube', video.id);
             video.channelId = this.main.db.model.Channel.buildId('youtube', video.channelId);
 
             if (!channelIdChannel.has(video.channelId)) {
-              const rawChannelIds = rawVideoIdRawChannelIds.get(video.id);
               debug('Video %s skip, cause: Channel %s is not exists requested %j', video.id, video.channelId, rawChannelIds);
               return;
             }
