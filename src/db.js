@@ -156,6 +156,8 @@ class Db {
       channelId: {type: Sequelize.STRING(191), allowNull: false},
       publishedAt: {type: Sequelize.DATE, allowNull: false},
       telegramPreviewFileId: {type: Sequelize.TEXT, allowNull: true},
+      mergedId: {type: Sequelize.STRING(191), allowNull: true},
+      mergedChannelId: {type: Sequelize.STRING(191), allowNull: true},
     }, {
       tableName: 'videos',
       timestamps: true,

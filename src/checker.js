@@ -82,19 +82,29 @@ class Checker {
         }).then(({videos: rawVideos, videoIdChannelIds: rawVideoIdRawChannelIds, skippedChannelIds: skippedRawChannelIds}) => {
           const videoIdVideo = new Map();
           const videoIds = [];
-          rawVideos.forEach((video) => {
-            const rawChannelIds = rawVideoIdRawChannelIds.get(video.id);
+          rawVideos.forEach((rawVideo) => {
+            const rawChannelIds = rawVideoIdRawChannelIds.get(rawVideo.id);
+            rawChannelIds.forEach((rawChannelId) => {
+              const video = Object.assign({}, rawVideo);
 
-            video.id = this.main.db.model.Channel.buildId('youtube', video.id);
-            video.channelId = this.main.db.model.Channel.buildId('youtube', video.channelId);
+              if (video.channelId !== rawChannelId) {
+                video.mergedId = this.main.db.model.Channel.buildId('youtube', video.id);
+                video.mergedChannelId = this.main.db.model.Channel.buildId('youtube', video.channelId);
+                video.id = `${video.id}@${rawChannelId}`;
+                video.channelId = rawChannelId;
+              }
 
-            if (!channelIdChannel.has(video.channelId)) {
-              debug('Video %s skip, cause: Channel %s is not exists requested %j', video.id, video.channelId, rawChannelIds);
-              return;
-            }
+              video.id = this.main.db.model.Channel.buildId('youtube', video.id);
+              video.channelId = this.main.db.model.Channel.buildId('youtube', video.channelId);
 
-            videoIdVideo.set(video.id, video);
-            videoIds.push(video.id);
+              if (!channelIdChannel.has(video.channelId)) {
+                debug('Video %s skip, cause: Channel %s is not exists', video.id, video.channelId);
+                return;
+              }
+
+              videoIdVideo.set(video.id, video);
+              videoIds.push(video.id);
+            });
           });
 
           const checkedChannelIds = channelIds.slice(0);
@@ -129,7 +139,7 @@ class Checker {
             const channelChanges = channelIdsChanges[channel.id];
 
             const title = channelChanges.title || channel.title;
-            if (title !== video.channelTitle) {
+            if (!video.mergedId && title !== video.channelTitle) {
               channelChanges.title = video.channelTitle;
             }
 
