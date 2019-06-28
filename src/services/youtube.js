@@ -373,7 +373,7 @@ class Youtube {
         const snippet = searchItemsSnippet.items[0].snippet;
         const title = snippet.channelTitle;
         const id = snippet.channelId;
-        const url = getChannelUrl(channelId);
+        const url = getChannelUrl(id);
         return {id, title, url};
       });
     });
