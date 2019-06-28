@@ -475,12 +475,6 @@ class Db {
     });
   }
 
-  getChannelsByIds(ids) {
-    return this.model.Channel.findAll({
-      where: {id: ids}
-    });
-  }
-
   getChannelById(id) {
     return this.model.Channel.findByPk(id).then((channel) => {
       if (!channel) {
