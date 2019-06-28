@@ -183,7 +183,9 @@ class Youtube {
           const activities = ActivitiesResponse(body);
           activities.items.forEach((item) => {
             const videoId = item.contentDetails.upload.videoId;
-            resultVideoIds.push(videoId);
+            if (!resultVideoIds.includes(videoId)) {
+              resultVideoIds.push(videoId);
+            }
 
             let channelIds = videoIdChannelIds.get(videoId);
             if (!channelIds) {
