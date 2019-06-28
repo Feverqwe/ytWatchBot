@@ -480,7 +480,7 @@ class Chat {
                   }
                 }).then(() => {
                   const channelId = '@' + chat.username;
-                  return this.main.db.createChatChannel(req.chat.id, channelId).then(() => channelId);
+                  return this.main.db.createChatChannel(req.chatId, channelId).then(() => channelId);
                 });
               });
             });
