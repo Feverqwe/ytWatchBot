@@ -63,7 +63,6 @@ class Db {
       syncTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
       subscriptionExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
       subscriptionTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
-      linkedChannelId: {type: Sequelize.STRING(191), allowNull: true, defaultValue: null},
     }, {
       tableName: 'channels',
       timestamps: true,
@@ -95,7 +94,6 @@ class Db {
         fields: ['subscriptionExpiresAt', 'subscriptionTimeoutExpiresAt']
       }]
     });
-    Channel.belongsTo(Channel, {foreignKey: 'linkedChannelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'SET NULL', as: 'linkedChannel'});
     Channel.buildId = (service, serviceId) => {
       return [service.substr(0, 2), JSON.stringify(serviceId)].join(':');
     };
@@ -434,10 +432,6 @@ class Db {
     });
   }
 
-  buildChannel(channel) {
-    return this.model.Channel.build(channel);
-  }
-
   getChatIdChannelIdChatIdCount() {
     return this.sequelize.query(`
       SELECT COUNT(DISTINCT(chatId)) as chatCount, channels.service as service FROM chatIdChannelId
@@ -558,8 +552,7 @@ class Db {
   cleanChannels() {
     return this.model.Channel.destroy({
       where: {
-        id: {[Op.notIn]: Sequelize.literal(`(SELECT DISTINCT channelId FROM chatIdChannelId)`)},
-        linkedChannelId: null
+        id: {[Op.notIn]: Sequelize.literal(`(SELECT DISTINCT channelId FROM chatIdChannelId)`)}
       }
     });
   }
@@ -639,33 +632,27 @@ class Db {
     });
   }
 
-  putVideos(newChannels, channelsChanges, videos, chatIdVideoIdChanges) {
-    return bulk(newChannels, (newChannels) => {
-      return this.model.Channel.bulkCreate(newChannels, {
-        updateOnDuplicate: ['linkedChannelId'],
-      });
-    }).then(() => {
-      return this.sequelize.transaction({
-        isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
-      }, async (transaction) => {
-        await Promise.all([
-          bulk(channelsChanges, (channelsChanges) => {
-            return this.model.Channel.bulkCreate(channelsChanges, {
-              updateOnDuplicate: ['lastSyncAt', 'lastVideoPublishedAt', 'title'],
-              transaction
-            });
-          }),
-          bulk(videos, (videos) => {
-            return this.model.Video.bulkCreate(videos, {
-              transaction
-            });
-          }),
-        ]);
-
-        await bulk(chatIdVideoIdChanges, (chatIdVideoIdChanges) => {
-          return this.model.ChatIdVideoId.bulkCreate(chatIdVideoIdChanges, {
+  putVideos(channelsChanges, videos, chatIdVideoIdChanges) {
+    return this.sequelize.transaction({
+      isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
+    }, async (transaction) => {
+      await Promise.all([
+        bulk(channelsChanges, (channelsChanges) => {
+          return this.model.Channel.bulkCreate(channelsChanges, {
+            updateOnDuplicate: ['lastSyncAt', 'lastVideoPublishedAt', 'title'],
             transaction
           });
+        }),
+        bulk(videos, (videos) => {
+          return this.model.Video.bulkCreate(videos, {
+            transaction
+          });
+        }),
+      ]);
+
+      await bulk(chatIdVideoIdChanges, (chatIdVideoIdChanges) => {
+        return this.model.ChatIdVideoId.bulkCreate(chatIdVideoIdChanges, {
+          transaction
         });
       });
     });

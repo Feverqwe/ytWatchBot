@@ -385,8 +385,6 @@ class Youtube {
       });
     });
   }
-
-  getChannelUrl = getChannelUrl;
 }
 
 function getVideoUrl(videoId) {
