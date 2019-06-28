@@ -93,6 +93,7 @@ class Checker {
           });
 
           rawVideos.forEach((video) => {
+            const rawChannelId = video.channelId;
             video.id = this.main.db.model.Channel.buildId('youtube', video.id);
             video.channelId = this.main.db.model.Channel.buildId('youtube', video.channelId);
 
@@ -108,7 +109,7 @@ class Checker {
                 id: video.channelId,
                 service: 'youtube',
                 title: video.channelTitle,
-                url: this.main.youtube.getChannelUrl(video.channelId),
+                url: this.main.youtube.getChannelUrl(rawChannelId),
                 linkedChannelId: linkedChannelId
               };
 
