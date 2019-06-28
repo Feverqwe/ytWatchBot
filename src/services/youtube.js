@@ -164,6 +164,7 @@ class Youtube {
     const videoIdChannelIds = new Map();
     const resultVideoIds = [];
     return parallel(10, channels, ({id: channelId, publishedAfter}) => {
+      const videoIds = [];
       let pageLimit = 100;
       const getPage = (pageToken) => {
         return withRetry({count: 3, timeout: 250}, () => {
@@ -183,15 +184,7 @@ class Youtube {
           const activities = ActivitiesResponse(body);
           activities.items.forEach((item) => {
             const videoId = item.contentDetails.upload.videoId;
-            if (!resultVideoIds.includes(videoId)) {
-              resultVideoIds.push(videoId);
-            }
-
-            let channelIds = videoIdChannelIds.get(videoId);
-            if (!channelIds) {
-              videoIdChannelIds.set(videoId, channelIds = []);
-            }
-            channelIds.push(channelId);
+            videoIds.push(videoId);
           });
 
           if (activities.nextPageToken) {
@@ -202,7 +195,19 @@ class Youtube {
           }
         });
       };
-      return getPage().catch((err) => {
+      return getPage().then(() => {
+        videoIds.forEach((videoId) => {
+          if (!resultVideoIds.includes(videoId)) {
+            resultVideoIds.push(videoId);
+          }
+
+          let channelIds = videoIdChannelIds.get(videoId);
+          if (!channelIds) {
+            videoIdChannelIds.set(videoId, channelIds = []);
+          }
+          channelIds.push(channelId);
+        });
+      }, (err) => {
         debug(`getVideoIds for channel (%s) skip, cause: %o`, channelId, err);
         resultSkippedChannelIds.push(channelId);
       });
