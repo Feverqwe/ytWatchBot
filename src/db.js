@@ -432,10 +432,28 @@ class Db {
     });
   }
 
-  getChatIdChannelId() {
-    return this.model.ChatIdChannelId.findAll({
-      attributes: ['chatId', 'channelId']
-    });
+  getChatIdChannelIdChatIdCount() {
+    return this.sequelize.query(`
+      SELECT COUNT(DISTINCT(chatId)) as chatCount, channels.service as service FROM chatIdChannelId
+      INNER JOIN channels ON channelId = channels.id
+      GROUP BY channels.service
+    `, {type: Sequelize.QueryTypes.SELECT});
+  }
+
+  getChatIdChannelIdChannelIdCount() {
+    return this.sequelize.query(`
+      SELECT COUNT(DISTINCT(channelId)) as channelCount, channels.service as service FROM chatIdChannelId
+      INNER JOIN channels ON channelId = channels.id
+      GROUP BY channels.service
+    `, {type: Sequelize.QueryTypes.SELECT});
+  }
+
+  getChatIdChannelIdTop10() {
+    return this.sequelize.query(`
+      SELECT channelId, COUNT(chatId) as chatCount, channels.service as service, channels.title as title FROM chatIdChannelId
+      INNER JOIN channels ON channelId = channels.id
+      GROUP BY channelId, channels.service ORDER BY COUNT(chatId) DESC LIMIT 10
+    `, {type: Sequelize.QueryTypes.SELECT});
   }
 
   getChannelsByChatId(chatId) {

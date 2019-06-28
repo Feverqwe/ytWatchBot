@@ -104,96 +104,39 @@ class Chat {
     });
 
     this.router.textOrCallbackQuery(/\/top/, (req, res) => {
-      return this.main.db.getChatIdChannelId().then((chatIdChannelIdList) => {
-        const serviceIds = [];
-        const serviceIdCount = {};
-        const chatIds = [];
-        const channelIds = [];
-        const serviceIdChannelIdCount = {};
-        chatIdChannelIdList.forEach(({chatId, channelId, serviceId}) => {
-          if (!serviceIds.includes(serviceId)) {
-            serviceIds.push(serviceId);
-          }
-
-          if (!chatIds.includes(chatId)) {
-            chatIds.push(chatId);
-          }
-
-          if (!channelIds.includes(channelId)) {
-            channelIds.push(channelId);
-          }
-
-          if (!serviceIdCount[serviceId]) {
-            serviceIdCount[serviceId] = 0;
-          }
-
-          let channelIdCount = serviceIdChannelIdCount[serviceId];
-          if (!channelIdCount) {
-            channelIdCount = serviceIdChannelIdCount[serviceId] = {};
-          }
-
-          if (!channelIdCount[channelId]) {
-            channelIdCount[channelId] = 0;
-            serviceIdCount[serviceId]++;
-          }
-
-          channelIdCount[channelId]++;
-        });
-
-        serviceIds.sort((aa, bb) => {
-          const a = serviceIdCount[aa];
-          const b = serviceIdCount[bb];
-          return a === b ? 0 : a > b ? -1 : 1;
-        });
-
-        const topChannelIds = [];
-        const serviceIdTop = {};
-        serviceIds.forEach((serviceId) => {
-          const channelIdCount = serviceIdChannelIdCount[serviceId];
-
-          const top10 = Object.keys(channelIdCount).sort((aa, bb) => {
-            const a = channelIdCount[aa];
-            const b = channelIdCount[bb];
-            return a === b ? 0 : a > b ? -1 : 1;
-          }).slice(0, 10);
-
-          serviceIdTop[serviceId] = top10;
-
-          top10.forEach((channelId) => {
-            topChannelIds.push(channelId);
-          });
-        });
-
-        return this.main.db.getChannelsByIds(topChannelIds).then((channels) => {
-          const channelIdChannelMap = channels.reduce((result, channel) => {
-            result[channel.id] = channel;
-            return result;
-          }, {});
-
-          return {
-            chatIdsCount: chatIds.length,
-            channelIdsCount: channelIds.length,
-            serviceIds,
-            serviceIdCount,
-            serviceIdTop,
-            channelIdChannelMap
-          };
-        });
-      }).then(({chatIdsCount, channelIdsCount, serviceIds, serviceIdCount, serviceIdTop, channelIdChannelMap}) => {
+      return Promise.all([
+        this.main.db.getChatIdChannelIdChatIdCount(),
+        this.main.db.getChatIdChannelIdChannelIdCount(),
+        this.main.db.getChatIdChannelIdTop10(),
+      ]).then(([serviceChatCount, serviceChannelCount, channelChatCount]) => {
         const lines = [];
 
-        lines.push(this.main.locale.getMessage('users').replace('{count}', chatIdsCount));
-        lines.push(this.main.locale.getMessage('channels').replace('{count}', channelIdsCount));
+        const userCount = serviceChatCount.reduce((sum, {chatCount}) => sum + chatCount, 0);
+        const channelCount = serviceChannelCount.reduce((sum, {channelCount}) => sum + channelCount, 0);
 
-        serviceIds.forEach((serviceId) => {
+        lines.push(this.main.locale.getMessage('users').replace('{count}', userCount));
+        lines.push(this.main.locale.getMessage('channels').replace('{count}', channelCount));
+
+        const serviceIdTop10 = new Map();
+        channelChatCount.forEach(({title, service, chatCount}) => {
+          let top10 = serviceIdTop10.get(service);
+          if (!top10) {
+            serviceIdTop10.set(service, top10 = []);
+          }
+          top10.push([title, chatCount]);
+        });
+
+        serviceIdTop10.forEach((top10) => {
+          top10.sort(([,a], [,b]) => a === b ? 0 : a > b ? -1 : 1);
+        });
+
+        serviceIdTop10.forEach((channels, serviceId) => {
           const name = this.main[serviceId].name;
-          const count = serviceIdCount[serviceId];
           lines.push('');
-          lines.push(`${name} (${count}):`);
+          lines.push(`${name}:`);
 
-          serviceIdTop[serviceId].forEach((channelId, index) => {
-            const channel = channelIdChannelMap[channelId];
-            lines.push((index + 1) + '. ' + channel.title);
+          channels.forEach(([title, chatCount], index) => {
+            lines.push((index + 1) + '. ' + title);
           });
         });
 
