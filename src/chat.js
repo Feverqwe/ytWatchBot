@@ -108,17 +108,17 @@ class Chat {
         this.main.db.getChatIdChannelIdChatIdCount(),
         this.main.db.getChatIdChannelIdChannelIdCount(),
         this.main.db.getChatIdChannelIdTop10(),
-      ]).then(([serviceChatCount, serviceChannelCount, channelChatCount]) => {
+      ]).then(([serviceChatCountList, serviceChannelCountList, serviceChannelChatCountList]) => {
         const lines = [];
 
-        const userCount = serviceChatCount.reduce((sum, {chatCount}) => sum + chatCount, 0);
-        const channelCount = serviceChannelCount.reduce((sum, {channelCount}) => sum + channelCount, 0);
+        const userCount = serviceChatCountList.reduce((sum, {chatCount}) => sum + chatCount, 0);
+        const channelCount = serviceChannelCountList.reduce((sum, {channelCount}) => sum + channelCount, 0);
 
         lines.push(this.main.locale.getMessage('users').replace('{count}', userCount));
         lines.push(this.main.locale.getMessage('channels').replace('{count}', channelCount));
 
         const serviceIdTop10 = new Map();
-        channelChatCount.forEach(({title, service, chatCount}) => {
+        serviceChannelChatCountList.forEach(({title, service, chatCount}) => {
           let top10 = serviceIdTop10.get(service);
           if (!top10) {
             serviceIdTop10.set(service, top10 = []);
