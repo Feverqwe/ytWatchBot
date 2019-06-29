@@ -555,10 +555,12 @@ class Chat {
         }
         switch (optionsType) {
           case 'options': {
-            return req.chat.update(changes);
+            Object.assign(req.chat, changes);
+            return req.chat.save();
           }
           case 'channelOptions': {
-            return req.chat.channel.update(changes);
+            Object.assign(req.chat.channel, changes);
+            return req.chat.channel.save();
           }
         }
       }).then(() => {
