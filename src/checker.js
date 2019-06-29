@@ -210,17 +210,45 @@ class Checker {
     return oneLimit(() => {
       const defaultDate = this.getDefaultDate();
 
-      const videoIds = [];
-      const videoIdFeed = new Map();
+      // const videoIds = [];
+      const channelIds = [];
+      const channelIdMinPublishedAt = new Map();
+      // const videoIdFeed = new Map();
       feeds.forEach((feed) => {
         if (feed.publishedAt.getTime() > defaultDate.getTime()) {
           const videoId = buildId('yo', feed.videoId);
-          videoIds.push(videoId);
-          videoIdFeed.set(videoId, feed);
+          const channelId = buildId('yo', feed.channelId);
+          // videoIds.push(videoId);
+          channelIds.push(channelId);
+          // videoIdFeed.set(videoId, feed);
+
+          const lastPublishedAt = channelIdMinPublishedAt.get(channelId);
+          if (!lastPublishedAt || lastPublishedAt.getTime() > feed.publishedAt.getTime()) {
+            channelIdMinPublishedAt.set(channelId, feed.publishedAt);
+          }
         }
       });
 
-      return this.main.db.getExistsVideoIds(videoIds).then((existsVideoIds) => {
+      return this.main.db.getChannelsByIds(channelIds).then((channels) => {
+        const channelIdChanges = new Map();
+        channels.forEach((channel) => {
+          const lastPublishedAt = channelIdMinPublishedAt.get(channel.id);
+          const lastVideoPublishedAt = channel.lastVideoPublishedAt || channel.lastSyncAt;
+          if (lastVideoPublishedAt && lastVideoPublishedAt.getTime() > lastPublishedAt.getTime()) {
+            if (!channelIdChanges.has(channel.id)) {
+              channelIdChanges.set(channel.id, Object.assign({}, channel.get({plain: true})));
+            }
+            const channelChanges = channelIdChanges.get(channel.id);
+            channelChanges.lastVideoPublishedAt = new Date(lastPublishedAt.getTime() - 1000);
+          }
+        });
+
+        const channelsChanges = Array.from(channelIdChanges.values());
+
+        return this.main.db.setChannelsPublishedAtChanges(channelsChanges);
+      });
+
+      /*return this.main.db.getExistsVideoIds(videoIds).then((existsVideoIds) => {
         const newVideoIds = arrayDifferent(videoIds, existsVideoIds);
         const rawVideoIds = newVideoIds.map(id => videoIdFeed.get(id).videoId);
         return this.main.youtube.getVideosByIds(rawVideoIds);
@@ -275,7 +303,7 @@ class Checker {
             }
           });
         });
-      });
+      });*/
     });
   }
 

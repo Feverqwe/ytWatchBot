@@ -562,6 +562,14 @@ class Db {
     });
   }
 
+  setChannelsPublishedAtChanges(channelsChanges) {
+    return bulk(channelsChanges, (channelsChanges) => {
+      return this.model.Channel.bulkCreate(channelsChanges, {
+        updateOnDuplicate: ['lastVideoPublishedAt']
+      });
+    });
+  }
+
   cleanChannels() {
     return this.model.Channel.destroy({
       where: {
