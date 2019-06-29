@@ -233,8 +233,8 @@ class Checker {
             video.id = this.main.db.model.Channel.buildId('youtube', video.id);
             video.channelId = this.main.db.model.Channel.buildId('youtube', video.channelId);
 
-            const channelVideos = ensureMap(channelIdVideoIds, video.channelId, []);
-            channelVideos.push(video);
+            const channelVideoIds = ensureMap(channelIdVideoIds, video.channelId, []);
+            channelVideoIds.push(video.id);
 
             channelIds.push(video.channelId);
             videos.push(video);
