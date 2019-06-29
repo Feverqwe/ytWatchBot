@@ -175,8 +175,12 @@ class YtPubSub {
 
   handleFeed(data) {
     try {
-      this.log.write('data', JSON.stringify(data));
-      const feed = parseData(data.feed.toString());
+      this.log.write('data', JSON.stringify({
+        topic: data.topic,
+        callback: data.callback,
+        feed: data.feed.toString()
+      }));
+      const feed = parseData(data.feed.toString(), this.log.write.bind(this.log));
       this.feeds.push(Object.assign(feed, {lastPushAt: new Date()}));
       this.emitFeedsChangesThrottled();
     } catch (err) {
