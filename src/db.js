@@ -1,5 +1,6 @@
 import ErrorWithCode from "./tools/errorWithCode";
 import arrayByPart from "./tools/arrayByPart";
+import buildId from "./tools/buildId";
 
 const debug = require('debug')('app:db');
 const Sequelize = require('sequelize');
@@ -94,13 +95,14 @@ class Db {
         fields: ['subscriptionExpiresAt', 'subscriptionTimeoutExpiresAt']
       }]
     });
-    Channel.buildId = (service, serviceId) => {
-      return [service.substr(0, 2), JSON.stringify(serviceId)].join(':');
-    };
+    Channel.buildId = buildId;
 
     const YtPubSub = this.sequelize.define('ytPubSub', {
       videoId: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
+      channelId: {type: Sequelize.STRING(191), allowNull: true, defaultValue: null},
+      publishedAt: {type: Sequelize.DATE, allowNull: true, defaultValue: null},
       lastPushAt: {type: Sequelize.DATE, allowNull: false},
+      isNew: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
     }, {
       timestamps: true,
       updatedAt: false,
@@ -471,6 +473,12 @@ class Db {
     });
   }
 
+  getChannelsByIds(ids) {
+    return this.model.Channel.findAll({
+      where: {id: ids}
+    });
+  }
+
   getChannelById(id) {
     return this.model.Channel.findByPk(id).then((channel) => {
       if (!channel) {
@@ -559,12 +567,12 @@ class Db {
     });
   }
 
-  putYtPubSub(existsVideoIds, ytPubSubItems, channelIds) {
+  putYtPubSub(existsVideoIds, newFeeds, channelIds) {
     return this.sequelize.transaction({
       isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
     }, async (transaction) => {
       await Promise.all([
-        bulk(ytPubSubItems, (ytPubSubItems) => {
+        bulk(newFeeds, (ytPubSubItems) => {
           return this.model.YtPubSub.bulkCreate(ytPubSubItems, {
             transaction
           });

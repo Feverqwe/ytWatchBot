@@ -3,6 +3,8 @@ import ErrorWithCode from "./tools/errorWithCode";
 import arrayDifferent from "./tools/arrayDifferent";
 import roundStartInterval from "./tools/roundStartInterval";
 import getInProgress from "./tools/getInProgress";
+import LogFile from "./logFile";
+import buildId from "./tools/buildId";
 
 const debug = require('debug')('app:YtPubSub');
 const path = require('path');
@@ -18,6 +20,7 @@ class YtPubSub {
   constructor(/**Main*/main) {
     this.main = main;
     this.hubUrl = 'https://pubsubhubbub.appspot.com/subscribe';
+    this.log = new LogFile('ytPubSub');
   }
 
   init() {
@@ -125,16 +128,7 @@ class YtPubSub {
     });
 
     this.pubsub.on('feed', (data) => {
-      try {
-        const feed = parseData(data.feed.toString());
-        this.handleFeed(feed);
-      } catch (err) {
-        if (err.code === 'ENTRY_IS_DELETED') {
-          // pass
-        } else {
-          debug('Parse xml error! %o', err);
-        }
-      }
+      this.handleFeed(data);
     });
 
     this.pubsub.listen(this.main.config.push.port);
@@ -142,30 +136,35 @@ class YtPubSub {
 
   feeds = [];
   emitFeedsChanges = () => {
-    const videoIdChannelId = new Map();
-    const videoIds = [];
-    this.feeds.splice(0).forEach(({videoId, channelId}) => {
-      if (!videoIdChannelId.has(videoId)) {
-        videoIdChannelId.set(videoId, channelId);
-        videoIds.push(videoId);
+    const feeds = this.feeds.splice(0);
+
+    const videoIdFeed = new Map();
+    feeds.forEach((feed) => {
+      if (!videoIdFeed.has(feed.videoId)) {
+        videoIdFeed.set(feed.videoId, feed);
       }
     });
+
+    const videoIds = Array.from(videoIdFeed.keys());
 
     return this.main.db.getExistsYtPubSubVideoIds(videoIds).then((existsVideoIds) => {
       const newVideoIds = arrayDifferent(videoIds, existsVideoIds);
 
-      const channelIds = [];
-      const ytPubSubItems = [];
-      newVideoIds.forEach((videoId) => {
-        const rawChannelId = videoIdChannelId.get(videoId);
-        const channelId = this.main.db.model.Channel.buildId('youtube', rawChannelId);
-        if (!channelIds.includes(channelId)) {
-          channelIds.push(channelId);
+      const newFeeds = [];
+      const serviceChannelIds = [];
+      newVideoIds.forEach((rawVideoId) => {
+        const feed = videoIdFeed.get(rawVideoId);
+
+        const serviceChannelId = buildId('yo', feed.channelId);
+        if (!serviceChannelIds.includes(serviceChannelId)) {
+          serviceChannelIds.push(serviceChannelId);
         }
-        ytPubSubItems.push({videoId, lastPushAt: new Date()});
+
+        feed.isNew = true;
+        newFeeds.push(feed);
       });
 
-      return this.main.db.putYtPubSub(existsVideoIds, ytPubSubItems, channelIds);
+      return this.main.db.putYtPubSub(existsVideoIds, newFeeds, serviceChannelIds);
     }).catch((err) => {
       debug('emitFeedsChanges error %o', err);
     });
@@ -174,9 +173,19 @@ class YtPubSub {
     leading: false
   });
 
-  handleFeed({videoId, channelId}) {
-    this.feeds.push({videoId, channelId});
-    this.emitFeedsChangesThrottled();
+  handleFeed(data) {
+    try {
+      this.log.write('data', JSON.stringify(data));
+      const feed = parseData(data.feed.toString());
+      this.feeds.push(Object.assign(feed, {lastPushAt: new Date()}));
+      this.emitFeedsChangesThrottled();
+    } catch (err) {
+      if (err.code === 'ENTRY_IS_DELETED') {
+        // pass
+      } else {
+        debug('parseData skip, cause: %o', err);
+      }
+    }
   }
 }
 
@@ -184,31 +193,35 @@ function parseData(xml) {
   const document = new XmlDocument(xml);
 
   const entry = getChildNode(document, 'entry');
-
   if (!entry) {
     const isDeletedEntry = !!getChildNode(document, 'at:deleted-entry');
-    if (!isDeletedEntry) {
-      debug('Unknown entry %j', document.toString({compressed: true}));
+    if (isDeletedEntry) {
+      throw new ErrorWithCode('Entry deleted!', 'ENTRY_IS_DELETED');
     }
-    throw new ErrorWithCode('Entry deleted!', 'ENTRY_IS_DELETED');
   }
 
-  const data = {};
-
-  const success = ['yt:videoId', 'yt:channelId'].every((item) => {
-    const node = getChildNode(entry, item);
-    if (node) {
-      data[item] = node.val;
-      return true;
+  try {
+    if (!entry) {
+      throw new ErrorWithCode('Entry is not found!', 'ENTRY_IS_NOT_FOUND');
     }
-  });
 
-  if (!success) {
-    debug('XML read error! %j', document.toString({compressed: true}));
-    throw new Error('parseData error');
+    const data = {};
+    const success = ['yt:videoId', 'yt:channelId', 'published', 'author'].every((item) => {
+      const node = getChildNode(entry, item);
+      if (node) {
+        data[item] = node.val;
+        return true;
+      }
+    });
+    if (!success) {
+      throw new ErrorWithCode('Some fields is not found', 'SOME_FIELDS_IS_NOT_FOUND');
+    }
+
+    return {videoId: data['yt:videoId'], channelId: data['yt:channelId'], publishedAt: new Date(data.published)};
+  } catch (err) {
+    debug('parseData error, cause: Some data is not found %j', document.toString({compressed: true}));
+    throw err;
   }
-
-  return {videoId: data['yt:videoId'], channelId: data['yt:channelId']};
 }
 
 function getTopicUrl(channelId) {
