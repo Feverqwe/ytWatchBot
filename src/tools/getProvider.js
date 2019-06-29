@@ -26,7 +26,7 @@ const getProvider = (requestDataById, keepAlive = 0) => {
       }));
     }).then((cache) => {
       cache.useCount++;
-      return callback(cache.result).then(...promiseFinally(() => {
+      return Promise.resolve(callback(cache.result)).then(...promiseFinally(() => {
         cache.useCount--;
         clearTimeout(cache.timerId);
         cache.timerId = setTimeout(() => {

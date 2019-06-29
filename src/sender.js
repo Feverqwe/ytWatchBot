@@ -103,7 +103,7 @@ class Sender {
 
   provideVideo = getProvider((id) => {
     return this.main.db.getVideoWithChannelById(id);
-  }, 3 * 1000);
+  }, 100);
 }
 
 export default Sender;
