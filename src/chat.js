@@ -5,6 +5,7 @@ import pageBtnList from "./tools/pageBtnList";
 import splitTextByPages from "./tools/splitTextByPages";
 import resolvePath from "./tools/resolvePath";
 import LogFile from "./logFile";
+import ensureMap from "./tools/ensureMap";
 
 const debug = require('debug')('app:Chat');
 const jsonStringifyPretty = require("json-stringify-pretty-compact");
@@ -119,10 +120,7 @@ class Chat {
 
         const serviceIdTop10 = new Map();
         serviceChannelChatCountList.forEach(({title, service, chatCount}) => {
-          let top10 = serviceIdTop10.get(service);
-          if (!top10) {
-            serviceIdTop10.set(service, top10 = []);
-          }
+          const top10 = ensureMap(serviceIdTop10, service, []);
           top10.push([title, chatCount]);
         });
 

@@ -109,6 +109,9 @@ class Db {
       indexes: [{
         name: 'lastPushAt_idx',
         fields: ['lastPushAt']
+      }, {
+        name: 'isNew_idx',
+        fields: ['isNew']
       }]
     });
 
@@ -567,6 +570,13 @@ class Db {
     });
   }
 
+  getYtPubSubNewFeeds(limit) {
+    return this.model.YtPubSub.findAll(({
+      where: {isNew: true},
+      limit: limit
+    }));
+  }
+
   putYtPubSub(existsVideoIds, newFeeds, channelIds) {
     return this.sequelize.transaction({
       isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
@@ -593,6 +603,18 @@ class Db {
     });
   }
 
+  setYtPubSubNotNew(videoIds) {
+    return bulk(videoIds, (videoIds) => {
+      return this.model.YtPubSub.update({
+        isNew: false
+      }, {
+        where: {
+          videoId: videoIds
+        }
+      });
+    });
+  }
+
   getExistsYtPubSubVideoIds(ids) {
     return this.model.YtPubSub.findAll({
       where: {videoId: ids},
@@ -604,7 +626,7 @@ class Db {
 
   cleanYtPubSub() {
     const date = new Date();
-    date.setDate(date.getDate() - 30);
+    date.setDate(date.getDate() - 14);
     return this.model.YtPubSub.destroy({
       where: {
         lastPushAt: {[Op.lt]: date}
@@ -634,7 +656,7 @@ class Db {
 
   cleanVideos() {
     const date = new Date();
-    date.setDate(date.getDate() - 30);
+    date.setDate(date.getDate() - 14);
     return this.model.Video.destroy({
       where: {
         publishedAt: {[Op.lt]: date}

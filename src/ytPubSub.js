@@ -164,7 +164,9 @@ class YtPubSub {
         newFeeds.push(feed);
       });
 
-      return this.main.db.putYtPubSub(existsVideoIds, newFeeds, serviceChannelIds);
+      return this.main.db.putYtPubSub(existsVideoIds, newFeeds, serviceChannelIds).then(() => {
+        return this.check();
+      });
     }).catch((err) => {
       debug('emitFeedsChanges error %o', err);
     });
@@ -190,6 +192,26 @@ class YtPubSub {
         debug('parseData skip, cause: %o', err);
       }
     }
+  }
+
+  check() {
+    return oneLimit(async () => {
+      while (true) {
+        const feeds = await this.main.db.getYtPubSubNewFeeds(50);
+        if (!feeds.length) {
+          break;
+        }
+
+        const videoIds = [];
+        feeds.forEach((feed) => {
+          videoIds.push(feed.videoId);
+        });
+
+        await this.main.checker.checkFeeds(feeds).then(() => {
+          return this.main.db.setYtPubSubNotNew(videoIds);
+        });
+      }
+    });
   }
 }
 

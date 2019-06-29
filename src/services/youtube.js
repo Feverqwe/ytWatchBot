@@ -5,6 +5,7 @@ import arrayByPart from "../tools/arrayByPart";
 import parallel from "../tools/parallel";
 import formatDuration from "../tools/formatDuration";
 import withRetry from "../tools/withRetry";
+import ensureMap from "../tools/ensureMap";
 
 const debug = require('debug')('app:Youtube');
 const got = require('got');
@@ -201,10 +202,7 @@ class Youtube {
             resultVideoIds.push(videoId);
           }
 
-          let channelIds = videoIdChannelIds.get(videoId);
-          if (!channelIds) {
-            videoIdChannelIds.set(videoId, channelIds = []);
-          }
+          const channelIds = ensureMap(videoIdChannelIds, videoId, []);
           channelIds.push(channelId);
         });
       }, (err) => {

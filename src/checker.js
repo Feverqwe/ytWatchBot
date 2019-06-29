@@ -2,6 +2,8 @@ import arrayDifferent from "./tools/arrayDifferent";
 import LogFile from "./logFile";
 import roundStartInterval from "./tools/roundStartInterval";
 import getInProgress from "./tools/getInProgress";
+import buildId from "./tools/buildId";
+import ensureMap from "./tools/ensureMap";
 
 const debug = require('debug')('app:Checker');
 const promiseLimit = require('promise-limit');
@@ -40,6 +42,12 @@ class Checker {
 
   inProgress = getInProgress();
 
+  getDefaultDate() {
+    const defaultDate = new Date();
+    defaultDate.setDate(defaultDate.getDate() - 7);
+    return defaultDate;
+  }
+
   check() {
     return this.inProgress(() => oneLimit(async () => {
       while (true) {
@@ -52,8 +60,7 @@ class Checker {
         const channelIds = [];
         const rawChannels = [];
 
-        const defaultDate = new Date();
-        defaultDate.setDate(defaultDate.getDate() - 7);
+        const defaultDate = this.getDefaultDate();
 
         channels.forEach(channel => {
           channelIds.push(channel.id);
@@ -148,20 +155,14 @@ class Checker {
               channelChanges.lastVideoPublishedAt = video.publishedAt;
             }
 
-            let channelVideoIds = channelIdVideoIds.get(video.channelId);
-            if (!channelVideoIds) {
-              channelIdVideoIds.set(video.channelId, channelVideoIds = []);
-            }
+            const channelVideoIds = ensureMap(channelIdVideoIds, video.channelId, []);
             channelVideoIds.push(video.id);
           });
 
           return this.main.db.getChatIdChannelIdByChannelIds(channelIds).then((chatIdChannelIdList) => {
             const channelIdChatIds = new Map();
             chatIdChannelIdList.forEach((chatIdChannelId) => {
-              let chatIds = channelIdChatIds.get(chatIdChannelId.channelId);
-              if (!chatIds) {
-                channelIdChatIds.set(chatIdChannelId.channelId, chatIds = []);
-              }
+              const chatIds = ensureMap(channelIdChatIds, chatIdChannelId.channelId, []);
               if (!chatIdChannelId.chat.channelId || !chatIdChannelId.chat.isMuted) {
                 chatIds.push(chatIdChannelId.chat.id);
               }
@@ -203,6 +204,79 @@ class Checker {
         });
       }
     }));
+  }
+
+  checkFeeds(feeds) {
+    return oneLimit(() => {
+      const defaultDate = this.getDefaultDate();
+
+      const videoIds = [];
+      const videoIdFeed = new Map();
+      feeds.forEach((feed) => {
+        if (feed.publishedAt.getTime() > defaultDate.getTime()) {
+          const videoId = buildId('yo', feed.videoId);
+          videoIds.push(videoId);
+          videoIdFeed.set(videoId, feed);
+        }
+      });
+
+      return this.main.db.getExistsVideoIds(videoIds).then((existsVideoIds) => {
+        const videoIds = arrayDifferent(videoIds, existsVideoIds);
+        const rawVideoIds = videoIds.map(id => videoIdFeed.get(id).videoId);
+        return this.main.youtube.getVideosByIds(rawVideoIds);
+      }).then((rawVideos) => {
+        const channelIdVideoIds = new Map();
+        const channelIds = [];
+        const videos = [];
+        rawVideos.forEach((video) => {
+          if (video.publishedAt.getTime() > defaultDate.getTime()) {
+            video.id = this.main.db.model.Channel.buildId('youtube', video.id);
+            video.channelId = this.main.db.model.Channel.buildId('youtube', video.channelId);
+
+            const channelVideos = ensureMap(channelIdVideoIds, video.channelId, []);
+            channelVideos.push(video);
+
+            channelIds.push(video.channelId);
+            videos.push(video);
+          }
+        });
+
+        return this.main.db.getChatIdChannelIdByChannelIds(channelIds).then((chatIdChannelIdList) => {
+          const channelIdChatIds = new Map();
+          chatIdChannelIdList.forEach((chatIdChannelId) => {
+            const chatIds = ensureMap(channelIdChatIds, chatIdChannelId.channelId, []);
+            if (!chatIdChannelId.chat.channelId || !chatIdChannelId.chat.isMuted) {
+              chatIds.push(chatIdChannelId.chat.id);
+            }
+            if (chatIdChannelId.chat.channelId) {
+              chatIds.push(chatIdChannelId.chat.channelId);
+            }
+          });
+
+          const chatIdVideoIdChanges = [];
+          for (const [channelId, chatIds] of channelIdChatIds.entries()) {
+            const videoIds = channelIdVideoIds.get(channelId);
+            if (videoIds) {
+              videoIds.forEach((videoId) => {
+                chatIds.forEach((chatId) => {
+                  chatIdVideoIdChanges.push({chatId, videoId});
+                });
+              });
+            }
+          }
+
+          return this.main.db.putVideos([], videos, chatIdVideoIdChanges).then(() => {
+            videos.forEach((video) => {
+              this.log.write(`[insert feed] ${video.channelId} ${video.id}`);
+            });
+
+            if (videos.length) {
+              this.main.sender.checkThrottled();
+            }
+          });
+        });
+      });
+    });
   }
 
   clean() {
