@@ -571,10 +571,10 @@ class Db {
   }
 
   getYtPubSubNewFeeds(limit) {
-    return this.model.YtPubSub.findAll(({
+    return this.model.YtPubSub.findAll({
       where: {isNew: true},
       limit: limit
-    }));
+    });
   }
 
   putYtPubSub(existsVideoIds, newFeeds, channelIds) {

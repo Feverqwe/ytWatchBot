@@ -221,8 +221,8 @@ class Checker {
       });
 
       return this.main.db.getExistsVideoIds(videoIds).then((existsVideoIds) => {
-        const videoIds = arrayDifferent(videoIds, existsVideoIds);
-        const rawVideoIds = videoIds.map(id => videoIdFeed.get(id).videoId);
+        const newVideoIds = arrayDifferent(videoIds, existsVideoIds);
+        const rawVideoIds = newVideoIds.map(id => videoIdFeed.get(id).videoId);
         return this.main.youtube.getVideosByIds(rawVideoIds);
       }).then((rawVideos) => {
         const channelIdVideoIds = new Map();
