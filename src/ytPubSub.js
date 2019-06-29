@@ -195,6 +195,7 @@ class YtPubSub {
   }
 
   check() {
+    return ;
     return oneLimit(async () => {
       while (true) {
         const feeds = await this.main.db.getYtPubSubNewFeeds(50);
