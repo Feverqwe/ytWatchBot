@@ -139,15 +139,11 @@ class YtPubSub {
   emitFeedsChanges = () => {
     const feeds = this.feeds.splice(0);
 
-    const rawVideoIdFeed = new Map();
     const rawVideoIdFeeds = new Map();
     feeds.forEach((feed) => {
-      rawVideoIdFeed.set(feed.videoId, feed);
-
-      const feeds = ensureMap(rawVideoIdFeeds, feed.videoId, []);
-      feeds.push(feed);
+      const videoIdFeeds = ensureMap(rawVideoIdFeeds, feed.videoId, []);
+      videoIdFeeds.push(feed);
     });
-    const unicFeeds = Array.from(rawVideoIdFeed.values());
 
     const rawVideoIds = Array.from(rawVideoIdFeeds.keys());
     return this.main.db.getExistsYtPubSubVideoIds(rawVideoIds).then((existsVideoIds) => {
@@ -192,7 +188,7 @@ class YtPubSub {
 
           const channelsChanges = Array.from(channelIdChanges.values());
 
-          return this.main.db.putYtPubSub(unicFeeds, channelsChanges, changedChannelIds);
+          return this.main.db.putYtPubSub(feeds, channelsChanges, changedChannelIds);
         });
       });
     }).catch((err) => {
