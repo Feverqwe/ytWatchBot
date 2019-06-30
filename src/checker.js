@@ -2,18 +2,16 @@ import arrayDifferent from "./tools/arrayDifferent";
 import LogFile from "./logFile";
 import roundStartInterval from "./tools/roundStartInterval";
 import getInProgress from "./tools/getInProgress";
-import buildId from "./tools/buildId";
 import ensureMap from "./tools/ensureMap";
 
 const debug = require('debug')('app:Checker');
 const promiseLimit = require('promise-limit');
 
-const oneLimit = promiseLimit(1);
-
 class Checker {
   constructor(/**Main*/main) {
     this.main = main;
     this.log = new LogFile('checker');
+    this.oneLimit = promiseLimit(1);
   }
 
   init() {
@@ -49,7 +47,7 @@ class Checker {
   }
 
   check() {
-    return this.inProgress(() => oneLimit(async () => {
+    return this.inProgress(() => this.oneLimit(async () => {
       while (true) {
         const channels = await this.main.db.getChannelsForSync(50);
         if (!channels.length) {
@@ -206,109 +204,8 @@ class Checker {
     }));
   }
 
-  checkFeeds(feeds) {
-    return oneLimit(() => {
-      const defaultDate = this.getDefaultDate();
-
-      // const videoIds = [];
-      const channelIds = [];
-      const channelIdMinPublishedAt = new Map();
-      // const videoIdFeed = new Map();
-      feeds.forEach((feed) => {
-        if (feed.publishedAt.getTime() > defaultDate.getTime()) {
-          const videoId = buildId('yo', feed.videoId);
-          const channelId = buildId('yo', feed.channelId);
-          // videoIds.push(videoId);
-          channelIds.push(channelId);
-          // videoIdFeed.set(videoId, feed);
-
-          const lastPublishedAt = channelIdMinPublishedAt.get(channelId);
-          if (!lastPublishedAt || lastPublishedAt.getTime() > feed.publishedAt.getTime()) {
-            channelIdMinPublishedAt.set(channelId, feed.publishedAt);
-          }
-        }
-      });
-
-      return this.main.db.getChannelsByIds(channelIds).then((channels) => {
-        const channelIdChanges = new Map();
-        channels.forEach((channel) => {
-          const lastPublishedAt = channelIdMinPublishedAt.get(channel.id);
-          const lastVideoPublishedAt = channel.lastVideoPublishedAt || channel.lastSyncAt;
-          if (lastVideoPublishedAt && lastVideoPublishedAt.getTime() > lastPublishedAt.getTime()) {
-            if (!channelIdChanges.has(channel.id)) {
-              channelIdChanges.set(channel.id, Object.assign({}, channel.get({plain: true})));
-            }
-            const channelChanges = channelIdChanges.get(channel.id);
-            channelChanges.lastVideoPublishedAt = new Date(lastPublishedAt.getTime() - 1000);
-          }
-        });
-
-        const channelsChanges = Array.from(channelIdChanges.values());
-
-        return this.main.db.setChannelsPublishedAtChanges(channelsChanges);
-      });
-
-      /*return this.main.db.getExistsVideoIds(videoIds).then((existsVideoIds) => {
-        const newVideoIds = arrayDifferent(videoIds, existsVideoIds);
-        const rawVideoIds = newVideoIds.map(id => videoIdFeed.get(id).videoId);
-        return this.main.youtube.getVideosByIds(rawVideoIds);
-      }).then((rawVideos) => {
-        const channelIdVideoIds = new Map();
-        const channelIds = [];
-        const videos = [];
-        rawVideos.forEach((video) => {
-          if (video.publishedAt.getTime() > defaultDate.getTime()) {
-            video.id = this.main.db.model.Channel.buildId('youtube', video.id);
-            video.channelId = this.main.db.model.Channel.buildId('youtube', video.channelId);
-
-            const channelVideoIds = ensureMap(channelIdVideoIds, video.channelId, []);
-            channelVideoIds.push(video.id);
-
-            channelIds.push(video.channelId);
-            videos.push(video);
-          }
-        });
-
-        return this.main.db.getChatIdChannelIdByChannelIds(channelIds).then((chatIdChannelIdList) => {
-          const channelIdChatIds = new Map();
-          chatIdChannelIdList.forEach((chatIdChannelId) => {
-            const chatIds = ensureMap(channelIdChatIds, chatIdChannelId.channelId, []);
-            if (!chatIdChannelId.chat.channelId || !chatIdChannelId.chat.isMuted) {
-              chatIds.push(chatIdChannelId.chat.id);
-            }
-            if (chatIdChannelId.chat.channelId) {
-              chatIds.push(chatIdChannelId.chat.channelId);
-            }
-          });
-
-          const chatIdVideoIdChanges = [];
-          for (const [channelId, chatIds] of channelIdChatIds.entries()) {
-            const videoIds = channelIdVideoIds.get(channelId);
-            if (videoIds) {
-              videoIds.forEach((videoId) => {
-                chatIds.forEach((chatId) => {
-                  chatIdVideoIdChanges.push({chatId, videoId});
-                });
-              });
-            }
-          }
-
-          return this.main.db.putVideos([], videos, chatIdVideoIdChanges).then(() => {
-            videos.forEach((video) => {
-              this.log.write(`[insert feed] ${video.channelId} ${video.id}`);
-            });
-
-            if (videos.length) {
-              this.main.sender.checkThrottled();
-            }
-          });
-        });
-      });*/
-    });
-  }
-
   clean() {
-    return oneLimit(() => {
+    return this.oneLimit(() => {
       return Promise.all([
         this.main.db.cleanChats().then((chatsCount) => {
           return this.main.db.cleanChannels().then((channelsCount) => {

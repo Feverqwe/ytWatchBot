@@ -102,16 +102,12 @@ class Db {
       channelId: {type: Sequelize.STRING(191), allowNull: true, defaultValue: null},
       publishedAt: {type: Sequelize.DATE, allowNull: true, defaultValue: null},
       lastPushAt: {type: Sequelize.DATE, allowNull: false},
-      isNew: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
     }, {
       timestamps: true,
       updatedAt: false,
       indexes: [{
         name: 'lastPushAt_idx',
         fields: ['lastPushAt']
-      }, {
-        name: 'isNew_idx',
-        fields: ['isNew']
       }]
     });
 
@@ -562,14 +558,6 @@ class Db {
     });
   }
 
-  setChannelsPublishedAtChanges(channelsChanges) {
-    return bulk(channelsChanges, (channelsChanges) => {
-      return this.model.Channel.bulkCreate(channelsChanges, {
-        updateOnDuplicate: ['lastVideoPublishedAt']
-      });
-    });
-  }
-
   cleanChannels() {
     return this.model.Channel.destroy({
       where: {
@@ -578,21 +566,20 @@ class Db {
     });
   }
 
-  getYtPubSubNewFeeds(limit) {
-    return this.model.YtPubSub.findAll({
-      where: {isNew: true},
-      limit: limit
-    });
-  }
-
-  putYtPubSub(existsVideoIds, newFeeds, channelIds) {
+  putYtPubSub(feeds, channelsChanges, channelIds) {
     return this.sequelize.transaction({
       isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
     }, async (transaction) => {
       await Promise.all([
-        bulk(newFeeds, (ytPubSubItems) => {
-          return this.model.YtPubSub.bulkCreate(ytPubSubItems, {
+        bulk(feeds, (feeds) => {
+          return this.model.YtPubSub.bulkCreate(feeds, {
             transaction
+          });
+        }),
+        bulk(channelsChanges, (channelsChanges) => {
+          return this.model.Channel.bulkCreate(channelsChanges, {
+            updateOnDuplicate: ['lastVideoPublishedAt'],
+            transaction,
           });
         }),
         this.model.Channel.update({
@@ -600,26 +587,8 @@ class Db {
         }, {
           transaction,
           where: {id: channelIds}
-        }),
-        this.model.YtPubSub.update({
-          lastPushAt: new Date()
-        }, {
-          transaction,
-          where: {videoId: existsVideoIds}
-        }),
+        })
       ]);
-    });
-  }
-
-  setYtPubSubNotNew(videoIds) {
-    return bulk(videoIds, (videoIds) => {
-      return this.model.YtPubSub.update({
-        isNew: false
-      }, {
-        where: {
-          videoId: videoIds
-        }
-      });
     });
   }
 

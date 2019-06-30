@@ -138,34 +138,55 @@ class YtPubSub {
   emitFeedsChanges = () => {
     const feeds = this.feeds.splice(0);
 
-    const videoIdFeed = new Map();
+    const rawVideoIdFeed = new Map();
     feeds.forEach((feed) => {
-      if (!videoIdFeed.has(feed.videoId)) {
-        videoIdFeed.set(feed.videoId, feed);
+      if (!rawVideoIdFeed.has(feed.videoId)) {
+        rawVideoIdFeed.set(feed.videoId, feed);
       }
     });
 
-    const videoIds = Array.from(videoIdFeed.keys());
+    const rawVideoIds = Array.from(rawVideoIdFeed.keys());
+    return this.main.db.getExistsYtPubSubVideoIds(rawVideoIds).then((existsVideoIds) => {
+      const newRawVideoIds = arrayDifferent(rawVideoIds, existsVideoIds);
 
-    return this.main.db.getExistsYtPubSubVideoIds(videoIds).then((existsVideoIds) => {
-      const newVideoIds = arrayDifferent(videoIds, existsVideoIds);
+      const changedChannelIds = [];
+      const channelIdPublishedAt = new Map();
+      newRawVideoIds.forEach((rawVideoId) => {
+        const feed = rawVideoIdFeed.get(rawVideoId);
 
-      const newFeeds = [];
-      const serviceChannelIds = [];
-      newVideoIds.forEach((rawVideoId) => {
-        const feed = videoIdFeed.get(rawVideoId);
+        const channelId = buildId('yo', feed.channelId);
+        changedChannelIds.push(channelId);
 
-        const serviceChannelId = buildId('yo', feed.channelId);
-        if (!serviceChannelIds.includes(serviceChannelId)) {
-          serviceChannelIds.push(serviceChannelId);
+        const lastPublishedAt = channelIdPublishedAt.get(channelId);
+        if (!lastPublishedAt || lastPublishedAt.getTime() > feed.publishedAt.getTime()) {
+          channelIdPublishedAt.set(channelId, feed.publishedAt);
         }
-
-        feed.isNew = true;
-        newFeeds.push(feed);
       });
 
-      return this.main.db.putYtPubSub(existsVideoIds, newFeeds, serviceChannelIds).then(() => {
-        return this.check();
+      return this.main.checker.oneLimit(() => {
+        const channelIds = Array.from(channelIdPublishedAt.keys());
+        return this.main.db.getChannelsByIds(channelIds).then((channels) => {
+          const channelIdChanges = new Map();
+          channels.forEach((channel) => {
+            const publishedAt = channelIdPublishedAt.get(channel.id);
+            const lastVideoPublishedAt = channel.lastVideoPublishedAt || channel.lastSyncAt;
+            if (lastVideoPublishedAt && lastVideoPublishedAt.getTime() > publishedAt.getTime()) {
+              channelIdChanges.set(channel.id, Object.assign({}, channel.get({plain: true}), {
+                lastVideoPublishedAt: new Date(publishedAt.getTime() - 1000),
+                hasChanges: true
+              }));
+
+              const pos = changedChannelIds.indexOf(channel.id);
+              if (pos !== -1) {
+                changedChannelIds.splice(pos, 1);
+              }
+            }
+          });
+
+          const channelsChanges = Array.from(channelIdChanges.values());
+
+          return this.main.db.putYtPubSub(feeds, channelsChanges, changedChannelIds);
+        });
       });
     }).catch((err) => {
       debug('emitFeedsChanges error %o', err);
@@ -192,26 +213,6 @@ class YtPubSub {
         debug('parseData skip, cause: %o', err);
       }
     }
-  }
-
-  check() {
-    return oneLimit(async () => {
-      while (true) {
-        const feeds = await this.main.db.getYtPubSubNewFeeds(50);
-        if (!feeds.length) {
-          break;
-        }
-
-        const videoIds = [];
-        feeds.forEach((feed) => {
-          videoIds.push(feed.videoId);
-        });
-
-        await this.main.checker.checkFeeds(feeds).then(() => {
-          return this.main.db.setYtPubSubNotNew(videoIds);
-        });
-      }
-    });
   }
 }
 
