@@ -573,6 +573,7 @@ class Db {
       await Promise.all([
         bulk(feeds, (feeds) => {
           return this.model.YtPubSub.bulkCreate(feeds, {
+            updateOnDuplicate: ['channelId', 'publishedAt', 'lastPushAt'],
             transaction
           });
         }),
