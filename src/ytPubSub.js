@@ -5,6 +5,7 @@ import roundStartInterval from "./tools/roundStartInterval";
 import getInProgress from "./tools/getInProgress";
 import LogFile from "./logFile";
 import buildId from "./tools/buildId";
+import ensureMap from "./tools/ensureMap";
 
 const debug = require('debug')('app:YtPubSub');
 const path = require('path');
@@ -139,29 +140,34 @@ class YtPubSub {
     const feeds = this.feeds.splice(0);
 
     const rawVideoIdFeed = new Map();
+    const rawVideoIdFeeds = new Map();
     feeds.forEach((feed) => {
-      if (!rawVideoIdFeed.has(feed.videoId)) {
-        rawVideoIdFeed.set(feed.videoId, feed);
-      }
+      rawVideoIdFeed.set(feed.videoId, feed);
+
+      const feeds = ensureMap(rawVideoIdFeeds, feed.videoId, []);
+      feeds.push(feed);
     });
     const unicFeeds = Array.from(rawVideoIdFeed.values());
 
-    const rawVideoIds = Array.from(rawVideoIdFeed.keys());
+    const rawVideoIds = Array.from(rawVideoIdFeeds.keys());
     return this.main.db.getExistsYtPubSubVideoIds(rawVideoIds).then((existsVideoIds) => {
       const newRawVideoIds = arrayDifferent(rawVideoIds, existsVideoIds);
 
       const changedChannelIds = [];
       const channelIdPublishedAt = new Map();
       newRawVideoIds.forEach((rawVideoId) => {
-        const feed = rawVideoIdFeed.get(rawVideoId);
+        const feeds = rawVideoIdFeeds.get(rawVideoId);
+        const firstFeed = feeds[0];
 
-        const channelId = buildId('yo', feed.channelId);
+        const channelId = buildId('yo', firstFeed.channelId);
         changedChannelIds.push(channelId);
 
-        const lastPublishedAt = channelIdPublishedAt.get(channelId);
-        if (!lastPublishedAt || lastPublishedAt.getTime() > feed.publishedAt.getTime()) {
-          channelIdPublishedAt.set(channelId, feed.publishedAt);
-        }
+        feeds.forEach((feed) => {
+          const lastPublishedAt = channelIdPublishedAt.get(channelId);
+          if (!lastPublishedAt || lastPublishedAt.getTime() > feed.publishedAt.getTime()) {
+            channelIdPublishedAt.set(channelId, feed.publishedAt);
+          }
+        });
       });
 
       return this.main.checker.oneLimit(() => {
