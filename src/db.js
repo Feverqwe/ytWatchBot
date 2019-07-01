@@ -323,6 +323,8 @@ class Db {
       include: [
         {model: this.model.Chat, as: 'channel'}
       ]
+    }).then(([model, isCreated]) => {
+      return model;
     });
   }
 
