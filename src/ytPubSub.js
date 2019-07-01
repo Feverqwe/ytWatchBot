@@ -178,7 +178,7 @@ class YtPubSub {
                 lastVideoPublishedAt: new Date(publishedAt.getTime() - 1000),
                 hasChanges: true
               }));
-              this.log.write('[change channel]', 'from', lastVideoPublishedAt.toISOString(), 'to', publishedAt.toISOString());
+              debug('[change channel]', channel.id, 'from', lastVideoPublishedAt.toISOString(), 'to', publishedAt.toISOString());
             }
           });
 
