@@ -96,9 +96,11 @@ class Youtube {
     this.name = 'Youtube';
   }
 
-  getVideos(channels) {
+  getVideos(channels, filterFn) {
     return this.getVideoIds(channels).then(({videoIds, videoIdChannelIds, skippedChannelIds}) => {
-      return this.getVideosByIds(videoIds).then((videos) => {
+      return filterFn(videoIds).then((videoIds) => {
+        return this.getVideosByIds(videoIds);
+      }).then((videos) => {
         return {videos, videoIdChannelIds, skippedChannelIds};
       });
     });

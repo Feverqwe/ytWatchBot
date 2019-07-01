@@ -84,7 +84,13 @@ class Checker {
 
         const syncAt = new Date();
         await this.main.db.setChannelsSyncTimeoutExpiresAtAndUncheckChanges(channelIds, 5).then(() => {
-          return this.main.youtube.getVideos(rawChannels);
+          const filterFn = (rawVideoIds) => {
+            const videoIds = rawVideoIds.map(id => serviceId.wrap(this.main.youtube, id));
+            return this.main.db.getExistsVideoIds(videoIds).then((existsVideoIds) => {
+              return arrayDifferent(videoIds, existsVideoIds).map(id => serviceId.unwrap(id));
+            });
+          };
+          return this.main.youtube.getVideos(rawChannels, filterFn);
         }).then(({videos: rawVideos, videoIdChannelIds: rawVideoIdRawChannelIds, skippedChannelIds: skippedRawChannelIds}) => {
           const videoIdVideo = new Map();
           const videoIds = [];
