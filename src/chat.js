@@ -251,14 +251,8 @@ class Chat {
           return service.findChannel(query);
         }).then((rawChannel) => {
           return this.main.db.ensureChannel(service, rawChannel).then((channel) => {
-            return Promise.resolve().then(() => {
-              if (req.chat.isNewRecord) {
-                return req.chat.save();
-              }
-            }).then(() => {
-              return this.main.db.putChatIdChannelId(req.chatId, channel.id).then((created) => {
-                return {channel, created};
-              });
+            return this.main.db.putChatIdChannelId(req.chatId, channel.id).then((created) => {
+              return {channel, created};
             });
           });
         }).then(({channel, created}) => {
@@ -471,14 +465,8 @@ class Chat {
                 if (chat.type !== 'channel') {
                   throw new ErrorWithCode('This chat type is not supported', 'INCORRECT_CHAT_TYPE');
                 }
-                return Promise.resolve().then(() => {
-                  if (req.chat.isNewRecord) {
-                    return req.chat.save();
-                  }
-                }).then(() => {
-                  const channelId = '@' + chat.username;
-                  return this.main.db.createChatChannel(req.chatId, channelId).then(() => channelId);
-                });
+                const channelId = '@' + chat.username;
+                return this.main.db.createChatChannel(req.chatId, channelId).then(() => channelId);
               });
             });
           });

@@ -318,16 +318,11 @@ class Db {
   }
 
   ensureChat(id) {
-    return this.model.Chat.findOne({
+    return this.model.Chat.findOrCreate({
       where: {id},
       include: [
         {model: this.model.Chat, as: 'channel'}
       ]
-    }).then((chat) => {
-      if (!chat) {
-        chat = this.model.Chat.build({id});
-      }
-      return chat;
     });
   }
 
