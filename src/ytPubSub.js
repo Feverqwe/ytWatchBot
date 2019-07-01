@@ -16,6 +16,7 @@ const promiseLimit = require('promise-limit');
 const throttle = require('lodash.throttle');
 
 const oneLimit = promiseLimit(1);
+const checkOneLimit = promiseLimit(1);
 
 class YtPubSub {
   constructor(/**Main*/main) {
@@ -137,67 +138,71 @@ class YtPubSub {
 
   feeds = [];
   emitFeedsChanges = () => {
-    const feeds = this.feeds.splice(0);
+    return checkOneLimit(async () => {
+      while (this.feeds.length) {
+        const feeds = this.feeds.splice(0);
 
-    const rawVideoIdFeeds = new Map();
-    feeds.forEach((feed) => {
-      const videoIdFeeds = ensureMap(rawVideoIdFeeds, feed.videoId, []);
-      videoIdFeeds.push(feed);
-    });
-
-    const rawVideoIds = Array.from(rawVideoIdFeeds.keys());
-    return this.main.db.getExistsYtPubSubVideoIds(rawVideoIds).then((existsVideoIds) => {
-      const newRawVideoIds = arrayDifferent(rawVideoIds, existsVideoIds);
-
-      const defaultDate = this.main.checker.getDefaultDate();
-
-      const changedChannelIds = [];
-      const channelIdPublishedAt = new Map();
-      newRawVideoIds.forEach((rawVideoId) => {
-        const feeds = rawVideoIdFeeds.get(rawVideoId);
-
-        feeds.forEach((feed, index) => {
-          const channelId = serviceId.wrap(this.main.youtube, feed.channelId);
-
-          if (index === 0) {
-            changedChannelIds.push(channelId);
-          }
-
-          if (feed.publishedAt.getTime() > defaultDate.getTime()) {
-            const lastPublishedAt = channelIdPublishedAt.get(channelId);
-            if (!lastPublishedAt || lastPublishedAt.getTime() > feed.publishedAt.getTime()) {
-              channelIdPublishedAt.set(channelId, feed.publishedAt);
-            }
-          }
+        const rawVideoIdFeeds = new Map();
+        feeds.forEach((feed) => {
+          const videoIdFeeds = ensureMap(rawVideoIdFeeds, feed.videoId, []);
+          videoIdFeeds.push(feed);
         });
-      });
 
-      return this.main.checker.oneLimit(() => {
-        const channelIds = Array.from(channelIdPublishedAt.keys());
-        return this.main.db.getChannelsByIds(channelIds).then((channels) => {
-          const channelIdChanges = new Map();
-          channels.forEach((channel) => {
-            const publishedAt = channelIdPublishedAt.get(channel.id);
-            const lastVideoPublishedAt = channel.lastVideoPublishedAt || channel.lastSyncAt;
-            if (lastVideoPublishedAt && lastVideoPublishedAt.getTime() > publishedAt.getTime()) {
-              channelIdChanges.set(channel.id, Object.assign({}, channel.get({plain: true}), {
-                lastVideoPublishedAt: new Date(publishedAt.getTime() - 1000),
-                hasChanges: true
-              }));
-              debug('[change channel]', channel.id, 'from', lastVideoPublishedAt.toISOString(), 'to', publishedAt.toISOString());
-            }
+        const rawVideoIds = Array.from(rawVideoIdFeeds.keys());
+        await this.main.db.getExistsYtPubSubVideoIds(rawVideoIds).then((existsVideoIds) => {
+          const newRawVideoIds = arrayDifferent(rawVideoIds, existsVideoIds);
+
+          const defaultDate = this.main.checker.getDefaultDate();
+
+          const changedChannelIds = [];
+          const channelIdPublishedAt = new Map();
+          newRawVideoIds.forEach((rawVideoId) => {
+            const feeds = rawVideoIdFeeds.get(rawVideoId);
+
+            feeds.forEach((feed, index) => {
+              const channelId = serviceId.wrap(this.main.youtube, feed.channelId);
+
+              if (index === 0) {
+                changedChannelIds.push(channelId);
+              }
+
+              if (feed.publishedAt.getTime() > defaultDate.getTime()) {
+                const lastPublishedAt = channelIdPublishedAt.get(channelId);
+                if (!lastPublishedAt || lastPublishedAt.getTime() > feed.publishedAt.getTime()) {
+                  channelIdPublishedAt.set(channelId, feed.publishedAt);
+                }
+              }
+            });
           });
 
-          const channelsChanges = Array.from(channelIdChanges.values());
+          return this.main.checker.oneLimit(() => {
+            const channelIds = Array.from(channelIdPublishedAt.keys());
+            return this.main.db.getChannelsByIds(channelIds).then((channels) => {
+              const channelIdChanges = new Map();
+              channels.forEach((channel) => {
+                const publishedAt = channelIdPublishedAt.get(channel.id);
+                const lastVideoPublishedAt = channel.lastVideoPublishedAt || channel.lastSyncAt;
+                if (lastVideoPublishedAt && lastVideoPublishedAt.getTime() > publishedAt.getTime()) {
+                  channelIdChanges.set(channel.id, Object.assign({}, channel.get({plain: true}), {
+                    lastVideoPublishedAt: new Date(publishedAt.getTime() - 1000),
+                    hasChanges: true
+                  }));
+                  debug('[change channel]', channel.id, 'from', lastVideoPublishedAt.toISOString(), 'to', publishedAt.toISOString());
+                }
+              });
 
-          return this.main.db.putYtPubSub(feeds, channelsChanges, changedChannelIds);
+              const channelsChanges = Array.from(channelIdChanges.values());
+
+              return this.main.db.putYtPubSub(feeds, channelsChanges, changedChannelIds);
+            });
+          });
+        }).catch((err) => {
+          debug('emitFeedsChanges error %o', err);
         });
-      });
-    }).catch((err) => {
-      debug('emitFeedsChanges error %o', err);
+      }
     });
   };
-  emitFeedsChangesThrottled = throttle(this.emitFeedsChanges, 60 * 1000, {
+  emitFeedsChangesThrottled = throttle(this.emitFeedsChanges, 1000, {
     leading: false
   });
 
