@@ -222,7 +222,7 @@ class Chat {
     });
 
     this.router.textOrCallbackQuery(/\/add(?:\s+(?<query>.+$))?/, provideChat, (req, res) => {
-      const serviceId = 'youtube';
+      const service = this.main.youtube;
       const query = req.params.query;
       let requestedData = null;
 
@@ -244,14 +244,13 @@ class Chat {
           return {query: req.message.text.trim(), messageId: msg.message_id};
         });
       }).then(({query, messageId}) => {
-        const service = /**@type Youtube*/this.main[serviceId];
         return this.main.db.getChannelCountByChatId(req.chatId).then((count) => {
           if (count >= 100) {
             throw new ErrorWithCode('Channels limit exceeded', 'CHANNELS_LIMIT');
           }
           return service.findChannel(query);
         }).then((rawChannel) => {
-          return this.main.db.ensureChannel(serviceId, rawChannel).then((channel) => {
+          return this.main.db.ensureChannel(service, rawChannel).then((channel) => {
             return Promise.resolve().then(() => {
               if (req.chat.isNewRecord) {
                 return req.chat.save();

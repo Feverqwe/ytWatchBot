@@ -58,8 +58,8 @@ class Main extends Events {
       return this.db.migrate();
     }
 
-    this.services = ['youtube'];
     this.youtube = new Youtube(this);
+    this.services = [this.youtube];
 
     this.tracker = new Tracker(this);
     this.sender = new Sender(this);

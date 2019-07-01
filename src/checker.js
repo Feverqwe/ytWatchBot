@@ -3,6 +3,7 @@ import LogFile from "./logFile";
 import roundStartInterval from "./tools/roundStartInterval";
 import getInProgress from "./tools/getInProgress";
 import ensureMap from "./tools/ensureMap";
+import serviceId from "./tools/serviceId";
 
 const debug = require('debug')('app:Checker');
 const promiseLimit = require('promise-limit');
@@ -76,7 +77,7 @@ class Checker {
           }
 
           rawChannels.push({
-            id: channel.rawId,
+            id: serviceId.unwrap(channel.id),
             publishedAfter: publishedAfter
           });
         });
@@ -93,14 +94,14 @@ class Checker {
               const video = Object.assign({}, rawVideo);
 
               if (video.channelId !== rawChannelId) {
-                video.mergedId = this.main.db.model.Channel.buildId('youtube', video.id);
-                video.mergedChannelId = this.main.db.model.Channel.buildId('youtube', video.channelId);
+                video.mergedId = serviceId.wrap(this.main.youtube, video.id);
+                video.mergedChannelId = serviceId.wrap(this.main.youtube, video.channelId);
                 video.id = `${video.id}@${rawChannelId}`;
                 video.channelId = rawChannelId;
               }
 
-              video.id = this.main.db.model.Channel.buildId('youtube', video.id);
-              video.channelId = this.main.db.model.Channel.buildId('youtube', video.channelId);
+              video.id = serviceId.wrap(this.main.youtube, video.id);
+              video.channelId = serviceId.wrap(this.main.youtube, video.channelId);
 
               if (!channelIdChannel.has(video.channelId)) {
                 debug('Video %s skip, cause: Channel %s is not exists', video.id, video.channelId);
@@ -114,7 +115,7 @@ class Checker {
 
           const checkedChannelIds = channelIds.slice(0);
           skippedRawChannelIds.forEach((rawId) => {
-            const id = this.main.db.model.Channel.buildId('youtube', rawId);
+            const id = serviceId.wrap(this.main.youtube, rawId);
             const pos = checkedChannelIds.indexOf(id);
             if (pos !== -1) {
               checkedChannelIds.splice(pos, 1);

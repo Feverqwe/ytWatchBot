@@ -92,6 +92,7 @@ const VideosResponse = struct.partial({
 class Youtube {
   constructor(/**Main*/main) {
     this.main = main;
+    this.id = 'youtube';
     this.name = 'Youtube';
   }
 

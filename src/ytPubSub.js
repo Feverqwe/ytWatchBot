@@ -4,7 +4,7 @@ import arrayDifferent from "./tools/arrayDifferent";
 import roundStartInterval from "./tools/roundStartInterval";
 import getInProgress from "./tools/getInProgress";
 import LogFile from "./logFile";
-import buildId from "./tools/buildId";
+import serviceId from "./tools/serviceId";
 import ensureMap from "./tools/ensureMap";
 
 const debug = require('debug')('app:YtPubSub');
@@ -71,7 +71,7 @@ class YtPubSub {
 
           const subscribedChannelIds = [];
           return parallel(10, channels, (channel) => {
-            const rawId = channel.rawId;
+            const rawId = serviceId.unwrap(channel.id);
             return this.subscribe(rawId).then(() => {
               subscribedChannelIds.push(channel.id);
             }, (err) => {
@@ -157,7 +157,7 @@ class YtPubSub {
         const feeds = rawVideoIdFeeds.get(rawVideoId);
 
         feeds.forEach((feed, index) => {
-          const channelId = buildId('yo', feed.channelId);
+          const channelId = serviceId.wrap(this.main.youtube, feed.channelId);
 
           if (index === 0) {
             changedChannelIds.push(channelId);

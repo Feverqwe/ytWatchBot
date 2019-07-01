@@ -1,6 +1,6 @@
 import ErrorWithCode from "./tools/errorWithCode";
 import arrayByPart from "./tools/arrayByPart";
-import buildId from "./tools/buildId";
+import serviceId from "./tools/serviceId";
 
 const debug = require('debug')('app:db');
 const Sequelize = require('sequelize');
@@ -67,20 +67,6 @@ class Db {
     }, {
       tableName: 'channels',
       timestamps: true,
-      getterMethods: {
-        rawId() {
-          const id = this.getDataValue('id');
-          if (id) {
-            return JSON.parse(id.substr(3));
-          }
-        }
-      },
-      setterMethods: {
-        rawId(value) {
-          const result = Channel.buildId(this.getDataValue('service'), JSON.stringify(value));
-          this.setDataValue('id', result);
-        }
-      },
       indexes: [{
         name: 'hasChanges_idx',
         fields: ['hasChanges']
@@ -95,7 +81,6 @@ class Db {
         fields: ['subscriptionExpiresAt', 'subscriptionTimeoutExpiresAt']
       }]
     });
-    Channel.buildId = buildId;
 
     const YtPubSub = this.sequelize.define('ytPubSub', {
       videoId: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
@@ -118,21 +103,6 @@ class Db {
       tableName: 'chatIdChannelId',
       timestamps: true,
       updatedAt: false,
-      getterMethods: {
-        serviceId() {
-          let result = null;
-          const shortServiceId = this.getDataValue('channelId').substr(0, 2);
-          main.services.some((id) => {
-            if (id.substr(0, 2) === shortServiceId) {
-              return result = id;
-            }
-          });
-          if (!result) {
-            throw new Error(`serviceId is not matched`);
-          }
-          return result;
-        }
-      },
       indexes: [{
         name: 'chatId_idx',
         fields: ['chatId']
@@ -425,11 +395,11 @@ class Db {
   }
 
   ensureChannel(service, rawChannel) {
-    const id = this.model.Channel.buildId(service, rawChannel.id);
+    const id = serviceId.wrap(service, rawChannel.id);
 
     return this.model.Channel.findOrCreate({
       where: {id},
-      defaults: Object.assign({}, rawChannel, {id, service})
+      defaults: Object.assign({}, rawChannel, {id, service: service.id})
     }).then(([channel, isCreated]) => {
       return channel;
     });
