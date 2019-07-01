@@ -185,7 +185,6 @@ class YtPubSub {
                 if (lastVideoPublishedAt && lastVideoPublishedAt.getTime() > publishedAt.getTime()) {
                   channelIdChanges.set(channel.id, Object.assign({}, channel.get({plain: true}), {
                     lastVideoPublishedAt: new Date(publishedAt.getTime() - 1000),
-                    hasChanges: true
                   }));
                   debug('[change channel]', channel.id, 'from', lastVideoPublishedAt.toISOString(), 'to', publishedAt.toISOString());
                 }
