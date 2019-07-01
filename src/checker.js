@@ -161,12 +161,12 @@ class Checker {
           return this.main.db.getChatIdChannelIdByChannelIds(channelIds).then((chatIdChannelIdList) => {
             const channelIdChats = new Map();
             chatIdChannelIdList.forEach((chatIdChannelId) => {
-              const chatIds = ensureMap(channelIdChats, chatIdChannelId.channelId, []);
+              const chats = ensureMap(channelIdChats, chatIdChannelId.channelId, []);
               if (!chatIdChannelId.chat.channelId || !chatIdChannelId.chat.isMuted) {
-                chatIds.push({chatId: chatIdChannelId.chat.id, createdAt: chatIdChannelId.createdAt});
+                chats.push({chatId: chatIdChannelId.chat.id, createdAt: chatIdChannelId.createdAt});
               }
               if (chatIdChannelId.chat.channelId) {
-                chatIds.push({chatId: chatIdChannelId.chat.channelId, createdAt: chatIdChannelId.createdAt});
+                chats.push({chatId: chatIdChannelId.chat.channelId, createdAt: chatIdChannelId.createdAt});
               }
             });
 
