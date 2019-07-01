@@ -125,10 +125,11 @@ class Checker {
             const videos = arrayDifferent(videoIds, existsVideoIds).map(id => videoIdVideo.get(id));
             return {
               videos,
+              videoIdVideo,
               channelIds: checkedChannelIds
             }
           });
-        }).then(({videos, channelIds}) => {
+        }).then(({videos, videoIdVideo, channelIds}) => {
           const channelIdsChanges = {};
           const channelIdVideoIds = new Map();
 
@@ -158,24 +159,27 @@ class Checker {
           });
 
           return this.main.db.getChatIdChannelIdByChannelIds(channelIds).then((chatIdChannelIdList) => {
-            const channelIdChatIds = new Map();
+            const channelIdChats = new Map();
             chatIdChannelIdList.forEach((chatIdChannelId) => {
-              const chatIds = ensureMap(channelIdChatIds, chatIdChannelId.channelId, []);
+              const chatIds = ensureMap(channelIdChats, chatIdChannelId.channelId, []);
               if (!chatIdChannelId.chat.channelId || !chatIdChannelId.chat.isMuted) {
-                chatIds.push(chatIdChannelId.chat.id);
+                chatIds.push({chatId: chatIdChannelId.chat.id, createdAt: chatIdChannelId.createdAt});
               }
               if (chatIdChannelId.chat.channelId) {
-                chatIds.push(chatIdChannelId.chat.channelId);
+                chatIds.push({chatId: chatIdChannelId.chat.channelId, createdAt: chatIdChannelId.createdAt});
               }
             });
 
             const chatIdVideoIdChanges = [];
-            for (const [channelId, chatIds] of channelIdChatIds.entries()) {
+            for (const [channelId, chats] of channelIdChats.entries()) {
               const videoIds = channelIdVideoIds.get(channelId);
               if (videoIds) {
                 videoIds.forEach((videoId) => {
-                  chatIds.forEach((chatId) => {
-                    chatIdVideoIdChanges.push({chatId, videoId});
+                  const video = videoIdVideo.get(videoId);
+                  chats.forEach(({chatId, createdAt}) => {
+                    if (video.publishedAt.getTime() > createdAt.getTime()) {
+                      chatIdVideoIdChanges.push({chatId, videoId});
+                    }
                   });
                 });
               }
