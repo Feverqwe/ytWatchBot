@@ -149,19 +149,25 @@ class YtPubSub {
     return this.main.db.getExistsYtPubSubVideoIds(rawVideoIds).then((existsVideoIds) => {
       const newRawVideoIds = arrayDifferent(rawVideoIds, existsVideoIds);
 
+      const defaultDate = this.main.checker.getDefaultDate();
+
       const changedChannelIds = [];
       const channelIdPublishedAt = new Map();
       newRawVideoIds.forEach((rawVideoId) => {
         const feeds = rawVideoIdFeeds.get(rawVideoId);
-        const firstFeed = feeds[0];
 
-        const channelId = buildId('yo', firstFeed.channelId);
-        changedChannelIds.push(channelId);
+        feeds.forEach((feed, index) => {
+          const channelId = buildId('yo', feed.channelId);
 
-        feeds.forEach((feed) => {
-          const lastPublishedAt = channelIdPublishedAt.get(channelId);
-          if (!lastPublishedAt || lastPublishedAt.getTime() > feed.publishedAt.getTime()) {
-            channelIdPublishedAt.set(channelId, feed.publishedAt);
+          if (index === 0) {
+            changedChannelIds.push(channelId);
+          }
+
+          if (feed.publishedAt.getTime() > defaultDate.getTime()) {
+            const lastPublishedAt = channelIdPublishedAt.get(channelId);
+            if (!lastPublishedAt || lastPublishedAt.getTime() > feed.publishedAt.getTime()) {
+              channelIdPublishedAt.set(channelId, feed.publishedAt);
+            }
           }
         });
       });
