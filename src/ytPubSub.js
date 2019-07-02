@@ -140,10 +140,14 @@ class YtPubSub {
       while (this.feeds.length) {
         const feeds = this.feeds.splice(0);
 
+        const defaultDate = this.main.checker.getDefaultDate();
+
         const videoIdsFromFeeds = [];
         const channelIdPublishedAt = new Map();
         const videoIdFeed = new Map();
         feeds.forEach((feed) => {
+          if (feed.publishedAt.getTime() < defaultDate.getTime()) return;
+
           const videoId = serviceId.wrap(this.main.youtube, feed.videoId);
           const channelId = serviceId.wrap(this.main.youtube, feed.channelId);
 
@@ -173,24 +177,21 @@ class YtPubSub {
 
           return this.main.checker.oneLimit(() => {
             return this.main.db.getChannelsByIds(feedChannelIds).then((channels) => {
-              const defaultDate = this.main.checker.getDefaultDate();
               const channelIds = [];
               const channelIdChanges = new Map();
               channels.forEach((channel) => {
                 const publishedAt = channelIdPublishedAt.get(channel.id);
-                if (publishedAt.getTime() > defaultDate.getTime()) {
-                  if (!channelIds.includes(channel.id)) {
-                    channelIds.push(channel.id);
-                  }
+                if (!channelIds.includes(channel.id)) {
+                  channelIds.push(channel.id);
+                }
 
-                  const lastVideoPublishedAt = channel.lastVideoPublishedAt || channel.lastSyncAt;
+                const lastVideoPublishedAt = channel.lastVideoPublishedAt || channel.lastSyncAt;
 
-                  if (lastVideoPublishedAt && lastVideoPublishedAt.getTime() > publishedAt.getTime()) {
-                    channelIdChanges.set(channel.id, Object.assign({}, channel.get({plain: true}), {
-                      lastVideoPublishedAt: new Date(publishedAt.getTime() - 1000),
-                    }));
-                    debug('[change channel]', channel.id, 'from', lastVideoPublishedAt.toISOString(), 'to', publishedAt.toISOString());
-                  }
+                if (lastVideoPublishedAt && lastVideoPublishedAt.getTime() > publishedAt.getTime()) {
+                  channelIdChanges.set(channel.id, Object.assign({}, channel.get({plain: true}), {
+                    lastVideoPublishedAt: new Date(publishedAt.getTime() - 1000),
+                  }));
+                  debug('[change channel]', channel.id, 'from', lastVideoPublishedAt.toISOString(), 'to', publishedAt.toISOString());
                 }
               });
 
