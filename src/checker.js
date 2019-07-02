@@ -150,7 +150,7 @@ class Checker {
               lastSyncAt: syncAt
             };
             if (channelIdIsFullCheck.get(id)) {
-              changes.lastFullSyncAt = Date.now();
+              changes.lastFullSyncAt = syncAt;
             }
             channelIdsChanges[id] = Object.assign({}, channel.get({plain: true}), changes);
           });
