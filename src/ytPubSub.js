@@ -144,8 +144,8 @@ class YtPubSub {
         const channelIdPublishedAt = new Map();
         const videoIdFeed = new Map();
         feeds.forEach((feed) => {
-          const videoId = serviceId(this.main.youtube, feed.videoId);
-          const channelId = serviceId(this.main.youtube, feed.channelId);
+          const videoId = serviceId.wrap(this.main.youtube, feed.videoId);
+          const channelId = serviceId.wrap(this.main.youtube, feed.channelId);
 
           if (!videoIdsFromFeeds.includes(videoId)) {
             videoIdsFromFeeds.push(videoId);
@@ -164,7 +164,7 @@ class YtPubSub {
           videoIds.forEach((videoId) => {
             const feed = videoIdFeed.get(videoId);
 
-            const channelId = serviceId(this.main.youtube, feed.channelId);
+            const channelId = serviceId.wrap(this.main.youtube, feed.channelId);
 
             if (!feedChannelIds.includes(channelId)) {
               feedChannelIds.push(channelId);
