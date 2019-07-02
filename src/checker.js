@@ -204,7 +204,13 @@ class Checker {
 
             return this.main.db.putVideos(channelsChanges, videos, chatIdVideoIdChanges).then(() => {
               videos.forEach((video) => {
-                this.log.write(`[insert] ${video.channelId} ${video.id}`);
+                let type = null;
+                if (channelIdIsFullCheck.has(video.channelId)) {
+                  type = 'insert full'
+                } else {
+                  type = 'insert'
+                }
+                this.log.write(`[${type}] ${video.channelId} ${video.id}`);
               });
 
               if (videos.length) {
