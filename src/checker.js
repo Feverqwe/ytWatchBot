@@ -58,8 +58,11 @@ class Checker {
         const channelIdChannel = new Map();
         const channelIds = [];
         const rawChannels = [];
+        const channelIdIsFullCheck = new Map();
 
         const defaultDate = this.getDefaultDate();
+        const minFullCheckDate = new Date();
+        minFullCheckDate.setHours(minFullCheckDate.getHours() - 6);
 
         channels.forEach(channel => {
           channelIds.push(channel.id);
@@ -69,8 +72,9 @@ class Checker {
           if (channel.lastVideoPublishedAt) {
             publishedAfter = new Date(channel.lastVideoPublishedAt.getTime() + 1000);
           }
-          if (!publishedAfter) {
-            publishedAfter = channel.lastSyncAt;
+          if (channel.lastFullSyncAt.getTime() < minFullCheckDate.getTime()) {
+            publishedAfter = defaultDate;
+            channelIdIsFullCheck.set(channel.id, true);
           }
           if (!publishedAfter || publishedAfter.getTime() < defaultDate.getTime()) {
             publishedAfter = defaultDate;
@@ -142,9 +146,13 @@ class Checker {
 
           channelIds.forEach((id) => {
             const channel = channelIdChannel.get(id);
-            channelIdsChanges[id] = Object.assign({}, channel.get({plain: true}), {
+            const changes = {
               lastSyncAt: syncAt
-            });
+            };
+            if (channelIdIsFullCheck.get(id)) {
+              changes.lastFullSyncAt = Date.now();
+            }
+            channelIdsChanges[id] = Object.assign({}, channel.get({plain: true}), changes);
           });
 
           videos.forEach((video) => {

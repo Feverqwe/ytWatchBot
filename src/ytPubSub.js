@@ -188,7 +188,7 @@ class YtPubSub {
 
                 const publishedAt = channelIdPublishedAt.get(channel.id);
                 const videoId = channelIdPublishedVideoId.get(channel.id);
-                const lastVideoPublishedAt = channel.lastVideoPublishedAt || channel.lastSyncAt;
+                const lastVideoPublishedAt = channel.lastVideoPublishedAt;
 
                 if (lastVideoPublishedAt && lastVideoPublishedAt.getTime() > publishedAt.getTime()) {
                   channelIdChanges.set(channel.id, Object.assign({}, channel.get({plain: true}), {
