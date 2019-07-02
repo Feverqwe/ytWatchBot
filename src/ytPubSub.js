@@ -194,7 +194,7 @@ class YtPubSub {
                   channelIdChanges.set(channel.id, Object.assign({}, channel.get({plain: true}), {
                     lastVideoPublishedAt: new Date(publishedAt.getTime() - 1000),
                   }));
-                  debug('[change channel]', channel.id, 'from', lastVideoPublishedAt.toISOString(), 'to', publishedAt.toISOString(), 'cause', videoId);
+                  // debug('[change channel]', channel.id, 'from', lastVideoPublishedAt.toISOString(), 'to', publishedAt.toISOString(), 'cause', videoId);
                 }
               });
 
