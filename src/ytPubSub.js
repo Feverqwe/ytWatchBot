@@ -144,6 +144,7 @@ class YtPubSub {
 
         const videoIdsFromFeeds = [];
         const channelIdPublishedAt = new Map();
+        const channelIdPublishedVideoId = new Map();
         const videoIdFeed = new Map();
         feeds.forEach((feed) => {
           if (feed.publishedAt.getTime() < defaultDate.getTime()) return;
@@ -158,6 +159,7 @@ class YtPubSub {
           let publishedAt = channelIdPublishedAt.get(channelId);
           if (!publishedAt || publishedAt.getTime() > feed.publishedAt.getTime()) {
             channelIdPublishedAt.set(channelId, feed.publishedAt);
+            channelIdPublishedVideoId.set(channelId, videoId);
           }
 
           videoIdFeed.set(videoId, feed);
@@ -180,18 +182,19 @@ class YtPubSub {
               const channelIds = [];
               const channelIdChanges = new Map();
               channels.forEach((channel) => {
-                const publishedAt = channelIdPublishedAt.get(channel.id);
                 if (!channelIds.includes(channel.id)) {
                   channelIds.push(channel.id);
                 }
 
+                const publishedAt = channelIdPublishedAt.get(channel.id);
+                const videoId = channelIdPublishedVideoId.get(channel.id);
                 const lastVideoPublishedAt = channel.lastVideoPublishedAt || channel.lastSyncAt;
 
                 if (lastVideoPublishedAt && lastVideoPublishedAt.getTime() > publishedAt.getTime()) {
                   channelIdChanges.set(channel.id, Object.assign({}, channel.get({plain: true}), {
                     lastVideoPublishedAt: new Date(publishedAt.getTime() - 1000),
                   }));
-                  debug('[change channel]', channel.id, 'from', lastVideoPublishedAt.toISOString(), 'to', publishedAt.toISOString());
+                  debug('[change channel]', channel.id, 'from', lastVideoPublishedAt.toISOString(), 'to', publishedAt.toISOString(), 'cause', videoId);
                 }
               });
 
