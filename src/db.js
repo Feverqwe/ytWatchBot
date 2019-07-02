@@ -1,6 +1,7 @@
 import ErrorWithCode from "./tools/errorWithCode";
 import arrayByPart from "./tools/arrayByPart";
 import serviceId from "./tools/serviceId";
+import arrayDifferent from "./tools/arrayDifferent";
 
 const debug = require('debug')('app:db');
 const Sequelize = require('sequelize');
@@ -585,6 +586,12 @@ class Db {
       attributes: ['id']
     }).then((videos) => {
       return videos.map(video => video.id);
+    });
+  }
+
+  getNoExistsVideoIds(ids) {
+    return this.getExistsVideoIds(ids).then((results) => {
+      return arrayDifferent(ids, results);
     });
   }
 
