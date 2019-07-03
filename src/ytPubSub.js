@@ -2,7 +2,6 @@ import parallel from "./tools/parallel";
 import ErrorWithCode from "./tools/errorWithCode";
 import roundStartInterval from "./tools/roundStartInterval";
 import getInProgress from "./tools/getInProgress";
-import LogFile from "./logFile";
 import serviceId from "./tools/serviceId";
 
 const debug = require('debug')('app:YtPubSub');
@@ -20,7 +19,7 @@ class YtPubSub {
   constructor(/**Main*/main) {
     this.main = main;
     this.hubUrl = 'https://pubsubhubbub.appspot.com/subscribe';
-    this.log = new LogFile('ytPubSub');
+    // this.log = new LogFile('ytPubSub');
   }
 
   init() {
@@ -215,12 +214,12 @@ class YtPubSub {
 
   handleFeed(data) {
     try {
-      this.log.write('data', JSON.stringify({
+      /*this.log.write('data', JSON.stringify({
         topic: data.topic,
         callback: data.callback,
         feed: data.feed.toString()
-      }));
-      const feed = parseData(data.feed.toString(), this.log.write.bind(this.log));
+      }));*/
+      const feed = parseData(data.feed.toString());
       this.feeds.push(Object.assign(feed, {lastPushAt: new Date()}));
       this.emitFeedsChangesThrottled();
     } catch (err) {
