@@ -62,7 +62,7 @@ class Checker {
 
         const defaultDate = this.getDefaultDate();
         const minFullCheckDate = new Date();
-        minFullCheckDate.setHours(minFullCheckDate.getHours() - 6);
+        minFullCheckDate.setHours(minFullCheckDate.getHours() - 4);
 
         channels.forEach(channel => {
           channelIds.push(channel.id);
