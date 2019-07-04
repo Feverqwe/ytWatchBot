@@ -61,7 +61,7 @@ class Db {
       url: {type: Sequelize.TEXT, allowNull: false},
       hasChanges: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
       lastVideoPublishedAt: {type: Sequelize.DATE, allowNull: true, defaultValue: null},
-      lastSyncAt: {type: Sequelize.DATE, allowNull: true, defaultValue: null},
+      lastSyncAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
       lastFullSyncAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
       syncTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
       subscriptionExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
@@ -354,10 +354,7 @@ class Db {
         syncTimeoutExpiresAt: {[Op.lt]: new Date()},
         [Op.or]: [
           {hasChanges: true},
-          {lastSyncAt: {[Op.or]: [
-            null,
-            {[Op.lt]: date}
-          ]}}
+          {lastSyncAt: {[Op.lt]: date}}
         ],
       },
       limit: limit
