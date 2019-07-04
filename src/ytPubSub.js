@@ -63,7 +63,7 @@ class YtPubSub {
         }
 
         const channelIds = channels.map(channel => channel.id);
-        await this.main.db.setChannelsSubscriptionTimeoutExpiresAt(channelIds, 5).then(() => {
+        await this.main.db.setChannelsSubscriptionTimeoutExpiresAt(channelIds).then(() => {
           const expiresAt = new Date();
           expiresAt.setSeconds(expiresAt.getSeconds() + this.main.config.push.leaseSeconds);
 

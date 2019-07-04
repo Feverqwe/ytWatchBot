@@ -1,14 +1,14 @@
 #!/bin/sh
 
-APP_DIR="~/telTwiMon"
-NODE_APP="index.js"
+APP_DIR="~/ytWatchBot"
+NODE_APP="dist/main.js"
 CONFIG_DIR="$APP_DIR"
 PID_DIR="$APP_DIR/pid"
 PID_FILE="$PID_DIR/app.pid"
 LOG_DIR="$APP_DIR/log"
-LOG_FILE="$LOG_DIR/app.log"
-LOG_ERROR="$LOG_DIR/error.log"
-NODE_EXEC="exec sudo -u www-data DEBUG=*,-node-telegram-bot-api $(which node)"
+LOG_FILE="$LOG_DIR/stdout.log"
+LOG_ERROR="$LOG_DIR/stderr.log"
+NODE_EXEC="exec sudo -u www-data DEBUG=*,-node-telegram-bot-api,-sequelize:* $(which node)"
 
 ###############
 

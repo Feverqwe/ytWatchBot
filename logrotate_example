@@ -1,15 +1,6 @@
-/home/user/ytWatchBot/log/app.log {
-        rotate 14
-        weekly
-        copytruncate
-        compress
-        missingok
-        notifempty
-}
-
-/home/user/ytWatchBot/log/error.log {
-        rotate 14
-        weekly
+/home/user/ytWatchBot/log/*.log {
+        rotate 64
+        daily
         copytruncate
         compress
         missingok

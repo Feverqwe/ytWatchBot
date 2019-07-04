@@ -232,9 +232,9 @@ class Db {
     });
   }
 
-  setChatSendTimeoutExpiresAt(ids, minutes = 1) {
+  setChatSendTimeoutExpiresAt(ids) {
     const date = new Date();
-    date.setMinutes(date.getMinutes() + minutes);
+    date.setMinutes(date.getMinutes() + this.main.config.chatSendTimeoutMinutes);
     return this.model.Chat.update({sendTimeoutExpiresAt: date}, {
       where: {id: ids}
     });
@@ -336,7 +336,7 @@ class Db {
 
   getChannelsWithExpiresSubscription(limit) {
     const date = new Date();
-    date.setMinutes(date.getMinutes() - 10);
+    date.setMinutes(date.getMinutes() - this.main.updateChannelPubSubSubscribeIfExpiresLessThenMinutes);
     return this.model.Channel.findAll({
       where: {
         subscriptionExpiresAt: {[Op.lt]: date},
@@ -348,7 +348,7 @@ class Db {
 
   getChannelsForSync(limit) {
     const date = new Date();
-    date.setMinutes(date.getMinutes() - this.main.config.interval);
+    date.setHours(date.getHours() - this.main.config.checkChannelIfLastSyncLessThenHours);
     return this.model.Channel.findAll({
       where: {
         syncTimeoutExpiresAt: {[Op.lt]: new Date()},
@@ -361,9 +361,9 @@ class Db {
     });
   }
 
-  setChannelsSyncTimeoutExpiresAtAndUncheckChanges(ids, minutes = 5) {
+  setChannelsSyncTimeoutExpiresAtAndUncheckChanges(ids) {
     const date = new Date();
-    date.setMinutes(date.getMinutes() + minutes);
+    date.setMinutes(date.getMinutes() + this.main.config.channelSyncTimeoutMinutes);
     return this.model.Channel.update({
       syncTimeoutExpiresAt: date,
       hasChanges: false
@@ -378,9 +378,9 @@ class Db {
     });
   }
 
-  setChannelsSubscriptionTimeoutExpiresAt(ids, minutes = 5) {
+  setChannelsSubscriptionTimeoutExpiresAt(ids) {
     const date = new Date();
-    date.setMinutes(date.getMinutes() + minutes);
+    date.setMinutes(date.getMinutes() + this.main.config.channelPubSubSubscribeTimeoutMinutes);
     return this.model.Channel.update({subscriptionTimeoutExpiresAt: date}, {
       where: {id: ids}
     });
@@ -432,7 +432,7 @@ class Db {
 
   cleanYtPubSub() {
     const date = new Date();
-    date.setDate(date.getDate() - 14);
+    date.setDate(date.getDate() - this.main.config.cleanPubSubFeedIfPushOlderThanDays);
     return this.model.YtPubSub.destroy({
       where: {
         lastPushAt: {[Op.lt]: date}
@@ -468,7 +468,7 @@ class Db {
 
   cleanVideos() {
     const date = new Date();
-    date.setDate(date.getDate() - 14);
+    date.setDate(date.getDate() - this.main.config.cleanVideosIfPublishedOlderThanDays);
     return this.model.Video.destroy({
       where: {
         publishedAt: {[Op.lt]: date}

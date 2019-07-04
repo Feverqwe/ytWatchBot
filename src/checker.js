@@ -43,7 +43,7 @@ class Checker {
 
   getDefaultDate() {
     const defaultDate = new Date();
-    defaultDate.setDate(defaultDate.getDate() - 7);
+    defaultDate.setDate(defaultDate.getDate() - this.main.config.fullCheckChannelActivityForDays);
     return defaultDate;
   }
 
@@ -62,7 +62,7 @@ class Checker {
 
         const defaultDate = this.getDefaultDate();
         const minFullCheckDate = new Date();
-        minFullCheckDate.setHours(minFullCheckDate.getHours() - 4);
+        minFullCheckDate.setHours(minFullCheckDate.getHours() - this.main.config.doFullCheckChannelActivityEveryHours);
 
         channels.forEach(channel => {
           channelIds.push(channel.id);
@@ -87,7 +87,7 @@ class Checker {
         });
 
         const syncAt = new Date();
-        await this.main.db.setChannelsSyncTimeoutExpiresAtAndUncheckChanges(channelIds, 5).then(() => {
+        await this.main.db.setChannelsSyncTimeoutExpiresAtAndUncheckChanges(channelIds).then(() => {
           const filterFn = (rawVideoIds) => {
             const videoIds = rawVideoIds.map(id => serviceId.wrap(this.main.youtube, id));
             return this.main.db.getExistsVideoIds(videoIds).then((existsVideoIds) => {

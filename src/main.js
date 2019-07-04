@@ -20,10 +20,17 @@ const debug = require('debug')('app:Main');
 
 const config = {
   token: '',
-  interval: 360,
   gaId: '',
   ytToken: '',
-  checkOnRun: false,
+  checkChannelIfLastSyncLessThenHours: 4,
+  fullCheckChannelActivityForDays: 7,
+  doFullCheckChannelActivityEveryHours: 4,
+  chatSendTimeoutMinutes: 1,
+  channelSyncTimeoutMinutes: 5,
+  cleanVideosIfPublishedOlderThanDays: 14,
+  updateChannelPubSubSubscribeIfExpiresLessThenMinutes: 10,
+  channelPubSubSubscribeTimeoutMinutes: 5,
+  cleanPubSubFeedIfPushOlderThanDays: 14,
   push: {
     port: 80,
     secret: '',
@@ -37,7 +44,8 @@ const config = {
     user: '',
     password: ''
   },
-  adminIds: []
+  adminIds: [],
+  proxy: null,
 };
 
 loadConfig(path.join(__dirname, '..', 'config.json'), config);
