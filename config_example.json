@@ -12,6 +12,7 @@
   "channelPubSubSubscribeTimeoutMinutes": 5,
   "cleanPubSubFeedIfPushOlderThanDays": 14,
   "push": {
+    "host": "localhost",
     "port": 80,
     "secret": "",
     "callbackUrl": "",

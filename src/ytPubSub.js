@@ -130,7 +130,7 @@ class YtPubSub {
       this.handleFeed(data);
     });
 
-    this.pubsub.listen(this.main.config.push.port);
+    this.pubsub.listen(this.main.config.push.port, this.main.config.push.host);
   }
 
   feeds = [];
