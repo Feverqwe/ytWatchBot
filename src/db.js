@@ -336,7 +336,7 @@ class Db {
 
   getChannelsWithExpiresSubscription(limit) {
     const date = new Date();
-    date.setMinutes(date.getMinutes() - this.main.updateChannelPubSubSubscribeIfExpiresLessThenMinutes);
+    date.setMinutes(date.getMinutes() - this.main.config.updateChannelPubSubSubscribeIfExpiresLessThenMinutes);
     return this.model.Channel.findAll({
       where: {
         subscriptionExpiresAt: {[Op.lt]: date},
