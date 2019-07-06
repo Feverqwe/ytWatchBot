@@ -127,6 +127,7 @@ class Sender {
             const body = err.response.body;
             return this.main.db.deleteChatById(chatId).then(() => {
               result.removedCount++;
+              offset--;
               this.main.chat.log.write(`[deleted] ${chatId}, cause: (${body.error_code}) ${JSON.stringify(body.description)}`);
             });
           } else {
