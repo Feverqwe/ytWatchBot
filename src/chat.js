@@ -88,7 +88,7 @@ class Chat {
     };
 
     this.router.text(/\/(start|menu|help)/, (req, res) => {
-      return sendMenu(0).catch((err) => {
+      return sendMenu(req.chatId, 0).catch((err) => {
         debug('%j error %o', req.command, err);
       });
     });
