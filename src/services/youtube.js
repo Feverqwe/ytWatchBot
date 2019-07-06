@@ -108,7 +108,7 @@ class Youtube {
   }
 
   getVideosByIds(videoIds) {
-    const resultVideos = [];
+    const resultIdVideo = new Map();
     return parallel(10, arrayByPart(videoIds, 50), (videoIds) => {
       let pageLimit = 100;
       const getPage = (pageToken) => {
@@ -149,7 +149,7 @@ class Youtube {
               publishedAt: new Date(video.snippet.publishedAt),
             };
 
-            resultVideos.push(result);
+            resultIdVideo.set(video.id, result);
           });
 
           if (videos.nextPageToken) {
@@ -161,7 +161,7 @@ class Youtube {
         });
       };
       return getPage();
-    }).then(() => resultVideos);
+    }).then(() => Array.from(resultIdVideo.values()));
   }
 
   getVideoIds(channels) {
