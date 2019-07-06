@@ -18,6 +18,10 @@ const tunnel = require('tunnel');
 
 const debug = require('debug')('app:Main');
 
+process.on('unhandledRejection', (err, promise) => {
+  debug('unhandledRejection %o', err);
+});
+
 const config = {
   token: '',
   gaId: '',
