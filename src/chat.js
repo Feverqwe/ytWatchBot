@@ -77,30 +77,40 @@ class Chat {
   }
 
   menu() {
-    this.router.text(/\/(start|menu|help)/, (req, res) => {
+    const sendMenu = (chatId, page) => {
       const help = this.main.locale.getMessage('help');
-      return this.main.bot.sendMessage(req.chatId, help, {
+      return this.main.bot.sendMessage(chatId, help, {
         disable_web_page_preview: true,
         reply_markup: JSON.stringify({
-          inline_keyboard: getMenu(0)
+          inline_keyboard: getMenu(page)
         })
-      }).catch((err) => {
+      });
+    };
+
+    this.router.text(/\/(start|menu|help)/, (req, res) => {
+      return sendMenu(0).catch((err) => {
         debug('%j error %o', req.command, err);
       });
     });
 
     this.router.callback_query(/\/menu(?:\/(?<page>\d+))?/, (req, res) => {
+      const page = parseInt(req.params.page || 0, 10);
       return this.main.bot.editMessageReplyMarkup(JSON.stringify({
-        inline_keyboard: getMenu(parseInt(req.params.page || 0, 10))
+        inline_keyboard: getMenu(page)
       }), {
         chat_id: req.chatId,
         message_id: req.messageId
       }).catch((err) => {
+        if (/message to edit not found/.test(err.message)) {
+          return sendMenu(req.chatId, page);
+        } else
         if (/message is not modified/.test(err.message)) {
           // pass
         } else {
-          debug('%j error %o', req.command, err);
+          throw err;
         }
+      }).catch((err) => {
+        debug('%j error %o', req.command, err);
       });
     });
 
