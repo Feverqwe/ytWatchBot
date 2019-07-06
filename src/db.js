@@ -217,6 +217,16 @@ class Db {
     });
   }
 
+  getChatIds(offset, limit) {
+    return this.model.Chat.findAll({
+      offset,
+      limit,
+      attributes: ['id']
+    }).then((chats) => {
+      return chats.map(chat => chat.id);
+    });
+  }
+
   getChatById(id) {
     return this.model.Chat.findByPk(id).then((chat) => {
       if (!chat) {

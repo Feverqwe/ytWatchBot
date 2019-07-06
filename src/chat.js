@@ -728,6 +728,7 @@ class Chat {
     };
 
     const commands = [
+      {name: 'Clean chats', method: 'sender.cleanChats'},
       {name: 'Check channels', method: 'checker.check'},
       {name: 'Clean channels & videos', method: 'checker.clean'},
       {name: 'Sender check', method: 'sender.check'},

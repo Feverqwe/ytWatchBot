@@ -1,7 +1,8 @@
 import getProvider from "./tools/getProvider";
-import ChatSender from "./chatSender";
+import ChatSender, {isBlockedError} from "./chatSender";
 import LogFile from "./logFile";
 import roundStartInterval from "./tools/roundStartInterval";
+import parallel from "./tools/parallel";
 
 const debug = require('debug')('app:Sender');
 const promiseLimit = require('promise-limit');
@@ -104,6 +105,39 @@ class Sender {
   provideVideo = getProvider((id) => {
     return this.main.db.getVideoWithChannelById(id);
   }, 100);
+
+  async cleanChats() {
+    let offset = 0;
+    let limit = 10;
+    const result = {
+      checkCount: 0,
+      removedCount: 0,
+      errorCount: 0,
+    };
+    while (true) {
+      const chatIds = await this.main.db.getChatIds(offset, limit);
+      offset += limit;
+      if (!chatIds.length) break;
+
+      await parallel(10, chatIds, (chatId) => {
+        result.checkCount++;
+        return this.main.bot.sendChatAction(chatId, 'typing').catch((err) => {
+          const isBlocked = isBlockedError(err);
+          if (isBlocked) {
+            const body = err.response.body;
+            return this.main.db.deleteChatById(chatId).then(() => {
+              result.removedCount++;
+              this.main.chat.log.write(`[deleted] ${chatId}, cause: (${body.error_code}) ${JSON.stringify(body.description)}`);
+            });
+          } else {
+            debug('cleanChats sendChatAction typing to %s error, cause: %o', chatId, err);
+            result.errorCount++;
+          }
+        });
+      });
+    }
+    return result;
+  }
 }
 
 export default Sender;

@@ -39,11 +39,7 @@ class ChatSender {
         if (err.code === 'ETELEGRAM') {
           const body = err.response.body;
 
-          let isBlocked = body.error_code === 403;
-          if (!isBlocked) {
-            isBlocked = blockedErrors.some(re => re.test(body.description));
-          }
-
+          const isBlocked = isBlockedError(err);
           if (isBlocked) {
             return this.main.db.deleteChatById(this.chat.id).then(() => {
               this.main.chat.log.write(`[deleted] ${this.chat.id}, cause: (${body.error_code}) ${JSON.stringify(body.description)}`);
@@ -271,4 +267,19 @@ function getCaption(video) {
   return lines.join('\n');
 }
 
+function isBlockedError(err) {
+  if (err.code === 'ETELEGRAM') {
+    const body = err.response.body;
+
+    let isBlocked = body.error_code === 403;
+    if (!isBlocked) {
+      isBlocked = blockedErrors.some(re => re.test(body.description));
+    }
+
+    return isBlocked;
+  }
+  return false;
+}
+
 export default ChatSender;
+export {isBlockedError};
