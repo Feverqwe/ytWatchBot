@@ -371,6 +371,16 @@ class Db {
     });
   }
 
+  getChannelIdsByServiceId(service, offset, limit) {
+    return this.model.Channel.findAll({
+      where: {service},
+      attributes: ['id'],
+      offset, limit,
+    }).then((channels) => {
+      return channels.map(channel => channel.id);
+    });
+  }
+
   setChannelsSyncTimeoutExpiresAtAndUncheckChanges(ids) {
     const date = new Date();
     date.setMinutes(date.getMinutes() + this.main.config.channelSyncTimeoutMinutes);
@@ -394,6 +404,10 @@ class Db {
     return this.model.Channel.update({subscriptionTimeoutExpiresAt: date}, {
       where: {id: ids}
     });
+  }
+
+  removeChannelByIds(ids) {
+    return this.model.Channel.destroy({where: {id: ids}});
   }
 
   cleanChannels() {

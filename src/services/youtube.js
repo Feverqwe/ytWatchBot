@@ -24,7 +24,8 @@ const VideosItemsSnippet = struct.partial({
 const ChannelsItemsId = struct.partial({
   items: [struct.partial({
     id: 'string'
-  })]
+  })],
+  nextPageToken: 'string?'
 });
 
 const SearchItemsId = struct.partial({
@@ -219,6 +220,41 @@ class Youtube {
         skippedChannelIds: resultSkippedChannelIds,
       };
     });
+  }
+
+  getExistsChannelIds(ids) {
+    const resultChannelIds = [];
+    return parallel(10, arrayByPart(ids, 50), (ids) => {
+      let pageLimit = 100;
+      const getPage = (pageToken) => {
+        return withRetry({count: 3, timeout: 250}, () => {
+          return gotLimited('https://www.googleapis.com/youtube/v3/channels', {
+            query: {
+              part: 'id',
+              id: ids.join(','),
+              pageToken: pageToken,
+              maxResults: 50,
+              fields: 'items/id,nextPageToken',
+              key: this.main.config.ytToken
+            },
+            json: true,
+          });
+        }, isDailyLimitExceeded).then(({body}) => {
+          const channelsItemsId = ChannelsItemsId(body);
+          channelsItemsId.items.forEach((item) => {
+            resultChannelIds.push(item.id);
+          });
+
+          if (channelsItemsId.nextPageToken) {
+            if (--pageLimit < 0) {
+              throw new ErrorWithCode(`Page limit reached `, 'PAGE_LIMIT_REACHED');
+            }
+            return getPage(channelsItemsId.nextPageToken);
+          }
+        });
+      };
+      return getPage();
+    }).then(() => resultChannelIds);
   }
 
   async requestChannelIdByQuery(query) {

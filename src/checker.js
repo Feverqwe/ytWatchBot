@@ -4,6 +4,7 @@ import roundStartInterval from "./tools/roundStartInterval";
 import getInProgress from "./tools/getInProgress";
 import ensureMap from "./tools/ensureMap";
 import serviceId from "./tools/serviceId";
+import parallel from "./tools/parallel";
 
 const debug = require('debug')('app:Checker');
 const promiseLimit = require('promise-limit');
@@ -227,6 +228,37 @@ class Checker {
         });
       }
     }));
+  }
+
+  async cleanRemovedChannels() {
+    return parallel(1, this.main.services, async (service) => {
+      const result = {
+        id: service.id,
+        channelCount: 0,
+        removedCount: 0,
+      };
+
+      let limit = 50;
+      let offset = 0;
+      while (true) {
+        const channelIds = await this.main.db.getChannelIdsByServiceId(service.id, offset, limit);
+        offset += limit;
+        if (!channelIds.length) break;
+        result.channelCount += channelIds.length;
+
+        await service.getExistsChannelIds(channelIds.map(id => serviceId.unwrap(id))).then((existsRawChannelIds) => {
+          const existsChannelIds = existsRawChannelIds.map(id => serviceId.wrap(service, id));
+
+          const removedChannelIds = arrayDifferent(channelIds, existsChannelIds);
+          return this.main.db.removeChannelByIds(removedChannelIds).then(() => {
+            result.removedCount += removedChannelIds.length;
+            offset -= removedChannelIds.length;
+          });
+        });
+      }
+
+      return result;
+    });
   }
 
   clean() {
