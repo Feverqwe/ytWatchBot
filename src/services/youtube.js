@@ -207,7 +207,9 @@ class Youtube {
           }
 
           const channelIds = ensureMap(videoIdChannelIds, videoId, []);
-          channelIds.push(channelId);
+          if (!channelIds.includes(channelId)) {
+            channelIds.push(channelId);
+          }
         });
       }, (err) => {
         debug(`getVideoIds for channel (%s) skip, cause: %o`, channelId, err);
