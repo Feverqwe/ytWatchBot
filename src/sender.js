@@ -106,7 +106,7 @@ class Sender {
     return this.main.db.getVideoWithChannelById(id);
   }, 100);
 
-  async cleanChats() {
+  async checkChatsExists() {
     let offset = 0;
     let limit = 10;
     const result = {

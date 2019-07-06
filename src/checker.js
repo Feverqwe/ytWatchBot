@@ -230,7 +230,7 @@ class Checker {
     }));
   }
 
-  async cleanRemovedChannels() {
+  async checkChannelsExists() {
     return parallel(1, this.main.services, async (service) => {
       const result = {
         id: service.id,
