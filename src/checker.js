@@ -26,7 +26,7 @@ class Checker {
     this.updateIntervalId = roundStartInterval(() => {
       this.updateIntervalId = setInterval(() => {
         this.check();
-      }, 5 * 60 * 1000);
+      }, this.main.config.emitCheckChannelsEveryMinutes * 60 * 1000);
       this.check();
     });
   }
@@ -36,7 +36,7 @@ class Checker {
     clearInterval(this.cleanIntervalId);
     this.cleanIntervalId = setInterval(() => {
       this.clean();
-    }, 60 * 60 * 1000);
+    }, this.main.config.emitCleanChatsAndVideosEveryHours * 60 * 60 * 1000);
   }
 
   inProgress = getInProgress();

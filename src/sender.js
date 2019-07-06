@@ -25,7 +25,7 @@ class Sender {
     this.checkIntervalId = roundStartInterval(() => {
       this.checkIntervalId = setInterval(() => {
         this.check();
-      }, 5 * 60 * 1000);
+      }, this.main.config.emitSendMessagesEveryMinutes * 60 * 1000);
       this.check();
     });
   }

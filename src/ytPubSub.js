@@ -39,7 +39,7 @@ class YtPubSub {
     this.updateIntervalId = roundStartInterval(() => {
       this.updateIntervalId = setInterval(() => {
         this.updateSubscribes();
-      }, 5 * 60 * 1000);
+      }, this.main.config.emitUpdateChannelPubSubSubscribeEveryMinutes * 60 * 1000);
       this.updateSubscribes();
     });
   }
@@ -49,7 +49,7 @@ class YtPubSub {
     clearInterval(this.cleanIntervalId);
     this.cleanIntervalId = setInterval(() => {
       this.clean();
-    }, 60 * 60 * 1000);
+    }, this.main.config.emitCleanPubSubFeedEveryHours * 60 * 60 * 1000);
   }
 
   inProgress = getInProgress();
