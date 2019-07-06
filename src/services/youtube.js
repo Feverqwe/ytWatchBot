@@ -51,8 +51,8 @@ const ActivitiesResponse = struct.partial({
         videoId: 'string'
       })
     }),
-    nextPageToken: 'string?'
-  })]
+  })],
+  nextPageToken: 'string?'
 });
 
 const VideosResponse = struct.partial({
@@ -85,8 +85,8 @@ const VideosResponse = struct.partial({
       // licensedContent: 'boolean', // true
       // projection: 'string', // rectangular
     }),
-    nextPageToken: 'string?'
-  })]
+  })],
+  nextPageToken: 'string?'
 });
 
 class Youtube {
