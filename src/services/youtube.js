@@ -108,6 +108,8 @@ class Youtube {
   }
 
   getVideosByIds(videoIds) {
+    videoIds = videoIds.filter((id, index, arr) => arr.indexOf(id) === index);
+
     const resultVideos = [];
     return parallel(10, arrayByPart(videoIds, 50), (videoIds) => {
       let pageLimit = 100;
