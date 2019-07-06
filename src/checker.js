@@ -23,12 +23,18 @@ class Checker {
 
   updateIntervalId = null;
   startUpdateInterval() {
+    const onInterval = () => {
+      this.check().catch((err) => {
+        debug('check error', err);
+      });
+    };
+
     clearInterval(this.updateIntervalId);
     this.updateIntervalId = roundStartInterval(() => {
       this.updateIntervalId = setInterval(() => {
-        this.check();
+        onInterval();
       }, this.main.config.emitCheckChannelsEveryMinutes * 60 * 1000);
-      this.check();
+      onInterval();
     });
   }
 
@@ -36,7 +42,9 @@ class Checker {
   startCleanInterval() {
     clearInterval(this.cleanIntervalId);
     this.cleanIntervalId = setInterval(() => {
-      this.clean();
+      this.clean().catch((err) => {
+        debug('clean error', err);
+      });
     }, this.main.config.emitCleanChatsAndVideosEveryHours * 60 * 60 * 1000);
   }
 

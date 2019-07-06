@@ -22,12 +22,18 @@ class Sender {
 
   checkIntervalId = null;
   startCheckInterval() {
+    const onInterval = () => {
+      this.check().catch((err) => {
+        debug('check error', err);
+      });
+    };
+
     clearInterval(this.checkIntervalId);
     this.checkIntervalId = roundStartInterval(() => {
       this.checkIntervalId = setInterval(() => {
-        this.check();
+        onInterval();
       }, this.main.config.emitSendMessagesEveryMinutes * 60 * 1000);
-      this.check();
+      onInterval();
     });
   }
 

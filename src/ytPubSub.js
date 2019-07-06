@@ -35,12 +35,18 @@ class YtPubSub {
 
   updateIntervalId = null;
   startUpdateInterval() {
+    const onInterval = () => {
+      this.updateSubscribes().catch((err) => {
+        debug('updateSubscribes error', err);
+      });
+    };
+
     clearInterval(this.updateIntervalId);
     this.updateIntervalId = roundStartInterval(() => {
       this.updateIntervalId = setInterval(() => {
-        this.updateSubscribes();
+        onInterval();
       }, this.main.config.emitUpdateChannelPubSubSubscribeEveryMinutes * 60 * 1000);
-      this.updateSubscribes();
+      onInterval();
     });
   }
 
@@ -48,7 +54,9 @@ class YtPubSub {
   startCleanInterval() {
     clearInterval(this.cleanIntervalId);
     this.cleanIntervalId = setInterval(() => {
-      this.clean();
+      this.clean().catch((err) => {
+        debug('clean error', err);
+      });
     }, this.main.config.emitCleanPubSubFeedEveryHours * 60 * 60 * 1000);
   }
 
