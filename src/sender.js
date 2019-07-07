@@ -8,8 +8,6 @@ const debug = require('debug')('app:Sender');
 const promiseLimit = require('promise-limit');
 const throttle = require('lodash.throttle');
 
-const oneLimit = promiseLimit(1);
-
 class Sender {
   constructor(/**Main*/main) {
     this.main = main;
@@ -52,53 +50,51 @@ class Sender {
     leading: false
   });
 
+  threadLimit = 10;
   chatIdChatSender = new Map();
   suspended = [];
   threads = [];
 
   run() {
-    return oneLimit(() => {
-      return new Promise(((resolve, reject) => {
-        const {chatIdChatSender, suspended, threads} = this;
-        const threadLimit = 10;
+    return new Promise(((resolve, reject) => {
+      const {threadLimit, chatIdChatSender, suspended, threads} = this;
 
-        return fillThreads();
+      return fillThreads();
 
-        function fillThreads() {
-          for (let i = 0; i < threadLimit; i++) {
-            runThread();
-          }
+      function fillThreads() {
+        for (let i = 0; i < threadLimit; i++) {
+          runThread();
         }
+      }
 
-        function runThread() {
-          if (!suspended.length && !threads.length) return resolve();
-          if (!suspended.length || threads.length === threadLimit) return;
+      function runThread() {
+        if (!suspended.length && !threads.length) return resolve();
+        if (!suspended.length || threads.length === threadLimit) return;
 
-          const chatSender = suspended.shift();
-          threads.push(chatSender);
+        const chatSender = suspended.shift();
+        threads.push(chatSender);
 
-          return chatSender.next().then((isDone) => {
-            onFinish(chatSender, isDone);
-          }, (err) => {
-            debug('chatSender %s stopped, cause: %o', chatSender.chat.id, err);
-            onFinish(chatSender, true);
-          });
+        return chatSender.next().then((isDone) => {
+          onFinish(chatSender, isDone);
+        }, (err) => {
+          debug('chatSender %s stopped, cause: %o', chatSender.chat.id, err);
+          onFinish(chatSender, true);
+        });
+      }
+
+      function onFinish(chatSender, isDone) {
+        const pos = threads.indexOf(chatSender);
+        if (pos !== -1) {
+          threads.splice(pos, 1);
         }
-
-        function onFinish(chatSender, isDone) {
-          const pos = threads.indexOf(chatSender);
-          if (pos !== -1) {
-            threads.splice(pos, 1);
-          }
-          if (isDone) {
-            chatIdChatSender.delete(chatSender.chat.id);
-          } else {
-            suspended.push(chatSender);
-          }
-          fillThreads();
+        if (isDone) {
+          chatIdChatSender.delete(chatSender.chat.id);
+        } else {
+          suspended.push(chatSender);
         }
-      }));
-    });
+        fillThreads();
+      }
+    }));
   }
 
   provideVideo = getProvider((id) => {
