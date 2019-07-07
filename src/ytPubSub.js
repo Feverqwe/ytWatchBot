@@ -1,8 +1,8 @@
 import parallel from "./tools/parallel";
 import ErrorWithCode from "./tools/errorWithCode";
-import roundStartInterval from "./tools/roundStartInterval";
 import getInProgress from "./tools/getInProgress";
 import serviceId from "./tools/serviceId";
+import {everyMinutes} from "./tools/everyTime";
 
 const debug = require('debug')('app:YtPubSub');
 const path = require('path');
@@ -33,31 +33,24 @@ class YtPubSub {
     });
   }
 
-  updateIntervalId = null;
+  updateTimer = null;
   startUpdateInterval() {
-    const onInterval = () => {
+    this.updateTimer && this.updateTimer();
+    this.updateTimer = everyMinutes(this.main.config.emitUpdateChannelPubSubSubscribeEveryMinutes, () => {
       this.updateSubscribes().catch((err) => {
         debug('updateSubscribes error', err);
       });
-    };
-
-    clearInterval(this.updateIntervalId);
-    this.updateIntervalId = roundStartInterval(() => {
-      this.updateIntervalId = setInterval(() => {
-        onInterval();
-      }, this.main.config.emitUpdateChannelPubSubSubscribeEveryMinutes * 60 * 1000);
-      onInterval();
     });
   }
 
-  cleanIntervalId = null;
+  cleanTimer = null;
   startCleanInterval() {
-    clearInterval(this.cleanIntervalId);
-    this.cleanIntervalId = setInterval(() => {
+    this.cleanTimer && this.cleanTimer();
+    this.cleanTimer = everyMinutes(this.main.config.emitCleanPubSubFeedEveryHours * 60, () => {
       this.clean().catch((err) => {
         debug('clean error', err);
       });
-    }, this.main.config.emitCleanPubSubFeedEveryHours * 60 * 60 * 1000);
+    });
   }
 
   inProgress = getInProgress();

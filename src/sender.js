@@ -1,8 +1,8 @@
 import getProvider from "./tools/getProvider";
 import ChatSender, {isBlockedError} from "./chatSender";
 import LogFile from "./logFile";
-import roundStartInterval from "./tools/roundStartInterval";
 import parallel from "./tools/parallel";
+import {everyMinutes} from "./tools/everyTime";
 
 const debug = require('debug')('app:Sender');
 const promiseLimit = require('promise-limit');
@@ -20,20 +20,13 @@ class Sender {
     this.startCheckInterval();
   }
 
-  checkIntervalId = null;
+  checkTimer = null;
   startCheckInterval() {
-    const onInterval = () => {
+    this.checkTimer && this.checkTimer();
+    this.checkTimer = everyMinutes(this.main.config.emitSendMessagesEveryMinutes, () => {
       this.check().catch((err) => {
         debug('check error', err);
       });
-    };
-
-    clearInterval(this.checkIntervalId);
-    this.checkIntervalId = roundStartInterval(() => {
-      this.checkIntervalId = setInterval(() => {
-        onInterval();
-      }, this.main.config.emitSendMessagesEveryMinutes * 60 * 1000);
-      onInterval();
     });
   }
 

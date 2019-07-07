@@ -1,10 +1,10 @@
 import arrayDifferent from "./tools/arrayDifferent";
 import LogFile from "./logFile";
-import roundStartInterval from "./tools/roundStartInterval";
 import getInProgress from "./tools/getInProgress";
 import ensureMap from "./tools/ensureMap";
 import serviceId from "./tools/serviceId";
 import parallel from "./tools/parallel";
+import {everyMinutes} from "./tools/everyTime";
 
 const debug = require('debug')('app:Checker');
 const promiseLimit = require('promise-limit');
@@ -21,31 +21,24 @@ class Checker {
     this.startCleanInterval();
   }
 
-  updateIntervalId = null;
+  updateTimer = null;
   startUpdateInterval() {
-    const onInterval = () => {
+    this.updateTimer && this.updateTimer();
+    this.updateTimer = everyMinutes(this.main.config.emitCheckChannelsEveryMinutes, () => {
       this.check().catch((err) => {
         debug('check error', err);
       });
-    };
-
-    clearInterval(this.updateIntervalId);
-    this.updateIntervalId = roundStartInterval(() => {
-      this.updateIntervalId = setInterval(() => {
-        onInterval();
-      }, this.main.config.emitCheckChannelsEveryMinutes * 60 * 1000);
-      onInterval();
     });
   }
 
-  cleanIntervalId = null;
+  cleanTimer = null;
   startCleanInterval() {
-    clearInterval(this.cleanIntervalId);
-    this.cleanIntervalId = setInterval(() => {
+    this.cleanTimer && this.cleanTimer();
+    this.cleanTimer = everyMinutes(this.main.config.emitCleanChatsAndVideosEveryHours * 60, () => {
       this.clean().catch((err) => {
         debug('clean error', err);
       });
-    }, this.main.config.emitCleanChatsAndVideosEveryHours * 60 * 60 * 1000);
+    });
   }
 
   inProgress = getInProgress();
