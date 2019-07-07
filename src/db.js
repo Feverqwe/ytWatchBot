@@ -256,6 +256,12 @@ class Db {
     });
   }
 
+  deleteChatsByIds(ids) {
+    return this.model.Chat.destroy({
+      where: {id: ids}
+    });
+  }
+
   cleanChats() {
     return this.model.Chat.destroy({
       where: {

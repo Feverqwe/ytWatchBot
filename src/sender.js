@@ -114,9 +114,9 @@ class Sender {
 
   async checkChatsExists() {
     let offset = 0;
-    let limit = 10;
+    let limit = 100;
     const result = {
-      checkCount: 0,
+      chatCount: 0,
       removedCount: 0,
       errorCount: 0,
     };
@@ -125,23 +125,27 @@ class Sender {
       offset += limit;
       if (!chatIds.length) break;
 
+      const blockedChatIds = [];
+
       await parallel(10, chatIds, (chatId) => {
-        result.checkCount++;
+        result.chatCount++;
         return this.main.bot.sendChatAction(chatId, 'typing').catch((err) => {
           const isBlocked = isBlockedError(err);
           if (isBlocked) {
+            blockedChatIds.push(chatId);
             const body = err.response.body;
-            return this.main.db.deleteChatById(chatId).then(() => {
-              result.removedCount++;
-              offset--;
-              this.main.chat.log.write(`[deleted] ${chatId}, cause: (${body.error_code}) ${JSON.stringify(body.description)}`);
-            });
+            this.main.chat.log.write(`[deleted] ${chatId}, cause: (${body.error_code}) ${JSON.stringify(body.description)}`);
           } else {
             debug('cleanChats sendChatAction typing to %s error, cause: %o', chatId, err);
             result.errorCount++;
           }
         });
       });
+
+      await this.main.db.deleteChatsByIds(blockedChatIds);
+
+      result.removedCount += blockedChatIds.length;
+      offset -= blockedChatIds.length;
     }
     return result;
   }
