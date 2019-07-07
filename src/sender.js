@@ -39,7 +39,7 @@ class Sender {
             this.suspended.push(chatSender);
           });
 
-          this.run();
+          this.fillThreads();
 
           return {addedCount: chats.length};
         });
@@ -55,46 +55,36 @@ class Sender {
   suspended = [];
   threads = [];
 
-  run() {
-    return new Promise(((resolve, reject) => {
-      const {threadLimit, chatIdChatSender, suspended, threads} = this;
+  fillThreads() {
+    for (let i = 0; i < this.threadLimit; i++) {
+      this.runThread();
+    }
+  }
 
-      return fillThreads();
+  runThread() {
+    const {threadLimit, chatIdChatSender, suspended, threads} = this;
 
-      function fillThreads() {
-        for (let i = 0; i < threadLimit; i++) {
-          runThread();
-        }
+    if (!suspended.length && !threads.length) return;
+    if (!suspended.length || threads.length >= threadLimit) return;
+
+    const chatSender = suspended.shift();
+    threads.push(chatSender);
+
+    return chatSender.next().catch((err) => {
+      debug('chatSender %s stopped, cause: %o', chatSender.chat.id, err);
+      return true;
+    }).then((isDone) => {
+      const pos = threads.indexOf(chatSender);
+      if (pos !== -1) {
+        threads.splice(pos, 1);
       }
-
-      function runThread() {
-        if (!suspended.length && !threads.length) return resolve();
-        if (!suspended.length || threads.length >= threadLimit) return;
-
-        const chatSender = suspended.shift();
-        threads.push(chatSender);
-
-        return chatSender.next().then((isDone) => {
-          onFinish(chatSender, isDone);
-        }, (err) => {
-          debug('chatSender %s stopped, cause: %o', chatSender.chat.id, err);
-          onFinish(chatSender, true);
-        });
+      if (isDone) {
+        chatIdChatSender.delete(chatSender.chat.id);
+      } else {
+        suspended.push(chatSender);
       }
-
-      function onFinish(chatSender, isDone) {
-        const pos = threads.indexOf(chatSender);
-        if (pos !== -1) {
-          threads.splice(pos, 1);
-        }
-        if (isDone) {
-          chatIdChatSender.delete(chatSender.chat.id);
-        } else {
-          suspended.push(chatSender);
-        }
-        fillThreads();
-      }
-    }));
+      this.fillThreads();
+    });
   }
 
   provideVideo = getProvider((id) => {
