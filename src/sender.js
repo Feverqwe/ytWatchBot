@@ -69,7 +69,7 @@ class Sender {
 
       function runThread() {
         if (!suspended.length && !threads.length) return resolve();
-        if (!suspended.length || threads.length === threadLimit) return;
+        if (!suspended.length || threads.length >= threadLimit) return;
 
         const chatSender = suspended.shift();
         threads.push(chatSender);
