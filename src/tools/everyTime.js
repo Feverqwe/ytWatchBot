@@ -53,20 +53,19 @@ const everyWeekAt = (day, hours, minutes, callback) => {
 function getOffset(step, offset = 0) {
   if (!step) throw new Error(`Incorrect step value ${step}`);
 
-  const max = Math.max(step, offset);
   const now = new Date();
 
   let pos = now.getMilliseconds();
-  if (max > dayMs) {
+  if (step > dayMs) {
     pos += now.getDay() * dayMs;
   }
-  if (max > hourMs) {
+  if (step > hourMs) {
     pos += now.getHours() * hourMs;
   }
-  if (max > minuteMs) {
+  if (step > minuteMs) {
     pos += now.getMinutes() * minuteMs;
   }
-  if (max > secondMs) {
+  if (step > secondMs) {
     pos += now.getSeconds() * secondMs;
   }
 
