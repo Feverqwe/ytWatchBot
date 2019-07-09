@@ -209,7 +209,7 @@ class Checker {
                 let type = null;
                 if (channelIdIsFullCheck.has(video.channelId)) {
                   const publishedAfter = channelIdIsFullCheck.get(video.channelId);
-                  if (publishedAfter.getTime() >= video.publishedAt.getTime()) {
+                  if (video.publishedAt.getTime() >= publishedAfter.getTime()) {
                     type = 'insert as full'
                   } else {
                     type = 'insert full'
