@@ -74,11 +74,11 @@ class Checker {
           if (channel.lastVideoPublishedAt) {
             publishedAfter = new Date(channel.lastVideoPublishedAt.getTime() + 1000);
           }
-          if (channel.lastFullSyncAt.getTime() < minFullCheckDate.getTime()) {
-            publishedAfter = defaultDate;
-            channelIdIsFullCheck.set(channel.id, true);
-          }
           if (!publishedAfter || publishedAfter.getTime() < defaultDate.getTime()) {
+            publishedAfter = defaultDate;
+          }
+          if (channel.lastFullSyncAt.getTime() < minFullCheckDate.getTime()) {
+            channelIdIsFullCheck.set(channel.id, publishedAfter);
             publishedAfter = defaultDate;
           }
 
@@ -151,7 +151,7 @@ class Checker {
             const changes = {
               lastSyncAt: syncAt
             };
-            if (channelIdIsFullCheck.get(id)) {
+            if (channelIdIsFullCheck.has(id)) {
               changes.lastFullSyncAt = syncAt;
             }
             channelIdsChanges[id] = Object.assign({}, channel.get({plain: true}), changes);
@@ -208,7 +208,12 @@ class Checker {
               videos.forEach((video) => {
                 let type = null;
                 if (channelIdIsFullCheck.has(video.channelId)) {
-                  type = 'insert full'
+                  const publishedAfter = channelIdIsFullCheck.get(video.channelId);
+                  if (publishedAfter.getTime() >= video.publishedAt.getTime()) {
+                    type = 'insert as full'
+                  } else {
+                    type = 'insert full'
+                  }
                 } else {
                   type = 'insert'
                 }
