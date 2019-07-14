@@ -25,12 +25,6 @@ languages.en = {
   users: 'Users: {count}',
   channels: 'Channels: {count}',
   preview: 'preview',
-  rateMe: [
-    '',
-    '',
-    '⭐️ If you like this bot, please rate us 5 stars in store:',
-    'https://telegram.me/storebot?start=ytwatchbot'
-  ].join('\n'),
   groupNote: [
     '',
     'Note for groups: Use \'Reply\' to answer.'
