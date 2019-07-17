@@ -35,6 +35,24 @@ class Chat {
   }
 
   base() {
+    this.router.message((req, res, next) => {
+      const {migrate_to_chat_id: targetChatId, migrate_from_chat_id: sourceChatId} = req.message;
+      if (targetChatId || sourceChatId) {
+        return Promise.resolve().then(async () => {
+          if (targetChatId) {
+            await this.main.db.changeChatId(req.chatId, targetChatId);
+            this.log.write(`[migrate msg] ${req.chatId} > ${targetChatId}`);
+          }
+          if (sourceChatId) {
+            await this.main.db.changeChatId(sourceChatId, req.chatId);
+            this.log.write(`[migrate msg] ${req.chatId} < ${sourceChatId}`);
+          }
+        }).then(next);
+      } else {
+        return next();
+      }
+    });
+
     this.router.textOrCallbackQuery(/(.+)/, (req, res, next) => {
       next();
       if (req.message) {
