@@ -280,7 +280,7 @@ class Chat {
           return this.main.db.getLastCreatedChannelsByChatId(req.chatId).then((channels) => {
             const targetTime = new Date();
             targetTime.setSeconds(targetTime.getSeconds() - 30);
-            if (channels.every(channel => channel.createdAt.getTime() > targetTime.getTime())) {
+            if (channels.length && channels.every(channel => channel.createdAt.getTime() > targetTime.getTime())) {
               throw new ErrorWithCode('Try add channel a little bit later', 'CHANNEL_INSERT_LIMIT');
             }
           });
