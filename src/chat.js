@@ -279,14 +279,6 @@ class Chat {
             throw new ErrorWithCode('Channels limit exceeded', 'CHANNELS_LIMIT');
           }
         }).then(() => {
-          return this.main.db.getLastCreatedChannelsByChatId(req.chatId).then((channels) => {
-            const targetTime = new Date();
-            targetTime.setSeconds(targetTime.getSeconds() - 30);
-            if (channels.length && channels.every(channel => channel.createdAt.getTime() > targetTime.getTime())) {
-              throw new ErrorWithCode('Try add channel a little bit later', 'CHANNEL_INSERT_LIMIT');
-            }
-          });
-        }).then(() => {
           return service.findChannel(query);
         }).then((rawChannel) => {
           return this.main.db.ensureChannel(service, rawChannel).then((channel) => {
@@ -321,7 +313,7 @@ class Chat {
             isResolved = true;
             message = this.main.locale.getMessage('channelIsNotFound').replace('{channelName}', query);
           } else
-          if (['CHANNEL_INSERT_LIMIT', 'CHANNELS_LIMIT'].includes(err.code)) {
+          if (['CHANNELS_LIMIT'].includes(err.code)) {
             isResolved = true;
             message = err.message;
           } else {

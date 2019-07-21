@@ -112,9 +112,6 @@ class Db {
         name: 'channelId_idx',
         fields: ['channelId']
       }, {
-        name: 'createdAt_idx',
-        fields: ['createdAt']
-      }, {
         name: 'chatId_channelId_UNIQUE',
         unique: true,
         fields: ['chatId', 'channelId']
@@ -340,14 +337,6 @@ class Db {
   getChannelCountByChatId(chatId) {
     return this.model.ChatIdChannelId.count({
       where: {chatId}
-    });
-  }
-
-  getLastCreatedChannelsByChatId(chatId, limit = 3) {
-    return this.model.ChatIdChannelId.findAll({
-      where: {chatId},
-      order: [['createdAt', 'DESC']],
-      limit
     });
   }
 
