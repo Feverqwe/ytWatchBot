@@ -1,11 +1,11 @@
+import promiseTry from "./promiseTry";
+
 /**
  * @param {number} limit
  * @param {Array} items
  * @param {function(*, number, Array)} callback
  * @return {Promise<Array>}
  */
-import promiseTry from "./promiseTry";
-
 const parallel = (limit, items, callback) => {
   limit = Math.min(limit, items.length);
   let index = 0;
