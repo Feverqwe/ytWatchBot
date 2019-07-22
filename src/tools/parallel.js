@@ -4,6 +4,8 @@
  * @param {function(*, number, Array)} callback
  * @return {Promise<Array>}
  */
+import promiseTry from "./promiseTry";
+
 const parallel = (limit, items, callback) => {
   limit = Math.min(limit, items.length);
   let index = 0;
@@ -17,7 +19,7 @@ const parallel = (limit, items, callback) => {
     const item = items[idx];
 
     try {
-      return Promise.resolve(callback(item, idx, items)).then((result) => {
+      return promiseTry(() => callback(item, idx, items)).then((result) => {
         results[idx] = result;
         return runThread();
       }, (err) => {

@@ -1,6 +1,7 @@
 import htmlSanitize from "./tools/htmlSanitize";
 import promiseFinally from "./tools/promiseFinally";
 import ErrorWithCode from "./tools/errorWithCode";
+import promiseTry from "./tools/promiseTry";
 
 const debug = require('debug')('app:ChatSender');
 const got = require('got');
@@ -29,7 +30,7 @@ class ChatSender {
     }
 
     return this.main.sender.provideVideo(this.videoIds.shift(), (video) => {
-      return Promise.resolve().then(() => {
+      return promiseTry(() => {
         if (this.chat.isHidePreview || !video.previews.length) {
           return this.sendVideoAsText(video);
         } else {
