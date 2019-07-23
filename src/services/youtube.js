@@ -420,11 +420,12 @@ function iterPages(callback, onResponse) {
   const getPage = (pageToken) => {
     return promiseTry(() => callback(pageToken)).then((response) => {
       return promiseTry(() => onResponse(response)).then(() => {
-        if (response.body.nextPageToken) {
+        const nextPageToken = response.body.nextPageToken;
+        if (nextPageToken) {
           if (--limit < 0) {
-            throw new ErrorWithCode(`Page limit reached `, 'PAGE_LIMIT_REACHED');
+            throw new ErrorWithCode(`Page limit reached`, 'PAGE_LIMIT_REACHED');
           }
-          return getPage(response.body.nextPageToken);
+          return getPage(nextPageToken);
         }
       });
     });
