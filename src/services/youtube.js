@@ -123,34 +123,36 @@ class Youtube {
             },
             json: true,
           });
-        }, isDailyLimitExceeded);
-      }, ({body}) => {
-        const videos = VideosResponse(body);
+        }, isDailyLimitExceeded).then(({body}) => {
+          const videos = VideosResponse(body);
 
-        videos.items.forEach((video) => {
-          const previews = Object.values(video.snippet.thumbnails).sort((a, b) => {
-            return a.width > b.width ? -1 : 1;
-          }).map(thumbnail => thumbnail.url);
+          videos.items.forEach((video) => {
+            const previews = Object.values(video.snippet.thumbnails).sort((a, b) => {
+              return a.width > b.width ? -1 : 1;
+            }).map(thumbnail => thumbnail.url);
 
-          let duration = null;
-          try {
-            duration = formatDuration(video.contentDetails.duration);
-          } catch (err) {
-            debug('formatDuration %s error %o', video.id, err);
-          }
+            let duration = null;
+            try {
+              duration = formatDuration(video.contentDetails.duration);
+            } catch (err) {
+              debug('formatDuration %s error %o', video.id, err);
+            }
 
-          const result = {
-            id: video.id,
-            url: getVideoUrl(video.id),
-            title: video.snippet.title,
-            previews: previews,
-            duration: duration,
-            channelId: video.snippet.channelId,
-            channelTitle: video.snippet.channelTitle,
-            publishedAt: new Date(video.snippet.publishedAt),
-          };
+            const result = {
+              id: video.id,
+              url: getVideoUrl(video.id),
+              title: video.snippet.title,
+              previews: previews,
+              duration: duration,
+              channelId: video.snippet.channelId,
+              channelTitle: video.snippet.channelTitle,
+              publishedAt: new Date(video.snippet.publishedAt),
+            };
 
-          resultVideos.push(result);
+            resultVideos.push(result);
+          });
+
+          return videos.nextPageToken;
         });
       });
     }).then(() => resultVideos);
@@ -176,12 +178,14 @@ class Youtube {
             },
             json: true,
           });
-        }, isDailyLimitExceeded);
-      }, ({body}) => {
-        const activities = ActivitiesResponse(body);
-        activities.items.forEach((item) => {
-          const videoId = item.contentDetails.upload.videoId;
-          videoIds.push(videoId);
+        }, isDailyLimitExceeded).then(({body}) => {
+          const activities = ActivitiesResponse(body);
+          activities.items.forEach((item) => {
+            const videoId = item.contentDetails.upload.videoId;
+            videoIds.push(videoId);
+          });
+
+          return activities.nextPageToken;
         });
       }).then(() => {
         videoIds.forEach((videoId) => {
@@ -223,11 +227,13 @@ class Youtube {
             },
             json: true,
           });
-        }, isDailyLimitExceeded);
-      }, ({body}) => {
-        const channelsItemsId = ChannelsItemsId(body);
-        channelsItemsId.items.forEach((item) => {
-          resultChannelIds.push(item.id);
+        }, isDailyLimitExceeded).then(({body}) => {
+          const channelsItemsId = ChannelsItemsId(body);
+          channelsItemsId.items.forEach((item) => {
+            resultChannelIds.push(item.id);
+          });
+
+          return channelsItemsId.nextPageToken;
         });
       });
     }).then(() => resultChannelIds);
@@ -415,19 +421,16 @@ function isDailyLimitExceeded(err) {
   return false;
 }
 
-function iterPages(callback, onResponse) {
+function iterPages(callback) {
   let limit = 100;
   const getPage = (pageToken) => {
-    return promiseTry(() => callback(pageToken)).then((response) => {
-      return promiseTry(() => onResponse(response)).then(() => {
-        const nextPageToken = response.body.nextPageToken;
-        if (nextPageToken) {
-          if (--limit < 0) {
-            throw new ErrorWithCode(`Page limit reached`, 'PAGE_LIMIT_REACHED');
-          }
-          return getPage(nextPageToken);
+    return promiseTry(() => callback(pageToken)).then((nextPageToken) => {
+      if (nextPageToken) {
+        if (--limit < 0) {
+          throw new ErrorWithCode(`Page limit reached`, 'PAGE_LIMIT_REACHED');
         }
-      });
+        return getPage(nextPageToken);
+      }
     });
   };
   return getPage();
