@@ -100,6 +100,16 @@ class Checker {
         }).then(({videos: rawVideos, videoIdChannelIds: rawVideoIdRawChannelIds, skippedChannelIds: skippedRawChannelIds}) => {
           const videoIdVideo = new Map();
           const videoIds = [];
+
+          const checkedChannelIds = channelIds.slice(0);
+          skippedRawChannelIds.forEach((rawId) => {
+            const id = serviceId.wrap(this.main.youtube, rawId);
+            const pos = checkedChannelIds.indexOf(id);
+            if (pos !== -1) {
+              checkedChannelIds.splice(pos, 1);
+            }
+          });
+
           rawVideos.forEach((rawVideo) => {
             const rawChannelIds = rawVideoIdRawChannelIds.get(rawVideo.id);
             rawChannelIds.forEach((rawChannelId) => {
@@ -115,7 +125,7 @@ class Checker {
               video.id = serviceId.wrap(this.main.youtube, video.id);
               video.channelId = serviceId.wrap(this.main.youtube, video.channelId);
 
-              if (!channelIdChannel.has(video.channelId)) {
+              if (!checkedChannelIds.includes(video.channelId)) {
                 debug('Video %s skip, cause: Channel %s is not exists', video.id, video.channelId);
                 return;
               }
@@ -123,15 +133,6 @@ class Checker {
               videoIdVideo.set(video.id, video);
               videoIds.push(video.id);
             });
-          });
-
-          const checkedChannelIds = channelIds.slice(0);
-          skippedRawChannelIds.forEach((rawId) => {
-            const id = serviceId.wrap(this.main.youtube, rawId);
-            const pos = checkedChannelIds.indexOf(id);
-            if (pos !== -1) {
-              checkedChannelIds.splice(pos, 1);
-            }
           });
 
           return this.main.db.getExistsVideoIds(videoIds).then((existsVideoIds) => {
