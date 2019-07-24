@@ -282,7 +282,7 @@ class Youtube {
     }
 
     if (!/^[\w\-]+$/.test(username)) {
-      return new ErrorWithCode('Incorrect username', 'INCORRECT_USERNAME');
+      throw new ErrorWithCode('Incorrect username', 'INCORRECT_USERNAME');
     }
 
     return gotLimited('https://www.googleapis.com/youtube/v3/channels', {
