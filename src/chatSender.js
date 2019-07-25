@@ -181,7 +181,7 @@ class ChatSender {
     }).then((response) => {
       const fileId = getPhotoFileIdFromMessage(response);
       if (!fileId) {
-        throw new ErrorWithCode('FILE_ID_IS_NOT_FOUND');
+        throw new ErrorWithCode('File id if not found', 'FILE_ID_IS_NOT_FOUND');
       }
       video.telegramPreviewFileId = fileId;
       return video.save();

@@ -5,7 +5,6 @@ import parallel from "./tools/parallel";
 import {everyMinutes} from "./tools/everyTime";
 
 const debug = require('debug')('app:Sender');
-const promiseLimit = require('promise-limit');
 const throttle = require('lodash.throttle');
 
 class Sender {
