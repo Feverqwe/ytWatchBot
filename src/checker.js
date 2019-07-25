@@ -1,4 +1,4 @@
-import arrayDifferent from "./tools/arrayDifferent";
+import arrayDifference from "./tools/arrayDifference";
 import LogFile from "./logFile";
 import getInProgress from "./tools/getInProgress";
 import ensureMap from "./tools/ensureMap";
@@ -93,7 +93,7 @@ class Checker {
           const filterFn = (rawVideoIds) => {
             const videoIds = rawVideoIds.map(id => serviceId.wrap(this.main.youtube, id));
             return this.main.db.getExistsVideoIds(videoIds).then((existsVideoIds) => {
-              return arrayDifferent(videoIds, existsVideoIds).map(id => serviceId.unwrap(id));
+              return arrayDifference(videoIds, existsVideoIds).map(id => serviceId.unwrap(id));
             });
           };
           return this.main.youtube.getVideos(rawChannels, filterFn);
@@ -136,7 +136,7 @@ class Checker {
           });
 
           return this.main.db.getExistsVideoIds(videoIds).then((existsVideoIds) => {
-            const videos = arrayDifferent(videoIds, existsVideoIds).map(id => videoIdVideo.get(id));
+            const videos = arrayDifference(videoIds, existsVideoIds).map(id => videoIdVideo.get(id));
             return {
               videos,
               videoIdVideo,
@@ -256,7 +256,7 @@ class Checker {
         await service.getExistsChannelIds(channelIds.map(id => serviceId.unwrap(id))).then((existsRawChannelIds) => {
           const existsChannelIds = existsRawChannelIds.map(id => serviceId.wrap(service, id));
 
-          const removedChannelIds = arrayDifferent(channelIds, existsChannelIds);
+          const removedChannelIds = arrayDifference(channelIds, existsChannelIds);
           return this.main.db.removeChannelByIds(removedChannelIds).then(() => {
             result.removedCount += removedChannelIds.length;
             offset -= removedChannelIds.length;

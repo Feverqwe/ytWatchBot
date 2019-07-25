@@ -1,7 +1,7 @@
 import ErrorWithCode from "./tools/errorWithCode";
 import arrayByPart from "./tools/arrayByPart";
 import serviceId from "./tools/serviceId";
-import arrayDifferent from "./tools/arrayDifferent";
+import arrayDifference from "./tools/arrayDifference";
 
 const debug = require('debug')('app:db');
 const Sequelize = require('sequelize');
@@ -481,7 +481,7 @@ class Db {
 
   getNoExistsVideoIds(ids) {
     return this.getExistsVideoIds(ids).then((results) => {
-      return arrayDifferent(ids, results);
+      return arrayDifference(ids, results);
     });
   }
 
