@@ -613,27 +613,27 @@ class Chat {
 
     this.router.textOrCallbackQuery(/\/list/, provideChannels, withChannels, (req, res) => {
       const serviceIds = [];
-      const serviceIdChannels = {};
+      const serviceIdChannels = new Map();
       req.channels.forEach((channel) => {
-        let serviceChannels = serviceIdChannels[channel.service];
-        if (!serviceChannels) {
-          serviceChannels = serviceIdChannels[channel.service] = [];
+        if (!serviceIdChannels.has(channel.service)) {
           serviceIds.push(channel.service);
         }
+        const serviceChannels = ensureMap(serviceIdChannels, channel.service, []);
         serviceChannels.push(channel);
       });
 
       serviceIds.sort((aa, bb) => {
-        const a = serviceIdChannels[aa].length;
-        const b = serviceIdChannels[bb].length;
+        const a = serviceIdChannels.get(aa).length;
+        const b = serviceIdChannels.get(bb).length;
         return a === b ? 0 : a > b ? -1 : 1;
       });
 
       const lines = [];
       serviceIds.forEach((serviceId) => {
         const channelLines = [];
-        channelLines.push(htmlSanitize('b', this.main[serviceId].name + ':'));
-        serviceIdChannels[serviceId].forEach((channel) => {
+        const service = this.main.getServiceById(serviceId);
+        channelLines.push(htmlSanitize('b', service.name + ':'));
+        serviceIdChannels.get(serviceId).forEach((channel) => {
           channelLines.push(htmlSanitize('a', channel.title, channel.url));
         });
         lines.push(channelLines.join('\n'));
