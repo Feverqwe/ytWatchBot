@@ -181,29 +181,22 @@ class Chat {
     this.router.textOrCallbackQuery(/\/about/, (req, res) => {
       if (!liveTime) {
         try {
-          liveTime = JSON.parse(fs.readFileSync('./liveTime.json', 'utf8'));
+          liveTime = JSON.parse(fs.readFileSync('./liveTime.json', 'utf8')).message;
         } catch (err) {
           debug('Read liveTime.json error! %o', err);
-          liveTime = {
-            endTime: '1970-01-01',
-            message: [
-              '{count}'
-            ]
-          };
-        }
-        if (Array.isArray(liveTime.message)) {
-          liveTime.message = liveTime.message.join('\n');
+          liveTime = '';
         }
       }
 
-      let count = '';
-      const m = /(\d{4}).(\d{2}).(\d{2})/.exec(liveTime.endTime);
-      if (m) {
-        const endTime = (new Date(m[1], m[2], m[3])).getTime();
-        count = Math.trunc((endTime - Date.now()) / 1000 / 60 / 60 / 24 / 30 * 10) / 10;
-      }
-
-      const message = liveTime.message.replace('{count}', count);
+      const message = liveTime.replace(/\$remainFrom\(([^)]+)\)/, (str, date) => {
+        const m = /(\d{4}).(\d{2}).(\d{2})/.exec(date);
+        if (m) {
+          const endTime = (new Date(m[1], m[2], m[3])).getTime();
+          const month =Math.trunc((endTime - Date.now()) / 1000 / 60 / 60 / 24 / 30 * 10) / 10;
+          return `${month} months`;
+        }
+        return str;
+      });
 
       return this.main.bot.sendMessage(req.chatId, message).catch((err) => {
         debug('%j error %o', req.command, err);
