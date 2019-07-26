@@ -237,34 +237,37 @@ class Checker {
     }));
   }
 
-  async checkChannelsExists() {
-    return parallel(1, this.main.services, async (service) => {
-      const result = {
-        id: service.id,
-        channelCount: 0,
-        removedCount: 0,
-      };
+  checkChannelsExistsInProgress = getInProgress();
+  checkChannelsExists() {
+    return this.checkChannelsExistsInProgress(async () => {
+      return parallel(1, this.main.services, async (service) => {
+        const result = {
+          id: service.id,
+          channelCount: 0,
+          removedCount: 0,
+        };
 
-      let limit = 500;
-      let offset = 0;
-      while (true) {
-        const channelIds = await this.main.db.getChannelIdsByServiceId(service.id, offset, limit);
-        offset += limit;
-        if (!channelIds.length) break;
-        result.channelCount += channelIds.length;
+        let limit = 500;
+        let offset = 0;
+        while (true) {
+          const channelIds = await this.main.db.getChannelIdsByServiceId(service.id, offset, limit);
+          offset += limit;
+          if (!channelIds.length) break;
+          result.channelCount += channelIds.length;
 
-        await service.getExistsChannelIds(channelIds.map(id => serviceId.unwrap(id))).then((existsRawChannelIds) => {
-          const existsChannelIds = existsRawChannelIds.map(id => serviceId.wrap(service, id));
+          await service.getExistsChannelIds(channelIds.map(id => serviceId.unwrap(id))).then((existsRawChannelIds) => {
+            const existsChannelIds = existsRawChannelIds.map(id => serviceId.wrap(service, id));
 
-          const removedChannelIds = arrayDifference(channelIds, existsChannelIds);
-          return this.main.db.removeChannelByIds(removedChannelIds).then(() => {
-            result.removedCount += removedChannelIds.length;
-            offset -= removedChannelIds.length;
+            const removedChannelIds = arrayDifference(channelIds, existsChannelIds);
+            return this.main.db.removeChannelByIds(removedChannelIds).then(() => {
+              result.removedCount += removedChannelIds.length;
+              offset -= removedChannelIds.length;
+            });
           });
-        });
-      }
+        }
 
-      return result;
+        return result;
+      });
     });
   }
 

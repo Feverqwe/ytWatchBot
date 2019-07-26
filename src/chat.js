@@ -746,7 +746,7 @@ class Chat {
       {name: 'Check chats exists', method: 'sender.checkChatsExists'},
       {name: 'Check channels exists', method: 'checker.checkChannelsExists'},
       {name: 'Check channels', method: 'checker.check'},
-      {name: 'Clean channels & videos', method: 'checker.clean'},
+      {name: 'Clean chats & channels & videos', method: 'checker.clean'},
       {name: 'Sender check', method: 'sender.check'},
       {name: 'Update pubsub', method: 'ytPubSub.updateSubscribes'},
       {name: 'Clean pubsub', method: 'ytPubSub.clean'},

@@ -3,6 +3,7 @@ import ChatSender, {isBlockedError} from "./chatSender";
 import LogFile from "./logFile";
 import parallel from "./tools/parallel";
 import {everyMinutes} from "./tools/everyTime";
+import getInProgress from "./tools/getInProgress";
 
 const debug = require('debug')('app:Sender');
 const throttle = require('lodash.throttle');
@@ -90,42 +91,45 @@ class Sender {
     return this.main.db.getVideoWithChannelById(id);
   }, 100);
 
-  async checkChatsExists() {
-    let offset = 0;
-    let limit = 100;
-    const result = {
-      chatCount: 0,
-      removedCount: 0,
-      errorCount: 0,
-    };
-    while (true) {
-      const chatIds = await this.main.db.getChatIds(offset, limit);
-      offset += limit;
-      if (!chatIds.length) break;
+  checkChatsExistsInProgress = getInProgress();
+  checkChatsExists() {
+    return this.checkChatsExistsInProgress(async () => {
+      let offset = 0;
+      let limit = 100;
+      const result = {
+        chatCount: 0,
+        removedCount: 0,
+        errorCount: 0,
+      };
+      while (true) {
+        const chatIds = await this.main.db.getChatIds(offset, limit);
+        offset += limit;
+        if (!chatIds.length) break;
 
-      const blockedChatIds = [];
+        const blockedChatIds = [];
 
-      await parallel(10, chatIds, (chatId) => {
-        result.chatCount++;
-        return this.main.bot.sendChatAction(chatId, 'typing').catch((err) => {
-          const isBlocked = isBlockedError(err);
-          if (isBlocked) {
-            blockedChatIds.push(chatId);
-            const body = err.response.body;
-            this.main.chat.log.write(`[deleted] ${chatId}, cause: (${body.error_code}) ${JSON.stringify(body.description)}`);
-          } else {
-            debug('cleanChats sendChatAction typing to %s error, cause: %o', chatId, err);
-            result.errorCount++;
-          }
+        await parallel(10, chatIds, (chatId) => {
+          result.chatCount++;
+          return this.main.bot.sendChatAction(chatId, 'typing').catch((err) => {
+            const isBlocked = isBlockedError(err);
+            if (isBlocked) {
+              blockedChatIds.push(chatId);
+              const body = err.response.body;
+              this.main.chat.log.write(`[deleted] ${chatId}, cause: (${body.error_code}) ${JSON.stringify(body.description)}`);
+            } else {
+              debug('cleanChats sendChatAction typing to %s error, cause: %o', chatId, err);
+              result.errorCount++;
+            }
+          });
         });
-      });
 
-      await this.main.db.deleteChatsByIds(blockedChatIds);
+        await this.main.db.deleteChatsByIds(blockedChatIds);
 
-      result.removedCount += blockedChatIds.length;
-      offset -= blockedChatIds.length;
-    }
-    return result;
+        result.removedCount += blockedChatIds.length;
+        offset -= blockedChatIds.length;
+      }
+      return result;
+    });
   }
 }
 
