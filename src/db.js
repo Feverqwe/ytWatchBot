@@ -288,7 +288,11 @@ class Db {
   getChatIdChannelIdChatIdCount() {
     return this.sequelize.query(`
       SELECT COUNT(DISTINCT(chatId)) as chatCount FROM chatIdChannelId
-    `, {type: Sequelize.QueryTypes.SELECT}).then((result) => {
+    `, {type: Sequelize.QueryTypes.SELECT}).then((results) => {
+      const result = results[0];
+      if (!result) {
+        return 0;
+      }
       return result.chatCount;
     });
   }
@@ -296,7 +300,11 @@ class Db {
   getChatIdChannelIdChannelIdCount() {
     return this.sequelize.query(`
       SELECT COUNT(DISTINCT(channelId)) as channelCount FROM chatIdChannelId
-    `, {type: Sequelize.QueryTypes.SELECT}).then((result) => {
+    `, {type: Sequelize.QueryTypes.SELECT}).then((results) => {
+      const result = results[0];
+      if (!result) {
+        return 0;
+      }
       return result.channelCount;
     });
   }
