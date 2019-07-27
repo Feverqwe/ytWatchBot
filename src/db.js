@@ -106,15 +106,18 @@ class Db {
       timestamps: true,
       updatedAt: false,
       indexes: [{
+        name: 'chatId_channelId_UNIQUE',
+        unique: true,
+        fields: ['chatId', 'channelId']
+      }, {
         name: 'chatId_idx',
         fields: ['chatId']
       }, {
         name: 'channelId_idx',
         fields: ['channelId']
       }, {
-        name: 'chatId_channelId_UNIQUE',
-        unique: true,
-        fields: ['chatId', 'channelId']
+        name: 'createdAt_idx',
+        fields: ['createdAt']
       }]
     });
     ChatIdChannelId.belongsTo(Chat, {foreignKey: 'chatId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
