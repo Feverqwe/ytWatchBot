@@ -385,7 +385,8 @@ class Db {
           {lastSyncAt: {[Op.lt]: date}}
         ],
       },
-      limit: limit
+      order: ['lastSyncAt'],
+      limit: limit,
     });
   }
 
