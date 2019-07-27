@@ -136,34 +136,22 @@ class Chat {
     });
 
     this.router.textOrCallbackQuery(/\/top/, (req, res) => {
+      const service = this.main.youtube;
       return Promise.all([
         this.main.db.getChatIdChannelIdChatIdCount(),
         this.main.db.getChatIdChannelIdChannelIdCount(),
-        this.main.db.getChatIdChannelIdTop10(),
-      ]).then(([chatCount, channelCount, serviceChannelChatCountList]) => {
+        this.main.db.getChatIdChannelIdTop10ByServiceId(service.id),
+      ]).then(([chatCount, channelCount, serviceTopChannels]) => {
         const lines = [];
 
         lines.push(this.main.locale.getMessage('users').replace('{count}', chatCount));
         lines.push(this.main.locale.getMessage('channels').replace('{count}', channelCount));
 
-        const serviceIdTop10 = new Map();
-        serviceChannelChatCountList.forEach(({title, service, chatCount}) => {
-          const top10 = ensureMap(serviceIdTop10, service, []);
-          top10.push([title, chatCount]);
-        });
-
-        serviceIdTop10.forEach((top10) => {
-          top10.sort(([,a], [,b]) => a === b ? 0 : a > b ? -1 : 1);
-        });
-
-        serviceIdTop10.forEach((channels, serviceId) => {
-          const name = this.main[serviceId].name;
-          lines.push('');
-          lines.push(`${name}:`);
-
-          channels.forEach(([title, chatCount], index) => {
-            lines.push((index + 1) + '. ' + title);
-          });
+        const name = service.name;
+        lines.push('');
+        lines.push(`${name}:`);
+        serviceTopChannels.forEach(({title, chatCount}, index) => {
+          lines.push((index + 1) + '. ' + title);
         });
 
         return this.main.bot.sendMessage(req.chatId, lines.join('\n'), {

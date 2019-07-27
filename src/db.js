@@ -301,11 +301,12 @@ class Db {
     });
   }
 
-  getChatIdChannelIdTop10() {
+  getChatIdChannelIdTop10ByServiceId(serviceId) {
     return this.sequelize.query(`
-      SELECT channelId, COUNT(chatId) as chatCount, channels.service as service, channels.title as title FROM chatIdChannelId
+      SELECT channelId, COUNT(chatId) as chatCount, channels.title as title FROM chatIdChannelId
       INNER JOIN channels ON channelId = channels.id
-      GROUP BY channelId, channels.service ORDER BY COUNT(chatId) DESC LIMIT 10
+      WHERE channels.service = "${serviceId}"
+      GROUP BY channelId ORDER BY COUNT(chatId) DESC LIMIT 10
     `, {type: Sequelize.QueryTypes.SELECT});
   }
 
