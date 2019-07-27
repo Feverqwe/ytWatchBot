@@ -631,7 +631,7 @@ class Chat {
       const lines = [];
       serviceIds.forEach((serviceId) => {
         const channelLines = [];
-        const service = this.main.getServiceById(serviceId);
+        const service = this.main[serviceId];
         channelLines.push(htmlSanitize('b', service.name + ':'));
         serviceIdChannels.get(serviceId).forEach((channel) => {
           channelLines.push(htmlSanitize('a', channel.title, channel.url));
