@@ -287,18 +287,18 @@ class Db {
 
   getChatIdChannelIdChatIdCount() {
     return this.sequelize.query(`
-      SELECT COUNT(DISTINCT(chatId)) as chatCount, channels.service as service FROM chatIdChannelId
-      INNER JOIN channels ON channelId = channels.id
-      GROUP BY channels.service
-    `, {type: Sequelize.QueryTypes.SELECT});
+      SELECT COUNT(DISTINCT(chatId)) as chatCount FROM chatIdChannelId
+    `, {type: Sequelize.QueryTypes.SELECT}).then((result) => {
+      return result.chatCount;
+    });
   }
 
   getChatIdChannelIdChannelIdCount() {
     return this.sequelize.query(`
-      SELECT COUNT(DISTINCT(channelId)) as channelCount, channels.service as service FROM chatIdChannelId
-      INNER JOIN channels ON channelId = channels.id
-      GROUP BY channels.service
-    `, {type: Sequelize.QueryTypes.SELECT});
+      SELECT COUNT(DISTINCT(channelId)) as channelCount FROM chatIdChannelId
+    `, {type: Sequelize.QueryTypes.SELECT}).then((result) => {
+      return result.channelCount;
+    });
   }
 
   getChatIdChannelIdTop10() {
