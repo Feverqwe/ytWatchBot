@@ -164,7 +164,7 @@ class ChatSender {
             debug('Content-type is empty, set default content-type %s', url);
             contentType = 'image/jpeg';
           }
-          return this.main.bot.sendPhoto(this.chat.id, got.stream(url), {caption}, {contentType}).then((result) => {
+          return this.main.bot.sendPhoto(this.chat.id, got.stream(url, {encoding: null}), {caption}, {contentType}).then((result) => {
             this.main.sender.log.write(`[send photo as file] ${this.chat.id} ${video.channelId} ${video.id}`);
             this.main.tracker.track(this.chat.id, {
               ec: 'bot',
