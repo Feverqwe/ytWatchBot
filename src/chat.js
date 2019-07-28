@@ -41,11 +41,11 @@ class Chat {
       if (targetChatId || sourceChatId) {
         return promiseTry(async () => {
           if (targetChatId) {
-            await this.main.db.changeChatId(req.chatId, targetChatId);
+            await this.main.db.changeChatId('' + req.chatId, '' + targetChatId);
             this.log.write(`[migrate msg] ${req.chatId} > ${targetChatId}`);
           }
           if (sourceChatId) {
-            await this.main.db.changeChatId(sourceChatId, req.chatId);
+            await this.main.db.changeChatId('' + sourceChatId, '' + req.chatId);
             this.log.write(`[migrate msg] ${req.chatId} < ${sourceChatId}`);
           }
         }).then(next, (err) => {
@@ -191,7 +191,7 @@ class Chat {
 
   user() {
     const provideChat = (req, res, next) => {
-      return this.main.db.ensureChat(req.chatId).then((chat) => {
+      return this.main.db.ensureChat('' + req.chatId).then((chat) => {
         req.chat = chat;
         next();
       }, (err) => {
@@ -201,7 +201,7 @@ class Chat {
     };
 
     const provideChannels = (req, res, next) => {
-      return this.main.db.getChannelsByChatId(req.chatId).then((channels) => {
+      return this.main.db.getChannelsByChatId('' + req.chatId).then((channels) => {
         req.channels = channels;
         next();
       }, (err) => {
@@ -253,7 +253,7 @@ class Chat {
           return {query: req.message.text.trim(), messageId: msg.message_id};
         });
       }).then(({query, messageId}) => {
-        return this.main.db.getChannelCountByChatId(req.chatId).then((count) => {
+        return this.main.db.getChannelCountByChatId('' + req.chatId).then((count) => {
           if (count >= 100) {
             throw new ErrorWithCode('Channels limit exceeded', 'CHANNELS_LIMIT');
           }
@@ -261,7 +261,7 @@ class Chat {
           return service.findChannel(query);
         }).then((rawChannel) => {
           return this.main.db.ensureChannel(service, rawChannel).then((channel) => {
-            return this.main.db.putChatIdChannelId(req.chatId, channel.id).then((created) => {
+            return this.main.db.putChatIdChannelId('' + req.chatId, channel.id).then((created) => {
               return {channel, created};
             });
           });
@@ -315,7 +315,7 @@ class Chat {
     });
 
     this.router.callback_query(/\/clear\/confirmed/, (req, res) => {
-      return this.main.db.deleteChatById(req.chatId).then(() => {
+      return this.main.db.deleteChatById('' + req.chatId).then(() => {
         this.log.write(`[deleted] ${req.chatId}, cause: /clear`);
         return this.main.bot.editMessageText(this.main.locale.getMessage('cleared'), {
           chat_id: req.chatId,
@@ -346,7 +346,7 @@ class Chat {
       const channelId = req.params.channelId;
 
       return this.main.db.getChannelById(channelId).then((channel) => {
-        return this.main.db.deleteChatIdChannelId(req.chatId, channelId).then((count) => {
+        return this.main.db.deleteChatIdChannelId('' + req.chatId, channelId).then((count) => {
           return {channel, deleted: !!count};
         });
       }).then(({channel, deleted}) => {
@@ -476,7 +476,7 @@ class Chat {
                   throw new ErrorWithCode('This chat type is not supported', 'INCORRECT_CHAT_TYPE');
                 }
                 const channelId = '@' + chat.username;
-                return this.main.db.createChatChannel(req.chatId, channelId).then(() => channelId);
+                return this.main.db.createChatChannel('' + req.chatId, channelId).then(() => channelId);
               });
             });
           });
