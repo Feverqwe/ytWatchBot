@@ -19,6 +19,7 @@
     "promise-limit": "^2.7.0",
     "pubsubhubbub": "^1.0.1",
     "quick-lru": "^4.0.1",
+    "request": "^2.88.0",
     "sequelize": "^5.10.1",
     "superstruct": "^0.6.1",
     "uuid": "^3.3.2",
