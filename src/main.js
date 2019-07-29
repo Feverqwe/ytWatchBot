@@ -40,6 +40,7 @@ const config = {
   channelPubSubSubscribeTimeoutMinutes: 5,
   emitCleanPubSubFeedEveryHours: 1,
   cleanPubSubFeedIfPushOlderThanDays: 14,
+  defaultChannelName: 'NationalGeographic',
   push: {
     port: 80,
     secret: '',

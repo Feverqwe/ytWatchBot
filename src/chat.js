@@ -240,7 +240,7 @@ class Chat {
           return {query: query.trim()};
         }
 
-        const messageText = this.main.locale.getMessage('enterChannelName');
+        const messageText = this.main.locale.getMessage('enterChannelName').replace('{example}', this.main.config.defaultChannelName);
         const cancelText = this.main.locale.getMessage('commandCanceled').replace('{command}', 'add');
         return requestData(req.chatId, req.fromId, messageText, cancelText).then(({req, msg}) => {
           requestedData = req.message.text;

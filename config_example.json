@@ -16,6 +16,7 @@
   "channelPubSubSubscribeTimeoutMinutes": 5,
   "emitCleanPubSubFeedEveryHours": 1,
   "cleanPubSubFeedIfPushOlderThanDays": 14,
+  "defaultChannelName": "NationalGeographic",
   "push": {
     "host": "localhost",
     "port": 80,
