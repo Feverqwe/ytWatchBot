@@ -7,6 +7,9 @@ import getInProgress from "./tools/getInProgress";
 
 const debug = require('debug')('app:Sender');
 const throttle = require('lodash.throttle');
+const promiseLimit = require('promise-limit');
+
+const oneLimit = promiseLimit(1);
 
 class Sender {
   constructor(/**Main*/main) {
@@ -29,19 +32,21 @@ class Sender {
   }
 
   check = () => {
-    return this.main.db.getDistinctChatIdVideoIdChatIds().then((chatIds) => {
-      const newChatIds = chatIds.filter(chatId => !this.chatIdChatSender.has(chatId));
-      return this.main.db.getChatsByIds(newChatIds).then((chats) => {
-        chats.forEach((chat) => {
-          if (this.chatIdChatSender.has(chat.id)) return;
-          const chatSender = new ChatSender(this.main, chat);
-          this.chatIdChatSender.set(chat.id, chatSender);
-          this.suspended.push(chatSender);
+    return oneLimit(() => {
+      return this.main.db.getDistinctChatIdVideoIdChatIds().then((chatIds) => {
+        const newChatIds = chatIds.filter(chatId => !this.chatIdChatSender.has(chatId));
+        return this.main.db.getChatsByIds(newChatIds).then((chats) => {
+          chats.forEach((chat) => {
+            if (this.chatIdChatSender.has(chat.id)) return;
+            const chatSender = new ChatSender(this.main, chat);
+            this.chatIdChatSender.set(chat.id, chatSender);
+            this.suspended.push(chatSender);
+          });
+
+          this.fillThreads();
+
+          return {addedCount: chats.length};
         });
-
-        this.fillThreads();
-
-        return {addedCount: chats.length};
       });
     });
   };
