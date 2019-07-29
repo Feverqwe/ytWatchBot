@@ -30,7 +30,7 @@ const config = {
   checkChannelIfLastSyncLessThenHours: 4,
   fullCheckChannelActivityForDays: 7,
   doFullCheckChannelActivityEveryHours: 4,
-  chatSendTimeoutMinutes: 1,
+  chatSendTimeoutAfterErrorMinutes: 1,
   channelSyncTimeoutMinutes: 5,
   emitCleanChatsAndVideosEveryHours: 1,
   cleanVideosIfPublishedOlderThanDays: 14,
