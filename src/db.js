@@ -442,12 +442,12 @@ class Db {
       isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
     }, async (transaction) => {
       await Promise.all([
-        bulk(feeds, (feeds) => {
+        /*bulk(feeds, (feeds) => {
           return this.model.YtPubSub.bulkCreate(feeds, {
             updateOnDuplicate: ['channelId', 'publishedAt', 'lastPushAt'],
             transaction
           });
-        }),
+        }),*/
         bulk(channelsChanges, (channelsChanges) => {
           return this.model.Channel.bulkCreate(channelsChanges, {
             updateOnDuplicate: ['lastVideoPublishedAt'],
