@@ -58,7 +58,7 @@ class YtPubSub {
   updateSubscribes() {
     return this.inProgress(() => oneLimit(async () => {
       while (true) {
-        const channelIds = await this.main.db.getChannelsWithExpiresSubscription(50);
+        const channelIds = await this.main.db.getChannelIdsWithExpiresSubscription(50);
         if (!channelIds.length) {
           break;
         }
