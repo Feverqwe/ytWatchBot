@@ -58,23 +58,22 @@ class YtPubSub {
   updateSubscribes() {
     return this.inProgress(() => oneLimit(async () => {
       while (true) {
-        const channels = await this.main.db.getChannelsWithExpiresSubscription(50);
-        if (!channels.length) {
+        const channelIds = await this.main.db.getChannelsWithExpiresSubscription(50);
+        if (!channelIds.length) {
           break;
         }
 
-        const channelIds = channels.map(channel => channel.id);
         await this.main.db.setChannelsSubscriptionTimeoutExpiresAt(channelIds).then(() => {
           const expiresAt = new Date();
           expiresAt.setSeconds(expiresAt.getSeconds() + this.main.config.push.leaseSeconds);
 
           const subscribedChannelIds = [];
-          return parallel(10, channels, (channel) => {
-            const rawId = serviceId.unwrap(channel.id);
+          return parallel(10, channelIds, (id) => {
+            const rawId = serviceId.unwrap(id);
             return this.subscribe(rawId).then(() => {
-              subscribedChannelIds.push(channel.id);
+              subscribedChannelIds.push(id);
             }, (err) => {
-              debug('subscribe channel %s skip, cause: %o', channel.id, err);
+              debug('subscribe channel %s skip, cause: %o', id, err);
             });
           }).then(() => {
             return this.main.db.setChannelsSubscriptionExpiresAt(subscribedChannelIds, expiresAt).then(([affectedRows]) => {

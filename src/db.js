@@ -370,7 +370,10 @@ class Db {
         subscriptionExpiresAt: {[Op.lt]: date},
         subscriptionTimeoutExpiresAt: {[Op.lt]: new Date()}
       },
-      limit: limit
+      limit: limit,
+      attributes: ['id']
+    }).then((results) => {
+      return results.map(item => item.id);
     });
   }
 
