@@ -362,7 +362,7 @@ class Db {
     });
   }
 
-  getChannelIdsWithExpiresSubscription(limit) {
+  getChannelIdsWithExpiresSubscription(limit = 10) {
     const date = new Date();
     date.setMinutes(date.getMinutes() + this.main.config.updateChannelPubSubSubscribeIfExpiresLessThenMinutes);
     return this.model.Channel.findAll({
