@@ -7,6 +7,7 @@ import resolvePath from "./tools/resolvePath";
 import LogFile from "./logFile";
 import ensureMap from "./tools/ensureMap";
 import promiseTry from "./tools/promiseTry";
+import TimeCache from "./tools/timeCache";
 
 const debug = require('debug')('app:Chat');
 const jsonStringifyPretty = require("json-stringify-pretty-compact");
@@ -16,6 +17,7 @@ class Chat {
   constructor(/**Main*/main) {
     this.main = main;
     this.log = new LogFile('chat');
+    this.chatIdAdminIdsCache = new TimeCache({maxSize: 100, ttl: 5 * 60 * 1000});
 
     this.router = new Router(main);
 
@@ -53,6 +55,27 @@ class Chat {
         });
       } else {
         return next();
+      }
+    });
+
+    this.router.textOrCallbackQuery(/(.+)/, (req, res, next) => {
+      if (['group', 'supergroup'].includes(req.chatType)) {
+        return promiseTry(() => {
+          const adminIds = this.chatIdAdminIdsCache.get(req.chatId);
+          if (adminIds) return adminIds;
+
+          return this.main.bot.getChatAdministrators(req.chatId).then((chatMembers) => {
+            const adminIds = chatMembers.map(chatMember => chatMember.user.id);
+            this.chatIdAdminIdsCache.set(req.chatId, adminIds);
+            return adminIds;
+          });
+        }).then((adminIds) => {
+          if (adminIds.includes(req.fromId)) {
+            next();
+          }
+        });
+      } else {
+        next();
       }
     });
 

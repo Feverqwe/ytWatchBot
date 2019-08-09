@@ -16,8 +16,6 @@ class Router {
 
     this.stack = [];
 
-    this.handle = this.handle.bind(this);
-
     /**
      * @param {RegExp} [re]
      * @param {...function(RouterReq, RouterRes, function())} callbacks
@@ -30,7 +28,7 @@ class Router {
        * @param {...function(RouterReq, RouterRes, function())} callbacks
        */
       this[type] = (re, ...callbacks) => {
-        const args = prepareArgs([re, ...callbacks]);
+        const args = prepareArgs(re, ...callbacks);
 
         args.callbackList.forEach((callback) => {
           this.stack.push(new RouterRoute({
@@ -51,15 +49,15 @@ class Router {
 
   /**
    * @param {string} event
-   * @param {Object} message
+   * @param {Object} data
    */
-  handle(event, message) {
-    const commands = getCommands(event, message, this.botNameRe);
+  handle = (event, data) => {
+    const commands = getCommands(event, data, this.botNameRe);
     if (!commands.length) {
       commands.push('');
     }
     commands.forEach((command) => {
-      const req = new RouterReq(event, message);
+      const req = new RouterReq(event, data);
       const res = new RouterRes(this.main.bot, req);
       let index = 0;
       const next = () => {
@@ -78,14 +76,14 @@ class Router {
       };
       next();
     });
-  }
+  };
 
   /**
    * @param {RegExp} [re]
    * @param {...function(RouterReq, RouterRes, function())} callbacks
    */
   all(re, ...callbacks) {
-    const args = prepareArgs([re, ...callbacks]);
+    const args = prepareArgs(re, ...callbacks);
 
     args.callbackList.forEach((callback) => {
       this.stack.push(new RouterRoute({}, args.re, callback));
@@ -97,7 +95,7 @@ class Router {
    * @param {...function(RouterReq, RouterRes, function())} [callbacks]
    */
   message(re, ...callbacks) {
-    const args = prepareArgs([re, ...callbacks]);
+    const args = prepareArgs(re, ...callbacks);
 
     args.callbackList.forEach((callback) => {
       this.stack.push(new RouterRoute({
@@ -111,7 +109,7 @@ class Router {
    * @param {...function(RouterReq, RouterRes, function())} [callbacks]
    */
   callback_query(re, ...callbacks) {
-    const args = prepareArgs([re, ...callbacks]);
+    const args = prepareArgs(re, ...callbacks);
 
     args.callbackList.forEach((callback) => {
       this.stack.push(new RouterRoute({
@@ -254,33 +252,25 @@ class RouterRoute {
 }
 
 class RouterReq {
-  constructor(event, message) {
+  constructor(event, data) {
     this.commands = null;
     this.command = null;
     this.params = null;
     this.event = event;
-    this[event] = message;
+    switch (event) {
+      case 'message': {
+        this.message = data;
+        break;
+      }
+      case 'callback_query': {
+        this.callback_query = data;
+        break;
+      }
+      default: {
+        throw new Error(`Unknown case ${event}`);
+      }
+    }
     this._cache = {};
-  }
-
-  getFromId() {
-    return this.fromId;
-  }
-
-  getChatId() {
-    return this.chatId;
-  }
-
-  getMessageId() {
-    return this.messageId;
-  }
-
-  getQuery() {
-    return this.query;
-  }
-
-  getEntities() {
-    return this.entities;
   }
 
   get fromId() {
@@ -300,6 +290,13 @@ class RouterReq {
     return this._useCache('chatId', () => {
       const message = this._findMessage();
       return message && message.chat.id;
+    });
+  }
+
+  get chatType() {
+    return this._useCache('chatType', () => {
+      const message = this._findMessage();
+      return message && message.chat.type;
     });
   }
 
@@ -334,7 +331,6 @@ class RouterReq {
     return this._useCache('entities', () => {
       const entities = {};
       if (!this.message || !this.message.entities) return Object.freeze(entities);
-
       this.message.entities.forEach((entity) => {
         let array = entities[entity.type];
         if (!array) {
@@ -380,55 +376,64 @@ class RouterRes {
 }
 
 /**
- * @param {[]} args
+ * @param {RegExp|function} [re]
+ * @param {function[]} callbacks
  * @return {{re: RegExp, callbackList: [function]}}
  */
-function prepareArgs(args) {
-  let re = null;
-  if (typeof args[0] !== 'function') {
-    re = args.shift();
+function prepareArgs(re, ...callbacks) {
+  if (typeof re === 'function') {
+    callbacks.unshift(re);
+    re = null;
   }
   return {
     re: re,
-    callbackList: args
-  }
+    callbackList: callbacks
+  };
 }
 
 /**
  * @param {String} event
- * @param {Object} message
+ * @param {Object} data
  * @param {RegExp} botNameRe
  * @return {String[]|null}
  */
-function getCommands(event, message, botNameRe) {
+function getCommands(event, data, botNameRe) {
   const commands = [];
-  if (event === 'message' && message.text && message.entities) {
-    const text = message.text;
-    const entities = message.entities.slice(0).reverse();
-    let end = text.length;
-    entities.forEach((entity) => {
-      if (entity.type === 'bot_command') {
-        let botName = null;
-        let command = text.substr(entity.offset, entity.length);
-        const m = /([^@]+)(?:@(.+))?/.exec(command);
-        if (m) {
-          command = m[1];
-          botName = m[2];
-        }
-        const start = entity.offset + entity.length;
-        const args = text.substr(start, end - start);
-        if (args) {
-          command += args;
-        }
-        if (!botName || botNameRe.test(botName)) {
-          commands.unshift(command);
-        }
-        end = entity.offset;
+  switch (event) {
+    case 'message': {
+      const message = data;
+      if (message.text && message.entities) {
+        const text = message.text;
+        const entities = message.entities.slice(0).reverse();
+        let end = text.length;
+        entities.forEach((entity) => {
+          if (entity.type === 'bot_command') {
+            let botName = null;
+            let command = text.substr(entity.offset, entity.length);
+            const m = /([^@]+)(?:@(.+))?/.exec(command);
+            if (m) {
+              command = m[1];
+              botName = m[2];
+            }
+            const start = entity.offset + entity.length;
+            const args = text.substr(start, end - start);
+            if (args) {
+              command += args;
+            }
+            if (!botName || botNameRe.test(botName)) {
+              commands.unshift(command);
+            }
+            end = entity.offset;
+          }
+        });
       }
-    });
-  } else
-  if (event === 'callback_query') {
-    commands.push(message.data);
+      break;
+    }
+    case 'callback_query': {
+      const callbackQuery = data;
+      commands.push(callbackQuery.data);
+      break;
+    }
   }
   return commands;
 }
