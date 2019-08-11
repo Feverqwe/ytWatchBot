@@ -8,13 +8,14 @@ const debug = require('debug')('app:ExpressPubSub');
 class ExpressPubSub extends Events {
   constructor(options) {
     super();
+    this.path = options.path;
     this.secret = options.secret;
     this.callbackUrl = options.callbackUrl;
     this.leaseSeconds = options.leaseSeconds;
   }
 
   bind(app) {
-    app.get('/', (req, res) => {
+    app.get(this.path, (req, res) => {
       const {'hub.topic': topic, 'hub.mode': mode} = req.query;
       if (!topic || !mode) {
         return res.sendStatus(400);
@@ -48,7 +49,7 @@ class ExpressPubSub extends Events {
         }
       }
     });
-    app.post('/', (req, res) => {
+    app.post(this.path, (req, res) => {
       let {topic, hub} = req.query;
       const requestRels = /<([^>]+)>;\s*rel=(?:["'](?=.*["']))?([A-z]+)/gi.exec(req.get('link'));
       if (requestRels) {
@@ -102,7 +103,7 @@ class ExpressPubSub extends Events {
         }
       }
     });
-    app.use((req, res) => {
+    app.all(this.path, (req, res) => {
       res.sendStatus(405);
     });
   }

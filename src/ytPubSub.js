@@ -25,6 +25,7 @@ class YtPubSub {
     this.host = main.config.push.host || 'localhost';
     this.port = main.config.push.port;
     this.expressPubSub = new ExpressPubSub({
+      path: main.config.push.path,
       secret: main.config.push.secret,
       callbackUrl: main.config.push.callbackUrl,
       leaseSeconds: main.config.push.leaseSeconds,

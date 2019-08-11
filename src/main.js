@@ -44,6 +44,7 @@ const config = {
   push: {
     host: 'localhost',
     port: 80,
+    path: '/',
     secret: '',
     callbackUrl: '',
     leaseSeconds: 86400
