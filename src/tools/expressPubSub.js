@@ -1,7 +1,6 @@
 const Events = require('events');
 const crypto = require('crypto');
 const got = require('got');
-const qs = require('querystring');
 
 class ExpressPubSub extends Events {
   constructor(options) {
@@ -133,7 +132,8 @@ class ExpressPubSub extends Events {
         .digest('hex');
     }
     return got.post(hub, {
-      body: qs.stringify(body)
+      form: true,
+      body: body
     }).then((res) => {
       if (![202, 204].includes(res.statusCode)) {
         const err = new Error(`Invalid response status ${res.statusCode}`);
