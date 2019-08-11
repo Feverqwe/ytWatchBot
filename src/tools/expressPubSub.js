@@ -3,6 +3,8 @@ const crypto = require('crypto');
 const got = require('got');
 const qs = require('querystring');
 
+const debug = require('debug')('app:ExpressPubSub');
+
 class ExpressPubSub extends Events {
   constructor(options) {
     super();
@@ -54,10 +56,12 @@ class ExpressPubSub extends Events {
         setTopicHub(url, rel);
       }
       if (!topic) {
+        debug('topic is not found');
         return res.sendStatus(400);
       }
       if (this.secret) {
         if (!req.get('x-hub-signature')) {
+          debug('x-hub-signature is not found');
           return res.sendStatus(403);
         }
         const signatureParts = req.get('x-hub-signature').split('=');
@@ -67,10 +71,13 @@ class ExpressPubSub extends Events {
         try {
           hmac = crypto.createHmac(algo, crypto.createHmac('sha1', this.secret).update(topic).digest('hex'));
         } catch (err) {
+          debug('createHmac error %o', err);
           return res.sendStatus(403);
         }
         hmac.update(req.body);
-        if (hmac.digest('hex').toLowerCase() !== signature) {
+        const sig = hmac.digest('hex').toLowerCase();
+        if (sig !== signature) {
+          debug('signature is incorrect', sig, signature);
           return res.sendStatus(202);
         }
       }
