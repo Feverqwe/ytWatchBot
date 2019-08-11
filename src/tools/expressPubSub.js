@@ -1,7 +1,6 @@
 const Events = require('events');
 const crypto = require('crypto');
 const got = require('got');
-
 const debug = require('debug')('app:ExpressPubSub');
 
 class ExpressPubSub extends Events {
@@ -17,6 +16,11 @@ class ExpressPubSub extends Events {
     app.get(this.path, (req, res) => {
       const {'hub.topic': topic, 'hub.mode': mode} = req.query;
       if (!topic || !mode) {
+        if (!topic) {
+          debug('get skip, cause: topic is empty');
+        } else {
+          debug('get skip, cause: mode is empty');
+        }
         return res.sendStatus(400);
       }
       switch (mode) {
@@ -43,6 +47,7 @@ class ExpressPubSub extends Events {
           break;
         }
         default: {
+          debug('get skip, cause: unknown mode', mode);
           res.sendStatus(403);
           break;
         }
