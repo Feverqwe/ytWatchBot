@@ -38,8 +38,8 @@ class YtPubSub {
     }));
 
     this.expressPubSub.bind(this.app);
-    this.expressPubSub.on('denied', (err) => {
-      debug('Denied %o', err);
+    this.expressPubSub.on('denied', (data) => {
+      debug('Denied %o', data);
     });
     this.expressPubSub.on('feed', (data) => {
       this.handleFeed(data);
