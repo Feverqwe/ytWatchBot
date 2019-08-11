@@ -20,7 +20,7 @@ class YtPubSub {
   constructor(/**Main*/main) {
     this.main = main;
     this.hubUrl = 'https://pubsubhubbub.appspot.com/subscribe';
-    this.log = new LogFile('ytPubSub');
+    // this.log = new LogFile('ytPubSub');
     this.host = main.config.push.host || 'localhost';
     this.port = main.config.push.port;
     this.expressPubSub = new ExpressPubSub({
@@ -206,11 +206,11 @@ class YtPubSub {
 
   handleFeed(data) {
     try {
-      this.log.write('data', JSON.stringify({
+      /*this.log.write('data', JSON.stringify({
         topic: data.topic,
         callback: data.callback,
         feed: data.feed.toString()
-      }));
+      }));*/
       const feed = parseData(data.feed.toString());
       this.feeds.push(Object.assign(feed, {lastPushAt: new Date()}));
       this.emitFeedsChangesThrottled();
