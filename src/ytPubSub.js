@@ -32,7 +32,9 @@ class YtPubSub {
 
   init() {
     this.app = express();
-    this.app.use(bodyParser.raw());
+    this.app.use(bodyParser.raw({
+      type: 'application/atom+xml'
+    }));
 
     this.expressPubSub.bind(this.app);
     this.expressPubSub.on('denied', (err) => {
