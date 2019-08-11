@@ -4,7 +4,6 @@ import getInProgress from "./tools/getInProgress";
 import serviceId from "./tools/serviceId";
 import {everyMinutes} from "./tools/everyTime";
 import ExpressPubSub from "./tools/expressPubSub";
-import LogFile from "./logFile";
 
 const debug = require('debug')('app:YtPubSub');
 const express = require('express');
