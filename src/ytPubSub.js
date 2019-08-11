@@ -3,14 +3,15 @@ import ErrorWithCode from "./tools/errorWithCode";
 import getInProgress from "./tools/getInProgress";
 import serviceId from "./tools/serviceId";
 import {everyMinutes} from "./tools/everyTime";
+import ExpressPubSub from "./tools/expressPubSub";
 
 const debug = require('debug')('app:YtPubSub');
-const path = require('path');
-const pubSubHubbub = require(path.join(__dirname, '../src/vendor/pubsubhubbub'));
+const express = require('express');
 const {XmlDocument} = require("xmldoc");
 const qs = require('querystring');
 const promiseLimit = require('promise-limit');
 const throttle = require('lodash.throttle');
+const bodyParser = require('body-parser');
 
 const oneLimit = promiseLimit(1);
 const checkOneLimit = promiseLimit(1);
@@ -20,13 +21,29 @@ class YtPubSub {
     this.main = main;
     this.hubUrl = 'https://pubsubhubbub.appspot.com/subscribe';
     // this.log = new LogFile('ytPubSub');
+    this.host = main.config.push.host || 'localhost';
+    this.port = main.config.push.port;
+    this.expressPubSub = new ExpressPubSub({
+      secret: main.config.push.secret,
+      callbackUrl: main.config.push.callbackUrl,
+      leaseSeconds: main.config.push.leaseSeconds,
+    });
   }
 
   init() {
-    this.pubsub = pubSubHubbub.createServer(this.main.config.push);
+    this.app = express();
+    this.app.use(bodyParser.raw());
 
-    return new Promise((resolve, reject) => {
-      this.initListener((err) => err ? reject(err) : resolve());
+    this.expressPubSub.bind(this.app);
+    this.expressPubSub.on('denied', (err) => {
+      debug('Denied %o', err);
+    });
+    this.expressPubSub.on('feed', (data) => {
+      this.handleFeed(data);
+    });
+
+    return new Promise((resolve) => {
+      this.server = this.app.listen(this.port, this.host, resolve);
     }).then(() => {
       this.startUpdateInterval();
       this.startCleanInterval();
@@ -96,41 +113,13 @@ class YtPubSub {
   subscribe(channelId) {
     const topicUrl = getTopicUrl(channelId);
 
-    return new Promise((resolve, reject) => {
-      this.pubsub.subscribe(topicUrl, this.hubUrl, (err, topic) => {
-        err ? reject(err) : resolve(topic);
-      });
-    });
+    return this.expressPubSub.subscribe(topicUrl, this.hubUrl);
   }
 
   unsubscribe(channelId) {
     const topicUrl = getTopicUrl(channelId);
 
-    return new Promise((resolve, reject) => {
-      this.pubsub.unsubscribe(topicUrl, this.hubUrl, (err, topic) => {
-        err ? reject(err) : resolve(topic);
-      });
-    });
-  }
-
-  initListener(callback) {
-    this.pubsub.on("listen", () => {
-      callback();
-    });
-
-    this.pubsub.on('error', (err) => {
-      callback(err);
-    });
-
-    this.pubsub.on('denied', (err) => {
-      debug('Denied %o', err);
-    });
-
-    this.pubsub.on('feed', (data) => {
-      this.handleFeed(data);
-    });
-
-    this.pubsub.listen(this.main.config.push.port, this.main.config.push.host);
+    return this.expressPubSub.unsubscribe(topicUrl, this.hubUrl);
   }
 
   feeds = [];

@@ -42,6 +42,7 @@ const config = {
   cleanPubSubFeedIfPushOlderThanDays: 14,
   defaultChannelName: 'NationalGeographic',
   push: {
+    host: 'localhost',
     port: 80,
     secret: '',
     callbackUrl: '',
