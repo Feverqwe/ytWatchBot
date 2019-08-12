@@ -1,6 +1,7 @@
 const Events = require('events');
 const crypto = require('crypto');
 const got = require('got');
+const express = require('express');
 const debug = require('debug')('app:ExpressPubSub');
 
 class ExpressPubSub extends Events {
@@ -13,7 +14,11 @@ class ExpressPubSub extends Events {
   }
 
   bind(app) {
-    app.get(this.path, (req, res) => {
+    app.use(this.path, express.raw({
+      type: 'application/atom+xml'
+    }));
+    const route = app.route(this.path);
+    route.get((req, res) => {
       const {'hub.topic': topic, 'hub.mode': mode} = req.query;
       if (!topic || !mode) {
         if (!topic) {
@@ -53,7 +58,7 @@ class ExpressPubSub extends Events {
         }
       }
     });
-    app.post(this.path, (req, res) => {
+    route.post((req, res) => {
       let {topic, hub} = req.query;
       const requestRels = /<([^>]+)>;\s*rel=(?:["'](?=.*["']))?([A-z]+)/gi.exec(req.get('link'));
       if (requestRels) {
@@ -106,7 +111,7 @@ class ExpressPubSub extends Events {
         }
       }
     });
-    app.all(this.path, (req, res) => {
+    route.all((req, res) => {
       res.sendStatus(405);
     });
   }
