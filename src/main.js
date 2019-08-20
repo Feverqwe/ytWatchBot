@@ -14,7 +14,7 @@ process.env.NTBA_FIX_350 = true;
 const TelegramBot = require('node-telegram-bot-api');
 const Events = require('events');
 const path = require('path');
-const tunnel = require('tunnel');
+const ProxyAgent = require('proxy-agent');
 
 const debug = require('debug')('app:Main');
 
@@ -57,7 +57,7 @@ const config = {
     password: ''
   },
   adminIds: [],
-  proxy: null,
+  botProxy: null,
 };
 
 loadConfig(path.join(__dirname, '..', 'config.json'), config);
@@ -110,11 +110,9 @@ class Main extends Events {
 
   initBot() {
     let request = null;
-    if (this.config.proxy) {
+    if (this.config.botProxy) {
       request = {
-        agent: tunnel.httpsOverHttp({
-          proxy: this.config.proxy
-        })
+        agent: new ProxyAgent(this.config.botProxy)
       };
     }
 
