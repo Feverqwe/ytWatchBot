@@ -4,12 +4,11 @@ import RateLimit from "../tools/rateLimit";
 import arrayByPart from "../tools/arrayByPart";
 import parallel from "../tools/parallel";
 import formatDuration from "../tools/formatDuration";
-import withRetry from "../tools/withRetry";
 import ensureMap from "../tools/ensureMap";
 import promiseTry from "../tools/promiseTry";
+import got from "../tools/gotWithTimeout";
 
 const debug = require('debug')('app:Youtube');
-const got = require('got');
 
 const rateLimit = new RateLimit(1000);
 const gotLimited = rateLimit.wrap(got);
@@ -112,18 +111,16 @@ class Youtube {
     const resultVideos = [];
     return parallel(10, arrayByPart(videoIds, 50), (videoIds) => {
       return iterPages((pageToken) => {
-        return withRetry({count: 3, timeout: 250}, () => {
-          return gotLimited('https://www.googleapis.com/youtube/v3/videos', {
-            query: {
-              part: 'snippet,contentDetails',
-              id: videoIds.join(','),
-              pageToken: pageToken,
-              fields: 'items/id,items/snippet,items/contentDetails,nextPageToken',
-              key: this.main.config.ytToken
-            },
-            json: true,
-          });
-        }, isDailyLimitExceeded).then(({body}) => {
+        return gotLimited('https://www.googleapis.com/youtube/v3/videos', {
+          query: {
+            part: 'snippet,contentDetails',
+            id: videoIds.join(','),
+            pageToken: pageToken,
+            fields: 'items/id,items/snippet,items/contentDetails,nextPageToken',
+            key: this.main.config.ytToken
+          },
+          json: true,
+        }).then(({body}) => {
           const videos = VideosResponse(body);
 
           videos.items.forEach((video) => {
@@ -165,20 +162,18 @@ class Youtube {
     return parallel(10, channels, ({id: channelId, publishedAfter}) => {
       const videoIds = [];
       return iterPages((pageToken) => {
-        return withRetry({count: 3, timeout: 250}, () => {
-          return gotLimited('https://www.googleapis.com/youtube/v3/activities', {
-            query: {
-              part: 'contentDetails',
-              channelId: channelId,
-              maxResults: 50,
-              pageToken: pageToken,
-              fields: 'items/contentDetails/upload/videoId,nextPageToken',
-              publishedAfter: publishedAfter.toISOString(),
-              key: this.main.config.ytToken
-            },
-            json: true,
-          });
-        }, isDailyLimitExceeded).then(({body}) => {
+        return gotLimited('https://www.googleapis.com/youtube/v3/activities', {
+          query: {
+            part: 'contentDetails',
+            channelId: channelId,
+            maxResults: 50,
+            pageToken: pageToken,
+            fields: 'items/contentDetails/upload/videoId,nextPageToken',
+            publishedAfter: publishedAfter.toISOString(),
+            key: this.main.config.ytToken
+          },
+          json: true,
+        }).then(({body}) => {
           const activities = ActivitiesResponse(body);
           activities.items.forEach((item) => {
             const videoId = item.contentDetails.upload.videoId;
@@ -215,19 +210,17 @@ class Youtube {
     const resultChannelIds = [];
     return parallel(10, arrayByPart(ids, 50), (ids) => {
       return iterPages((pageToken) => {
-        return withRetry({count: 3, timeout: 250}, () => {
-          return gotLimited('https://www.googleapis.com/youtube/v3/channels', {
-            query: {
-              part: 'id',
-              id: ids.join(','),
-              pageToken: pageToken,
-              maxResults: 50,
-              fields: 'items/id,nextPageToken',
-              key: this.main.config.ytToken
-            },
-            json: true,
-          });
-        }, isDailyLimitExceeded).then(({body}) => {
+        return gotLimited('https://www.googleapis.com/youtube/v3/channels', {
+          query: {
+            part: 'id',
+            id: ids.join(','),
+            pageToken: pageToken,
+            maxResults: 50,
+            fields: 'items/id,nextPageToken',
+            key: this.main.config.ytToken
+          },
+          json: true,
+        }).then(({body}) => {
           const channelsItemsId = ChannelsItemsId(body);
           channelsItemsId.items.forEach((item) => {
             resultChannelIds.push(item.id);
