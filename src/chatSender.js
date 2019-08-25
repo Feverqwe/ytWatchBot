@@ -14,6 +14,9 @@ class ChatSender {
     this.main = main;
     this.chat = chat;
 
+    this.startAt = Date.now();
+    this.lastActivityAt = Date.now();
+
     this.videoIds = null;
   }
 
@@ -22,6 +25,8 @@ class ChatSender {
   }
 
   async next() {
+    this.lastActivityAt = Date.now();
+
     if (!this.videoIds || !this.videoIds.length) {
       this.videoIds = await this.getVideoIds();
     }
