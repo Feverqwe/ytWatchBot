@@ -23,7 +23,9 @@ function gotLockTimeout(request) {
     clearTimeout(timeout);
   })).catch((err) => {
     if (err.name === 'CancelError' && lockTimeoutFired) {
-      throw new ErrorWithCode('Lock timeout fired', 'LockTimeoutError');
+      const err = new ErrorWithCode('Lock timeout fired', 'ETIMEDOUT');
+      err.name = 'LockTimeoutError';
+      throw err;
     }
     throw err;
   });
