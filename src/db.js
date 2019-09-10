@@ -73,6 +73,9 @@ class Db {
         name: 'hasChanges_idx',
         fields: ['hasChanges']
       }, {
+        name: 'lastVideoPublishedAt_idx',
+        fields: ['lastVideoPublishedAt']
+      }, {
         name: 'lastSyncAt_idx',
         fields: ['lastSyncAt']
       }, {
