@@ -393,7 +393,7 @@ class Db {
           {lastSyncAt: {[Op.lt]: date}}
         ],
       },
-      order: Sequelize.literal(`-lastVideoPublishedAt DESC, lastSyncAt`),
+      order: [['lastVideoPublishedAt', 'DESC'], 'lastSyncAt'],
       limit: limit,
     });
   }
