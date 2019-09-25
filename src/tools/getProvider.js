@@ -1,6 +1,3 @@
-import promiseFinally from "./promiseFinally";
-import promiseTry from "./promiseTry";
-
 const getProvider = (requestDataById, keepAlive = 0) => {
   const idCacheMap = new Map();
   const inflightCache = {};
@@ -8,7 +5,7 @@ const getProvider = (requestDataById, keepAlive = 0) => {
   return (id, callback) => {
     const key = `key-${id}`;
 
-    return promiseTry(() => {
+    return Promise.try(() => {
       const cache = idCacheMap.get(id);
       if (cache) {
         return cache;
@@ -22,12 +19,12 @@ const getProvider = (requestDataById, keepAlive = 0) => {
         const cache = {useCount: 0, result};
         idCacheMap.set(id, cache);
         return cache;
-      }).then(...promiseFinally(() => {
+      }).finally(() => {
         delete inflightCache[key];
-      }));
+      });
     }).then((cache) => {
       cache.useCount++;
-      return promiseTry(() => callback(cache.result)).then(...promiseFinally(() => {
+      return Promise.try(() => callback(cache.result)).finally(() => {
         cache.useCount--;
         clearTimeout(cache.timerId);
         cache.timerId = setTimeout(() => {
@@ -35,7 +32,7 @@ const getProvider = (requestDataById, keepAlive = 0) => {
             idCacheMap.delete(id);
           }
         }, keepAlive);
-      }));
+      });
     });
   }
 };
