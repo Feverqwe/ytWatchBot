@@ -24,18 +24,18 @@
     "pubsubhubbub": "^1.0.1",
     "quick-lru": "^4.0.1",
     "request": "^2.88.0",
-    "sequelize": "^5.16.0",
-    "superstruct": "^0.6.2",
+    "sequelize": "^5.19.0",
+    "superstruct": "^0.7.0",
     "uuid": "^3.3.3",
     "xmldoc": "^1.1.2"
   },
   "devDependencies": {
-    "@babel/core": "^7.6.0",
+    "@babel/core": "^7.6.2",
     "@babel/plugin-proposal-class-properties": "^7.5.5",
     "@types/superstruct": "^0.5.0",
     "core-js": "^3.2.1",
     "del-cli": "^3.0.0",
-    "rollup": "^1.21.2",
+    "rollup": "^1.21.4",
     "rollup-plugin-babel": "^4.3.3"
   }
 }
