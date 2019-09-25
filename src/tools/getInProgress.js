@@ -1,11 +1,14 @@
+import promiseFinally from "./promiseFinally";
+import promiseTry from "./promiseTry";
+
 const getInProgress = () => {
   let isInProgress = false;
   return (callback) => {
     if (isInProgress) return Promise.resolve();
     isInProgress = true;
-    return Promise.try(callback).finally(() => {
+    return promiseTry(callback).then(...promiseFinally(() => {
       isInProgress = false;
-    });
+    }));
   };
 };
 

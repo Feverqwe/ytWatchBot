@@ -1,5 +1,7 @@
 import htmlSanitize from "./tools/htmlSanitize";
+import promiseFinally from "./tools/promiseFinally";
 import ErrorWithCode from "./tools/errorWithCode";
+import promiseTry from "./tools/promiseTry";
 import got from "./tools/gotWithTimeout";
 import inlineInspect from "./tools/inlineInspect";
 
@@ -35,7 +37,7 @@ class ChatSender {
     }
 
     return this.main.sender.provideVideo(this.videoIds.shift(), (video) => {
-      return Promise.try(() => {
+      return promiseTry(() => {
         if (this.chat.isHidePreview || !video.previews.length) {
           return this.sendVideoAsText(video);
         } else {
@@ -124,9 +126,9 @@ class ChatSender {
     let promise = videoWeakMap.get(video);
 
     if (!promise) {
-      promise = this.ensureTelegramPreviewFileId(video).finally(() => {
+      promise = this.ensureTelegramPreviewFileId(video).then(...promiseFinally(() => {
         videoWeakMap.delete(video);
-      });
+      }));
       videoWeakMap.set(video, promise);
       promise = promise.catch((err) => {
         if (err.code === 'ETELEGRAM' && /not enough rights to send photos/.test(err.response.body.description)) {
