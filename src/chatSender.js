@@ -242,8 +242,9 @@ async function getValidPreviewUrl(urls) {
       lastError = err;
     }
   }
-  debug('getValidPreviewUrl error %o', lastError);
-  throw new ErrorWithCode(`Previews is invalid`, 'INVALID_PREVIEWS');
+  const err = new ErrorWithCode(`Previews is invalid`, 'INVALID_PREVIEWS');
+  err.original = lastError;
+  throw err;
 }
 
 function getDescription(video) {
