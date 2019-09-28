@@ -164,26 +164,29 @@ class Youtube {
     const resultVideoIds = [];
     return parallel(10, channels, ({id: channelId, publishedAfter}) => {
       const videoIds = [];
-      return iterPages((pageToken) => {
-        return gotLimited('https://www.googleapis.com/youtube/v3/activities', {
-          query: {
-            part: 'contentDetails',
-            channelId: channelId,
-            maxResults: 50,
-            pageToken: pageToken,
-            fields: 'items/contentDetails/upload/videoId,nextPageToken',
-            publishedAfter: publishedAfter.toISOString(),
-            key: this.main.config.ytToken
-          },
-          json: true,
-        }).then(({body}) => {
-          const activities = ActivitiesResponse(body);
-          activities.items.forEach((item) => {
-            const videoId = item.contentDetails.upload.videoId;
-            videoIds.push(videoId);
-          });
+      return tryFixBackendError(25, (maxResults = 50) => {
+        videoIds.splice(0);
+        return iterPages((pageToken) => {
+          return gotLimited('https://www.googleapis.com/youtube/v3/activities', {
+            query: {
+              part: 'contentDetails',
+              channelId: channelId,
+              maxResults,
+              pageToken: pageToken,
+              fields: 'items/contentDetails/upload/videoId,nextPageToken',
+              publishedAfter: publishedAfter.toISOString(),
+              key: this.main.config.ytToken
+            },
+            json: true,
+          }).then(({body}) => {
+            const activities = ActivitiesResponse(body);
+            activities.items.forEach((item) => {
+              const videoId = item.contentDetails.upload.videoId;
+              videoIds.push(videoId);
+            });
 
-          return activities.nextPageToken;
+            return activities.nextPageToken;
+          });
         });
       }).then(() => {
         videoIds.forEach((videoId) => {
@@ -417,6 +420,13 @@ function isDailyLimitExceeded(err) {
   return false;
 }
 
+function isBackendError(err) {
+  if (err.name === 'HTTPError' && err.statusCode === 500 && err.body && err.body.error && err.body.error.code === 500 && /Backend Error/.test(err.body.error.message)) {
+    return true;
+  }
+  return false;
+}
+
 function iterPages(callback) {
   let limit = 100;
   const getPage = (pageToken) => {
@@ -430,6 +440,15 @@ function iterPages(callback) {
     });
   };
   return getPage();
+}
+
+function tryFixBackendError(fixMaxResults, callback) {
+  return callback().catch((err) => {
+    if (isBackendError(err)) {
+      return callback(fixMaxResults);
+    }
+    throw err;
+  });
 }
 
 export default Youtube;
