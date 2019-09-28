@@ -13,12 +13,18 @@ for (const method of aliases) {
   gotWithTimeout[method] = (url, options) => gotWithTimeout(url, {...options, method});
 }
 
-function gotLockTimeout(request) {
+/**
+ * @template T
+ * @param {T} request
+ * @param lockTimeout
+ * @return {T}
+ */
+function gotLockTimeout(request, lockTimeout = 60 * 1000) {
   let lockTimeoutFired = false;
   const timeout = setTimeout(() => {
     lockTimeoutFired = true;
     request.cancel();
-  }, 60 * 1000);
+  }, lockTimeout);
   return request.then(...promiseFinally(() => {
     clearTimeout(timeout);
   })).catch((err) => {
@@ -32,4 +38,5 @@ function gotLockTimeout(request) {
   });
 }
 
+export {gotLockTimeout};
 export default gotWithTimeout;

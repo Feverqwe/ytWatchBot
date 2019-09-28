@@ -38,8 +38,9 @@ class RateLimit {
   }
 
   /**
-   * @param {function} callback
-   * @returns {function:Promise}
+   * @template T
+   * @param {T} callback
+   * @returns {T}
    */
   wrap(callback) {
     return (...args) => {
