@@ -112,47 +112,50 @@ class Youtube {
 
   getVideosByIds(videoIds) {
     const resultVideos = [];
-    return parallel(10, arrayByPart(videoIds, 50), (videoIds) => {
-      return iterPages((pageToken) => {
-        return gotLimited('https://www.googleapis.com/youtube/v3/videos', {
-          query: {
-            part: 'snippet,contentDetails',
-            id: videoIds.join(','),
-            pageToken: pageToken,
-            fields: 'items/id,items/snippet,items/contentDetails,nextPageToken',
-            key: this.main.config.ytToken
-          },
-          json: true,
-        }).then(({body}) => {
-          const videos = VideosResponse(body);
+    return tryFixBackendError(25, (maxResults = 50) => {
+      resultVideos.splice(0);
+      return parallel(10, arrayByPart(videoIds, maxResults), (videoIds) => {
+        return iterPages((pageToken) => {
+          return gotLimited('https://www.googleapis.com/youtube/v3/videos', {
+            query: {
+              part: 'snippet,contentDetails',
+              id: videoIds.join(','),
+              pageToken: pageToken,
+              fields: 'items/id,items/snippet,items/contentDetails,nextPageToken',
+              key: this.main.config.ytToken
+            },
+            json: true,
+          }).then(({body}) => {
+            const videos = VideosResponse(body);
 
-          videos.items.forEach((video) => {
-            const previews = Object.values(video.snippet.thumbnails).sort((a, b) => {
-              return a.width > b.width ? -1 : 1;
-            }).map(thumbnail => thumbnail.url);
+            videos.items.forEach((video) => {
+              const previews = Object.values(video.snippet.thumbnails).sort((a, b) => {
+                return a.width > b.width ? -1 : 1;
+              }).map(thumbnail => thumbnail.url);
 
-            let duration = null;
-            try {
-              duration = formatDuration(video.contentDetails.duration);
-            } catch (err) {
-              debug('formatDuration %s error %o', video.id, err);
-            }
+              let duration = null;
+              try {
+                duration = formatDuration(video.contentDetails.duration);
+              } catch (err) {
+                debug('formatDuration %s error %o', video.id, err);
+              }
 
-            const result = {
-              id: video.id,
-              url: getVideoUrl(video.id),
-              title: video.snippet.title,
-              previews: previews,
-              duration: duration,
-              channelId: video.snippet.channelId,
-              channelTitle: video.snippet.channelTitle,
-              publishedAt: new Date(video.snippet.publishedAt),
-            };
+              const result = {
+                id: video.id,
+                url: getVideoUrl(video.id),
+                title: video.snippet.title,
+                previews: previews,
+                duration: duration,
+                channelId: video.snippet.channelId,
+                channelTitle: video.snippet.channelTitle,
+                publishedAt: new Date(video.snippet.publishedAt),
+              };
 
-            resultVideos.push(result);
+              resultVideos.push(result);
+            });
+
+            return videos.nextPageToken;
           });
-
-          return videos.nextPageToken;
         });
       });
     }).then(() => resultVideos);
