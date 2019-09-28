@@ -19,7 +19,7 @@ for (const method of aliases) {
  * @param lockTimeout
  * @return {T}
  */
-function gotLockTimeout(request, lockTimeout = 60 * 1000) {
+function gotLockTimeout(request, lockTimeout = 1.5 * 60 * 1000) {
   let lockTimeoutFired = false;
   const timeout = setTimeout(() => {
     lockTimeoutFired = true;
