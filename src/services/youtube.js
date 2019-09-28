@@ -445,6 +445,7 @@ function iterPages(callback) {
 function tryFixBackendError(fixMaxResults, callback) {
   return callback().catch((err) => {
     if (isBackendError(err)) {
+      debug('tryFixBackendError backendError: %o', err);
       return callback(fixMaxResults);
     }
     throw err;
