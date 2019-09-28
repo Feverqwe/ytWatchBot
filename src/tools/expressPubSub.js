@@ -149,7 +149,8 @@ class ExpressPubSub extends Events {
         .digest('hex');
     }
     return got.post(hub, {
-      form: body,
+      form: true,
+      body: body
     }).then((res) => {
       if (![202, 204].includes(res.statusCode)) {
         const err = new Error(`Invalid response status ${res.statusCode}`);
