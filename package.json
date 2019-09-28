@@ -11,7 +11,7 @@
   "dependencies": {
     "debug": "^4.1.1",
     "express": "^4.17.1",
-    "got": "^9.6.0",
+    "got": "^10.0.0-alpha.2.2",
     "iso8601-duration": "^1.2.0",
     "json-stringify-pretty-compact": "^2.0.0",
     "lodash.throttle": "^4.1.1",
@@ -22,7 +22,7 @@
     "pubsubhubbub": "^1.0.1",
     "quick-lru": "^4.0.1",
     "request": "^2.88.0",
-    "sequelize": "^5.19.0",
+    "sequelize": "^5.19.1",
     "superstruct": "^0.7.0",
     "uuid": "^3.3.3",
     "xmldoc": "^1.1.2"
