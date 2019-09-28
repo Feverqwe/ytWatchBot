@@ -164,29 +164,26 @@ class Youtube {
     const resultVideoIds = [];
     return parallel(10, channels, ({id: channelId, publishedAfter}) => {
       const videoIds = [];
-      return tryFixBackendError(25, (maxResults = 50) => {
-        videoIds.splice(0);
-        return iterPages((pageToken) => {
-          return gotLimited('https://www.googleapis.com/youtube/v3/activities', {
-            searchParams: {
-              part: 'contentDetails',
-              channelId: channelId,
-              maxResults,
-              pageToken: pageToken,
-              fields: 'items/contentDetails/upload/videoId,nextPageToken',
-              publishedAfter: publishedAfter.toISOString(),
-              key: this.main.config.ytToken
-            },
-            responseType: 'json',
-          }).then(({body}) => {
-            const activities = ActivitiesResponse(body);
-            activities.items.forEach((item) => {
-              const videoId = item.contentDetails.upload.videoId;
-              videoIds.push(videoId);
-            });
-
-            return activities.nextPageToken;
+      return iterPages((pageToken) => {
+        return gotLimited('https://www.googleapis.com/youtube/v3/activities', {
+          searchParams: {
+            part: 'contentDetails',
+            channelId: channelId,
+            maxResults: 50,
+            pageToken: pageToken,
+            fields: 'items/contentDetails/upload/videoId,nextPageToken',
+            publishedAfter: publishedAfter.toISOString(),
+            key: this.main.config.ytToken
+          },
+          responseType: 'json',
+        }).then(({body}) => {
+          const activities = ActivitiesResponse(body);
+          activities.items.forEach((item) => {
+            const videoId = item.contentDetails.upload.videoId;
+            videoIds.push(videoId);
           });
+
+          return activities.nextPageToken;
         });
       }).then(() => {
         videoIds.forEach((videoId) => {
@@ -420,13 +417,6 @@ function isDailyLimitExceeded(err) {
   return false;
 }
 
-function isBackendError(err) {
-  if (err.name === 'HTTPError' && err.response && err.response.statusCode === 500 && err.response.body && err.response.body.error && err.response.body.error.code === 500 && /Backend Error/.test(err.response.body.error.message)) {
-    return true;
-  }
-  return false;
-}
-
 function iterPages(callback) {
   let limit = 100;
   const getPage = (pageToken) => {
@@ -440,15 +430,6 @@ function iterPages(callback) {
     });
   };
   return getPage();
-}
-
-function tryFixBackendError(fixMaxResults, callback) {
-  return callback().catch((err) => {
-    if (isBackendError(err)) {
-      return callback(fixMaxResults);
-    }
-    throw err;
-  });
 }
 
 export default Youtube;
