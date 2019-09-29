@@ -6,12 +6,15 @@ import parallel from "../tools/parallel";
 import formatDuration from "../tools/formatDuration";
 import ensureMap from "../tools/ensureMap";
 import promiseTry from "../tools/promiseTry";
-import got from "../tools/gotWithTimeout";
+import {gotLockTimeout} from "../tools/gotWithTimeout";
 
+const got = require('got');
 const debug = require('debug')('app:Youtube');
 
 const rateLimit = new RateLimit(1000);
-const gotLimited = rateLimit.wrap(got);
+const gotLimited = rateLimit.wrap((url, options) => {
+  return gotLockTimeout(got(url, options), 2.5 * 60 * 1000);
+});
 
 const VideosItemsSnippet = struct.partial({
   items: [struct.partial({
