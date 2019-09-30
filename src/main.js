@@ -32,6 +32,7 @@ const config = {
   doFullCheckChannelActivityEveryHours: 4,
   channelSyncTimeoutMinutes: 5,
   emitSendMessagesEveryMinutes: 5,
+  emitCheckExistsChatsEveryHours: 24,
   chatSendTimeoutAfterErrorMinutes: 1,
   emitCleanChatsAndVideosEveryHours: 1,
   cleanVideosIfPublishedOlderThanDays: 14,
