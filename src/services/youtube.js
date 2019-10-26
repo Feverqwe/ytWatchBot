@@ -16,42 +16,42 @@ const gotLimited = rateLimit.wrap((url, options) => {
   return gotLockTimeout(got(url, options), 2.5 * 60 * 1000);
 });
 
-const VideosItemsSnippet = struct.partial({
-  items: [struct.partial({
-    snippet: struct.partial({
+const VideosItemsSnippet = struct.pick({
+  items: [struct.pick({
+    snippet: struct.pick({
       channelId: 'string'
     })
   })]
 });
 
-const ChannelsItemsId = struct.partial({
-  items: [struct.partial({
+const ChannelsItemsId = struct.pick({
+  items: [struct.pick({
     id: 'string'
   })],
   nextPageToken: 'string?'
 });
 
-const SearchItemsId = struct.partial({
-  items: [struct.partial({
-    id: struct.partial({
+const SearchItemsId = struct.pick({
+  items: [struct.pick({
+    id: struct.pick({
       channelId: 'string'
     })
   })]
 });
 
-const SearchItemsSnippet = struct.partial({
-  items: [struct.partial({
-    snippet: struct.partial({
+const SearchItemsSnippet = struct.pick({
+  items: [struct.pick({
+    snippet: struct.pick({
       channelId: 'string',
       channelTitle: 'string'
     })
   })]
 });
 
-const ActivitiesResponse = struct.partial({
-  items: [struct.partial({
-    contentDetails: struct.partial({
-      upload: struct.partial({
+const ActivitiesResponse = struct.pick({
+  items: [struct.pick({
+    contentDetails: struct.pick({
+      upload: struct.pick({
         videoId: 'string'
       })
     }),
@@ -59,15 +59,15 @@ const ActivitiesResponse = struct.partial({
   nextPageToken: 'string?'
 });
 
-const VideosResponse = struct.partial({
-  items: [struct.partial({
+const VideosResponse = struct.pick({
+  items: [struct.pick({
     id: 'string',
-    snippet: struct.partial({
+    snippet: struct.pick({
       publishedAt: 'string', // 2007-03-05T08:22:25.000Z
       channelId: 'string',
       title: 'string',
       // description: 'string',
-      thumbnails: struct.dict(['string', struct.partial({
+      thumbnails: struct.record(['string', struct.pick({
         url: 'string',
         width: 'number',
         height: 'number',
@@ -76,12 +76,12 @@ const VideosResponse = struct.partial({
       // tags: ['string'],
       // categoryId: 'string', // 10
       // liveBroadcastContent: 'string', // none
-      // localized: struct.partial({
+      // localized: struct.pick({
       //   title: 'string',
       //   description: 'string',
       // })
     }),
-    contentDetails: struct.partial({
+    contentDetails: struct.pick({
       duration: 'string', // PT2M57S
       // dimension: 'string', // 2d
       // definition: 'string', // sd
