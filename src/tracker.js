@@ -49,7 +49,6 @@ class Tracker {
               return qs.stringify(hit);
             }).join('\n'),
           }).catch((err) => {
-            debug('track error: %o', err);
             const fourHoursAgo = new Date();
             fourHoursAgo.setHours(fourHoursAgo.getHours() - 4);
             queue.forEach(([time, hit]) => {
@@ -61,6 +60,8 @@ class Tracker {
           });
         });
       }
+    }).catch((err) => {
+      debug('track error: %o', err);
     });
   };
   sendDataThrottled = throttle(this.sendData, 1000, {
