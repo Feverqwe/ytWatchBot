@@ -57,6 +57,7 @@ class Tracker {
                 this.queue.unshift([time, hit]);
               }
             });
+            throw err;
           });
         });
       }
