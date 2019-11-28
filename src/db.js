@@ -318,7 +318,7 @@ class Db {
     return this.sequelize.query(`
       SELECT channelId, COUNT(chatId) as chatCount, channels.title as title FROM chatIdChannelId
       INNER JOIN channels ON channelId = channels.id
-      WHERE channels.service = "${serviceId}" AND channels.lastVideoPublishedAt > "${monthAgo.toISOString()}"
+      WHERE channels.service = "${serviceId}" AND channels.lastVideoPublishedAt > "${dateToSql(monthAgo)}"
       GROUP BY channelId ORDER BY COUNT(chatId) DESC LIMIT 10
     `, {type: Sequelize.QueryTypes.SELECT});
   }
@@ -557,7 +557,7 @@ class Db {
     return this.sequelize.query(`
       SELECT DISTINCT chatId FROM chatIdVideoId
       INNER JOIN chats ON chatIdVideoId.chatId = chats.id
-      WHERE chats.sendTimeoutExpiresAt < "${new Date().toISOString()}"
+      WHERE chats.sendTimeoutExpiresAt < "${dateToSql(new Date())}"
     `,  { type: Sequelize.QueryTypes.SELECT}).then((results) => {
       return results.map(result => result.chatId);
     });
@@ -603,6 +603,14 @@ class Db {
 function bulk(results, callback) {
   const resultsParts = arrayByPart(results, 100);
   return Promise.all(resultsParts.map(results => callback(results)));
+}
+
+function dateToSql(date) {
+  const [YYYY, MM, DD, HH, mm, ss] = [
+    date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate(),
+    date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds()
+  ].map(v => ((v < 10) ? '0' : '') + v);
+  return `${YYYY}-${MM}-${DD} ${HH}:${mm}:${ss}`;
 }
 
 export default Db;
