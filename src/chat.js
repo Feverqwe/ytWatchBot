@@ -174,7 +174,7 @@ class Chat {
         lines.push('');
         lines.push(`${name}:`);
         serviceTopChannels.forEach(({title, chatCount}, index) => {
-          lines.push(chatCount + '. ' + title);
+          lines.push(chatCount + ' - ' + title);
         });
 
         return this.main.bot.sendMessage(req.chatId, lines.join('\n'), {
