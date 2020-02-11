@@ -5,9 +5,9 @@ import ensureMap from "./tools/ensureMap";
 import serviceId from "./tools/serviceId";
 import parallel from "./tools/parallel";
 import {everyMinutes} from "./tools/everyTime";
+import promiseLimit from "./tools/promiseLimit";
 
 const debug = require('debug')('app:Checker');
-const promiseLimit = require('promise-limit');
 
 class Checker {
   constructor(/**Main*/main) {

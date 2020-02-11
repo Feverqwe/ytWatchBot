@@ -4,10 +4,10 @@ import LogFile from "./logFile";
 import parallel from "./tools/parallel";
 import {everyMinutes} from "./tools/everyTime";
 import getInProgress from "./tools/getInProgress";
+import promiseLimit from "./tools/promiseLimit";
 
 const debug = require('debug')('app:Sender');
 const throttle = require('lodash.throttle');
-const promiseLimit = require('promise-limit');
 
 const oneLimit = promiseLimit(1);
 
