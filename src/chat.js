@@ -216,8 +216,9 @@ class Chat {
     const provideChat = (req, res, next) => {
       return this.main.db.ensureChat('' + req.chatId, req.chatUsername).then(async (chat) => {
         req.chat = chat;
-        if (chat.username !== req.chatUsername) {
-          chat.username = req.chatUsername;
+        const username = req.chatUsername || null;
+        if (chat.username !== username) {
+          chat.username = username;
           await chat.save();
         }
         next();
