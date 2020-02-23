@@ -227,6 +227,12 @@ class Db {
     });
   }
 
+  setChatUsernameById(id, username) {
+    return this.model.Chat.update({username}, {
+      where: {id}
+    });
+  }
+
   getChatIds(offset, limit) {
     return this.model.Chat.findAll({
       offset,

@@ -43,6 +43,18 @@ class ChatSender {
         } else {
           return this.sendVideoAsPhoto(video);
         }
+      }).then((sendMessage) => {
+        const message = sendMessage.message;
+        const username = message.chat.username || null;
+        let isUpdateUsername = false;
+        if (username !== this.chat.username) {
+          isUpdateUsername = true;
+          this.chat.username = username;
+        }
+        return Promise.all([
+          this.main.db.deleteChatIdVideoId(this.chat.id, video.id),
+          isUpdateUsername && this.main.db.setChatUsernameById(this.chat.id, username)
+        ]);
       }).catch((err) => {
         if (err.code === 'ETELEGRAM') {
           const body = err.response.body;
@@ -71,8 +83,6 @@ class ChatSender {
         }
 
         throw err;
-      }).then(() => {
-        return this.main.db.deleteChatIdVideoId(this.chat.id, video.id);
       });
     }).catch((err) => {
       if (err.code === 'VIDEO_IS_NOT_FOUND') {
@@ -86,7 +96,7 @@ class ChatSender {
   sendVideoAsText(video, isFallback) {
     return this.main.bot.sendMessage(this.chat.id, getDescription(video), {
       parse_mode: 'HTML'
-    }).then(() => {
+    }).then((message) => {
       let type = null;
       if (isFallback) {
         type = 'send message as fallback';
@@ -100,6 +110,7 @@ class ChatSender {
         t: 'event'
       });
       this.main.sender.log.write(`[${type}] ${this.chat.id} ${video.channelId} ${video.id}`);
+      return {message};
     });
   }
 
@@ -107,7 +118,7 @@ class ChatSender {
     if (video.telegramPreviewFileId) {
       return this.main.bot.sendPhotoQuote(this.chat.id, video.telegramPreviewFileId, {
         caption: getCaption(video)
-      }).then((result) => {
+      }).then((message) => {
         this.main.tracker.track(this.chat.id, {
           ec: 'bot',
           ea: 'sendPhoto',
@@ -115,7 +126,7 @@ class ChatSender {
           t: 'event'
         });
         this.main.sender.log.write(`[send photo as id] ${this.chat.id} ${video.channelId} ${video.id}`);
-        return result;
+        return {message};
       });
     } else {
       return this.requestAndSendPhoto(video);
@@ -158,7 +169,7 @@ class ChatSender {
     const previews = !Array.isArray(video.previews) ? JSON.parse(video.previews) : video.previews;
     return getValidPreviewUrl(previews).then(({url, contentType}) => {
       const caption = getCaption(video);
-      return this.main.bot.sendPhoto(this.chat.id, url, {caption}).then((result) => {
+      return this.main.bot.sendPhoto(this.chat.id, url, {caption}).then((message) => {
         this.main.sender.log.write(`[send photo as url] ${this.chat.id} ${video.channelId} ${video.id}`);
         this.main.tracker.track(this.chat.id, {
           ec: 'bot',
@@ -166,7 +177,7 @@ class ChatSender {
           el: video.channelId,
           t: 'event'
         });
-        return result;
+        return message;
       }).catch((err) => {
         let isSendUrlError = sendUrlErrors.some(re => re.test(err.message));
         if (!isSendUrlError) {
@@ -178,7 +189,7 @@ class ChatSender {
             debug('Content-type is empty, set default content-type %s', url);
             contentType = 'image/jpeg';
           }
-          return this.main.bot.sendPhoto(this.chat.id, request(url), {caption}, {contentType}).then((result) => {
+          return this.main.bot.sendPhoto(this.chat.id, request(url), {caption}, {contentType}).then((message) => {
             this.main.sender.log.write(`[send photo as file] ${this.chat.id} ${video.channelId} ${video.id}`);
             this.main.tracker.track(this.chat.id, {
               ec: 'bot',
@@ -186,19 +197,21 @@ class ChatSender {
               el: video.channelId,
               t: 'event'
             });
-            return result;
+            return message;
           });
         }
 
         throw err;
       });
-    }).then((response) => {
-      const fileId = getPhotoFileIdFromMessage(response);
+    }).then((message) => {
+      const fileId = getPhotoFileIdFromMessage(message);
       if (!fileId) {
         throw new ErrorWithCode('File id if not found', 'FILE_ID_IS_NOT_FOUND');
       }
       video.telegramPreviewFileId = fileId;
-      return video.save();
+      return video.save().then(() => {
+        return {message};
+      });
     });
   }
 }
