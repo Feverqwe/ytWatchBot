@@ -300,6 +300,13 @@ class RouterReq {
     });
   }
 
+  get chatUsername() {
+    return this._useCache('chatUsername', () => {
+      const message = this._findMessage();
+      return message && message.chat.username;
+    });
+  }
+
   get messageId() {
     return this._useCache('messageId', () => {
       const message = this._findMessage();

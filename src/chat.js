@@ -214,8 +214,12 @@ class Chat {
 
   user() {
     const provideChat = (req, res, next) => {
-      return this.main.db.ensureChat('' + req.chatId).then((chat) => {
+      return this.main.db.ensureChat('' + req.chatId, req.chatUsername).then(async (chat) => {
         req.chat = chat;
+        if (chat.username !== req.chatUsername) {
+          chat.username = req.chatUsername;
+          await chat.save();
+        }
         next();
       }, (err) => {
         debug('ensureChat error! %o', err);

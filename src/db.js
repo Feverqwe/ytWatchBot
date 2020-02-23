@@ -34,6 +34,7 @@ class Db {
 
     const Chat = this.sequelize.define('chat', {
       id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
+      username: {type: Sequelize.STRING(191), allowNull: true},
       channelId: {type: Sequelize.STRING(191), allowNull: true},
       isHidePreview: {type: Sequelize.BOOLEAN, defaultValue: false},
       isMuted: {type: Sequelize.BOOLEAN, defaultValue: false},
@@ -187,9 +188,12 @@ class Db {
     });
   }
 
-  ensureChat(id) {
+  ensureChat(id, username) {
     return this.model.Chat.findOrCreate({
       where: {id},
+      defaults: {
+        username,
+      },
       include: [
         {model: this.model.Chat, as: 'channel'}
       ]
