@@ -44,17 +44,7 @@ class ChatSender {
           return this.sendVideoAsPhoto(video);
         }
       }).then((sendMessage) => {
-        const message = sendMessage.message;
-        const username = message.chat.username || null;
-        let isUpdateUsername = false;
-        if (username !== this.chat.username) {
-          isUpdateUsername = true;
-          this.chat.username = username;
-        }
-        return Promise.all([
-          this.main.db.deleteChatIdVideoId(this.chat.id, video.id),
-          isUpdateUsername && this.main.db.setChatUsernameById(this.chat.id, username)
-        ]);
+        return this.main.db.deleteChatIdVideoId(this.chat.id, video.id);
       }).catch((err) => {
         if (err.code === 'ETELEGRAM') {
           const body = err.response.body;

@@ -34,7 +34,6 @@ class Db {
 
     const Chat = this.sequelize.define('chat', {
       id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
-      username: {type: Sequelize.STRING(191), allowNull: true},
       channelId: {type: Sequelize.STRING(191), allowNull: true},
       isHidePreview: {type: Sequelize.BOOLEAN, defaultValue: false},
       isMuted: {type: Sequelize.BOOLEAN, defaultValue: false},
@@ -188,12 +187,9 @@ class Db {
     });
   }
 
-  ensureChat(id, username) {
+  ensureChat(id) {
     return this.model.Chat.findOrCreate({
       where: {id},
-      defaults: {
-        username,
-      },
       include: [
         {model: this.model.Chat, as: 'channel'}
       ]
@@ -223,12 +219,6 @@ class Db {
 
   changeChatId(id, newId) {
     return this.model.Chat.update({id: newId}, {
-      where: {id}
-    });
-  }
-
-  setChatUsernameById(id, username) {
-    return this.model.Chat.update({username}, {
       where: {id}
     });
   }

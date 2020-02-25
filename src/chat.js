@@ -214,7 +214,7 @@ class Chat {
 
   user() {
     const provideChat = (req, res, next) => {
-      return this.main.db.ensureChat('' + req.chatId, req.chatUsername).then((chat) => {
+      return this.main.db.ensureChat('' + req.chatId).then((chat) => {
         req.chat = chat;
         next();
       }, (err) => {
