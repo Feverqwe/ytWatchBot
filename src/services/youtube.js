@@ -93,6 +93,15 @@ const VideosResponse = struct.pick({
   nextPageToken: 'string?'
 });
 
+const FineChannelByVideoIdResponse = struct.pick({
+  items: [struct.pick({
+    snippet: struct.pick({
+      channelId: 'string',
+      channelTitle: 'string',
+    }),
+  })],
+});
+
 class Youtube {
   constructor(/**Main*/main) {
     this.main = main;
@@ -364,7 +373,12 @@ class Youtube {
       throw new ErrorWithCode('Incorrect channel id', 'INCORRECT_CHANNEL_ID');
     }
 
-    return channelId;
+    return this.getExistsChannelIds([channelId]).then((channelIds) => {
+      if (!channelIds.length) {
+        throw new ErrorWithCode('Incorrect channel id', 'INCORRECT_CHANNEL_ID');
+      }
+      return channelIds[0];
+    });
   }
 
   findChannel(query) {
@@ -384,17 +398,37 @@ class Youtube {
       }
       throw err;
     }).then((channelId) => {
-      return gotLimited('https://www.googleapis.com/youtube/v3/search', {
+      return gotLimited('https://www.googleapis.com/youtube/v3/activities', {
         query: {
-          part: 'snippet',
+          part: 'contentDetails',
           channelId: channelId,
           maxResults: 1,
+          fields: 'items/contentDetails/upload/videoId',
+          key: this.main.config.ytToken
+        },
+        json: true,
+      }).then(({body}) => {
+        const activities = ActivitiesResponse(body);
+        let videoId = null;
+        activities.items.some((item) => {
+          return videoId = item.contentDetails.upload.videoId;
+        });
+        if (!videoId) {
+          throw new ErrorWithCode(`Can't find any videos`, 'VIDEOS_IS_NOT_FOUND');
+        }
+        return videoId;
+      });
+    }).then((videoId) => {
+      return gotLimited('https://www.googleapis.com/youtube/v3/videos', {
+        query: {
+          part: 'snippet',
+          id: videoId,
           fields: 'items/snippet',
           key: this.main.config.ytToken
         },
         json: true,
       }).then(({body}) => {
-        const searchItemsSnippet = SearchItemsSnippet(body);
+        const searchItemsSnippet = FineChannelByVideoIdResponse(body);
         if (!searchItemsSnippet.items.length) {
           throw new ErrorWithCode('Channel is not found', 'CHANNEL_BY_ID_IS_NOT_FOUND');
         }

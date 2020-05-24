@@ -315,7 +315,7 @@ class Chat {
             isResolved = true;
             message = this.main.locale.getMessage('channelIsNotFound').replace('{channelName}', query);
           } else
-          if (['CHANNELS_LIMIT'].includes(err.code)) {
+          if (['VIDEOS_IS_NOT_FOUND', 'CHANNELS_LIMIT'].includes(err.code)) {
             isResolved = true;
             message = err.message;
           } else {
