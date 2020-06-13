@@ -51,9 +51,9 @@ const SearchItemsSnippet = struct.pick({
 const ActivitiesResponse = struct.pick({
   items: [struct.pick({
     contentDetails: struct.pick({
-      upload: struct.pick({
+      upload: struct.optional(struct.pick({
         videoId: 'string'
-      })
+      })),
     }),
   })],
   nextPageToken: 'string?'
@@ -193,6 +193,7 @@ class Youtube {
           }).then(({body}) => {
             const activities = ActivitiesResponse(body);
             activities.items.forEach((item) => {
+              if (!item.contentDetails.upload) return;
               const videoId = item.contentDetails.upload.videoId;
               videoIds.push(videoId);
             });
@@ -411,6 +412,7 @@ class Youtube {
         const activities = ActivitiesResponse(body);
         let videoId = null;
         activities.items.some((item) => {
+          if (!item.contentDetails.upload) return;
           return videoId = item.contentDetails.upload.videoId;
         });
         if (!videoId) {
