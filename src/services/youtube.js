@@ -25,9 +25,9 @@ const VideosItemsSnippet = struct.pick({
 });
 
 const ChannelsItemsId = struct.pick({
-  items: [struct.pick({
+  items: struct.optional([struct.pick({
     id: 'string'
-  })],
+  })]),
   nextPageToken: 'string?'
 });
 
@@ -241,9 +241,11 @@ class Youtube {
           json: true,
         }).then(({body}) => {
           const channelsItemsId = ChannelsItemsId(body);
-          channelsItemsId.items.forEach((item) => {
-            resultChannelIds.push(item.id);
-          });
+          if (channelsItemsId.items) {
+            channelsItemsId.items.forEach((item) => {
+              resultChannelIds.push(item.id);
+            });
+          }
 
           return channelsItemsId.nextPageToken;
         });
@@ -309,7 +311,7 @@ class Youtube {
       json: true,
     }).then(({body}) => {
       const channelsItemsId = ChannelsItemsId(body);
-      if (!channelsItemsId.items.length) {
+      if (!channelsItemsId.items || !channelsItemsId.items.length) {
         throw new ErrorWithCode('Channel by user is not found', 'CHANNEL_BY_USER_IS_NOT_FOUND');
       }
 
