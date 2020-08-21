@@ -282,8 +282,8 @@ class Youtube {
     let username = null;
     [
       /youtube\.com\/(?:#\/)?user\/([\w\-]+)/i,
-      /youtube\.com\/([\w\-]+)/i,
       /youtube\.com\/c\/([\w\-]+)/i,
+      /youtube\.com\/([\w\-]+)/i,
     ].some((re) => {
       const m = re.exec(url);
       if (m) {
