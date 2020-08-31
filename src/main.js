@@ -14,7 +14,6 @@ process.env.NTBA_FIX_350 = true;
 const TelegramBot = require('node-telegram-bot-api');
 const Events = require('events');
 const path = require('path');
-const ProxyAgent = require('proxy-agent');
 
 const debug = require('debug')('app:Main');
 
@@ -113,6 +112,7 @@ class Main extends Events {
   initBot() {
     let request = null;
     if (this.config.botProxy) {
+      const ProxyAgent = require('proxy-agent');
       request = {
         agent: new ProxyAgent(this.config.botProxy)
       };
