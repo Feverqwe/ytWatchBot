@@ -1,5 +1,4 @@
 import htmlSanitize from "./tools/htmlSanitize";
-import promiseFinally from "./tools/promiseFinally";
 import ErrorWithCode from "./tools/errorWithCode";
 import promiseTry from "./tools/promiseTry";
 import got from "./tools/gotWithTimeout";
