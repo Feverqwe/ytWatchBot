@@ -127,9 +127,9 @@ class ChatSender {
     let promise = videoWeakMap.get(video);
 
     if (!promise) {
-      promise = this.ensureTelegramPreviewFileId(video).then(...promiseFinally(() => {
+      promise = this.ensureTelegramPreviewFileId(video).finally(() => {
         videoWeakMap.delete(video);
-      }));
+      });
       videoWeakMap.set(video, promise);
       promise = promise.catch((err) => {
         if (err.code === 'ETELEGRAM' && /not enough rights to send photos/.test(err.response.body.description)) {

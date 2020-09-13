@@ -22,12 +22,12 @@ const getProvider = (requestDataById, keepAlive = 0) => {
         const cache = {useCount: 0, result};
         idCacheMap.set(id, cache);
         return cache;
-      }).then(...promiseFinally(() => {
+      }).finally(() => {
         delete inflightCache[key];
-      }));
+      });
     }).then((cache) => {
       cache.useCount++;
-      return promiseTry(() => callback(cache.result)).then(...promiseFinally(() => {
+      return promiseTry(() => callback(cache.result)).finally(() => {
         cache.useCount--;
         clearTimeout(cache.timerId);
         cache.timerId = setTimeout(() => {
@@ -35,7 +35,7 @@ const getProvider = (requestDataById, keepAlive = 0) => {
             idCacheMap.delete(id);
           }
         }, keepAlive);
-      }));
+      });
     });
   }
 };

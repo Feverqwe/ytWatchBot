@@ -6,9 +6,9 @@ const getInProgress = () => {
   return (callback) => {
     if (isInProgress) return Promise.resolve();
     isInProgress = true;
-    return promiseTry(callback).then(...promiseFinally(() => {
+    return promiseTry(callback).finally(() => {
       isInProgress = false;
-    }));
+    });
   };
 };
 
