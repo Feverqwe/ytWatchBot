@@ -33,6 +33,5 @@
     "user": "",
     "password": ""
   },
-  "adminIds": [],
-  "apiSecret": ""
+  "adminIds": []
 }

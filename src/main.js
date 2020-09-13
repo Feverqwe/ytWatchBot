@@ -58,7 +58,6 @@ const config = {
   },
   adminIds: [],
   botProxy: null,
-  apiSecret: '',
 };
 
 loadConfig(path.join(__dirname, '..', 'config.json'), config);
