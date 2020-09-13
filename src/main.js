@@ -136,3 +136,5 @@ class Main extends Events {
 }
 
 const main = new Main();
+
+export default Main;
