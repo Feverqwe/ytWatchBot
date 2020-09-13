@@ -117,6 +117,17 @@ class ChatSender {
         });
         this.main.sender.log.write(`[send photo as id] ${this.chat.id} ${video.channelId} ${video.id}`);
         return {message};
+      }, (err) => {
+        if (err.code === 'ETELEGRAM') {
+          const body = err.response.body;
+
+          if (/FILE_REFERENCE_.+/.test(body.description)) {
+            video.telegramPreviewFileId = null;
+
+            return this.sendVideoAsPhoto(video);
+          }
+        }
+        throw err;
       });
     } else {
       return this.requestAndSendPhoto(video);
