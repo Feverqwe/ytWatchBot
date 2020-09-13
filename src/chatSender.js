@@ -237,7 +237,8 @@ const blockedErrors = [
 const sendUrlErrors = [
   /failed to get HTTP URL content/,
   /wrong type of the web page content/,
-  /wrong file identifier\/HTTP URL specified/
+  /wrong file identifier\/HTTP URL specified/,
+  /FILE_REFERENCE_.+/,
 ];
 
 function getPhotoFileIdFromMessage(response) {
