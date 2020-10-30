@@ -2,7 +2,7 @@ FROM node:12-alpine as node
 ENV NO_UPDATE_NOTIFIER true
 
 FROM node as base
-WORKDIR /opt/ytWatchBot
+WORKDIR /opt/backend
 RUN chown -R nobody:nobody ./ && \
     mkdir /.npm && \
     chown -R nobody:nobody /.npm
@@ -12,7 +12,7 @@ COPY ./package-lock.json .
 RUN npm install --production
 
 FROM base as build
-WORKDIR /opt/ytWatchBot
+WORKDIR /opt/backend
 USER nobody:nobody
 RUN npm install
 ADD ./src ./src
@@ -20,8 +20,8 @@ COPY ./rollup.config.js .
 RUN npm run build
 
 FROM base as release
-WORKDIR /opt/ytWatchBot
-COPY --from=build /opt/ytWatchBot/dist ./dist
+WORKDIR /opt/backend
+COPY --from=build /opt/backend/dist ./dist
 USER nobody:nobody
 COPY ./liveTime.json .
 COPY ./config.json .

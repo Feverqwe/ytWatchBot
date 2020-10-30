@@ -1,13 +1,13 @@
 {
   "version": "2",
   "services": {
-    "ytwatchbot": {
+    "bot": {
       "build": ".",
       "ports": [
         "1337:1337"
       ],
       "volumes": [
-          "./log:/opt/ytWatchBot/log"
+          "./log:/opt/backend/log"
       ],
       "restart": "always",
       "network_mode": "host"
