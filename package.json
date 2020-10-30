@@ -5,8 +5,7 @@
     "clean": "del-cli ./dist",
     "build": "npm run clean && rollup -c ./rollup.config.js",
     "watch": "npm run build -- -w",
-    "start": "node ./dist/main.js",
-    "postinstall": "npm run build"
+    "start": "node ./dist/main.js"
   },
   "dependencies": {
     "debug": "^4.1.1",
