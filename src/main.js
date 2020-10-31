@@ -57,7 +57,6 @@ const config = {
     password: ''
   },
   adminIds: [],
-  botProxy: null,
 };
 
 loadConfig(path.join(__dirname, '..', 'config.json'), config);
@@ -109,19 +108,10 @@ class Main extends Events {
   }
 
   initBot() {
-    let request = null;
-    if (this.config.botProxy) {
-      const ProxyAgent = require('proxy-agent');
-      request = {
-        agent: new ProxyAgent(this.config.botProxy)
-      };
-    }
-
     const bot = new TelegramBot(this.config.token, {
       polling: {
         autoStart: false
       },
-      request: request
     });
     bot.on('polling_error', function (err) {
       debug('pollingError %s', err.message);
