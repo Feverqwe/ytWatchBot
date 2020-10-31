@@ -20,7 +20,7 @@
   "defaultChannelName": "NationalGeographic",
   "push": {
     "host": "localhost",
-    "port": 80,
+    "port": 1337,
     "path": "/",
     "secret": "",
     "callbackUrl": "",
