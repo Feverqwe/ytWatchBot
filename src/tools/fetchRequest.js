@@ -1,5 +1,6 @@
 import promiseTry from "./promiseTry";
 
+const debug = require('debug')('app:fetchRequest');
 const http = require('http');
 const https = require('https');
 const fetch = require('node-fetch');
@@ -30,17 +31,19 @@ const AbortController = require('abort-controller');
 
 /**
  * @param {string} url
- * @param {FetchRequestOptions} options
+ * @param {FetchRequestOptions} [options]
  * @return {Promise<FetchResponse>}
  */
 function fetchRequest(url, options) {
-  const { responseType, keepAlive, searchParams, ...fetchOptions } = options;
+  const { responseType, keepAlive, searchParams, ...fetchOptions } = options || {};
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
     controller.abort();
   }, 60 * 1000);
 
   return promiseTry(async () => {
+    fetchOptions.method = fetchOptions.method || 'GET';
+
     if (searchParams) {
       url = url.split('?')[0] + '?' + qs.stringify(searchParams);
     }
@@ -65,7 +68,7 @@ function fetchRequest(url, options) {
 
     const fetchResponse = {
       url: rawResponse.url,
-      method: options.method,
+      method: fetchOptions.method,
       statusCode: rawResponse.status,
       statusMessage: rawResponse.statusText,
       headers: normalizeHeaders(rawResponse.headers),
@@ -73,7 +76,7 @@ function fetchRequest(url, options) {
       body: undefined,
     };
 
-    if (options.method !== 'HEAD') {
+    if (fetchOptions.method !== 'HEAD') {
       try {
         if (responseType === 'buffer') {
           fetchResponse.rawBody = await rawResponse.buffer();
@@ -184,8 +187,14 @@ function keepAliveAgentFn(_parsedURL) {
 
 function normalizeHeaders(fetchHeaders) {
   const headers = {};
-  fetchHeaders.forEach((value, key) => {
-    headers[key.toLowerCase()] = value;
+  const rawHeaders = fetchHeaders.raw();
+  Object.entries(rawHeaders).forEach(([key, values]) => {
+    const lowKey = key.toLowerCase();
+    if (values.length === 1) {
+      headers[lowKey] = values[0];
+    } else {
+      headers[lowKey] = values;
+    }
   });
   return headers;
 }
