@@ -35,11 +35,14 @@ const AbortController = require('abort-controller');
  * @return {Promise<FetchResponse>}
  */
 function fetchRequest(url, options) {
-  const { responseType, keepAlive, searchParams, ...fetchOptions } = options || {};
+  const { responseType, keepAlive, searchParams, timeout, ...fetchOptions } = options || {};
+
+  let isTimeout = false;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
+    isTimeout = true;
     controller.abort();
-  }, 60 * 1000);
+  }, timeout);
 
   return promiseTry(async () => {
     fetchOptions.method = fetchOptions.method || 'GET';
@@ -58,7 +61,7 @@ function fetchRequest(url, options) {
       ...fetchOptions,
       signal: controller.signal,
     }).catch((err) => {
-      if (err.name === 'FetchError' && err.type === 'request-timeout') {
+      if (err.name === 'AbortError' && err.type === 'aborted' && isTimeout) {
         throw new TimeoutError(err);
       }
       else {
@@ -85,7 +88,7 @@ function fetchRequest(url, options) {
           fetchResponse.rawBody = await rawResponse.text();
         }
       } catch (err) {
-        if (err.name === 'FetchError' && err.type === 'body-timeout') {
+        if (err.name === 'AbortError' && err.type === 'aborted' && isTimeout) {
           throw new TimeoutError(err);
         }
         else {
