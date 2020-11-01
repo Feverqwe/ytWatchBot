@@ -35,7 +35,7 @@ const AbortController = require('abort-controller');
  * @return {Promise<FetchResponse>}
  */
 function fetchRequest(url, options) {
-  const { responseType, keepAlive, searchParams, timeout, ...fetchOptions } = options || {};
+  const { responseType, keepAlive, searchParams, timeout = 60 * 1000, ...fetchOptions } = options || {};
 
   let isTimeout = false;
   const controller = new AbortController();
