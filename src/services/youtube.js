@@ -1,5 +1,5 @@
 import ErrorWithCode from "../tools/errorWithCode";
-import {struct} from "superstruct";
+import * as s from "superstruct";
 import RateLimit from "../tools/rateLimit";
 import arrayByPart from "../tools/arrayByPart";
 import parallel from "../tools/parallel";
@@ -16,90 +16,90 @@ const gotLimited = rateLimit.wrap((url, options) => {
   return gotLockTimeout(got(url, options), 2.5 * 60 * 1000);
 });
 
-const VideosItemsSnippet = struct.pick({
-  items: [struct.pick({
-    snippet: struct.pick({
-      channelId: 'string'
+const VideosItemsSnippetStruct = s.type({
+  items: s.array(s.type({
+    snippet: s.type({
+      channelId: s.string()
     })
-  })]
+  }))
 });
 
-const ChannelsItemsId = struct.pick({
-  items: struct.optional([struct.pick({
-    id: 'string'
-  })]),
-  nextPageToken: 'string?'
+const ChannelsItemsIdStruct = s.type({
+  items: s.optional(s.array(s.type({
+    id: s.string()
+  }))),
+  nextPageToken: s.optional(s.string())
 });
 
-const SearchItemsId = struct.pick({
-  items: [struct.pick({
-    id: struct.pick({
-      channelId: 'string'
+const SearchItemsIdStruct = s.type({
+  items: s.array(s.type({
+    id: s.type({
+      channelId: s.string()
     })
-  })]
+  }))
 });
 
-const SearchItemsSnippet = struct.pick({
-  items: [struct.pick({
-    snippet: struct.pick({
-      channelId: 'string',
-      channelTitle: 'string'
+const SearchItemsSnippetStruct = s.type({
+  items: s.array(s.type({
+    snippet: s.type({
+      channelId: s.string(),
+      channelTitle: s.string()
     })
-  })]
+  }))
 });
 
-const ActivitiesResponse = struct.pick({
-  items: [struct.pick({
-    contentDetails: struct.pick({
-      upload: struct.optional(struct.pick({
-        videoId: 'string'
+const ActivitiesResponseStruct = s.type({
+  items: s.array(s.type({
+    contentDetails: s.type({
+      upload: s.optional(s.type({
+        videoId: s.string()
       })),
     }),
-  })],
-  nextPageToken: 'string?'
+  })),
+  nextPageToken: s.optional(s.string())
 });
 
-const VideosResponse = struct.pick({
-  items: [struct.pick({
-    id: 'string',
-    snippet: struct.pick({
-      publishedAt: 'string', // 2007-03-05T08:22:25.000Z
-      channelId: 'string',
-      title: 'string',
-      // description: 'string',
-      thumbnails: struct.record(['string', struct.pick({
-        url: 'string',
-        width: 'number',
-        height: 'number',
-      })]),
-      channelTitle: 'string',
-      // tags: ['string'],
-      // categoryId: 'string', // 10
-      // liveBroadcastContent: 'string', // none
-      // localized: struct.pick({
-      //   title: 'string',
-      //   description: 'string',
+const VideosResponseStruct = s.type({
+  items: s.array(s.type({
+    id: s.string(),
+    snippet: s.type({
+      publishedAt: s.string(), // 2007-03-05T08:22:25.000Z
+      channelId: s.string(),
+      title: s.string(),
+      // description: s.string(),
+      thumbnails: s.record(s.string(), s.type({
+        url: s.string(),
+        width: s.number(),
+        height: s.number(),
+      })),
+      channelTitle: s.string(),
+      // tags: [s.string()],
+      // categoryId: s.string(), // 10
+      // liveBroadcastContent: s.string(), // none
+      // localized: s.type({
+      //   title: s.string(),
+      //   description: s.string(),
       // })
     }),
-    contentDetails: struct.pick({
-      duration: 'string', // PT2M57S
-      // dimension: 'string', // 2d
-      // definition: 'string', // sd
-      // caption: 'string', // false
+    contentDetails: s.type({
+      duration: s.string(), // PT2M57S
+      // dimension: s.string(), // 2d
+      // definition: s.string(), // sd
+      // caption: s.string(), // false
       // licensedContent: 'boolean', // true
-      // projection: 'string', // rectangular
+      // projection: s.string(), // rectangular
     }),
-  })],
-  nextPageToken: 'string?'
+  })),
+  nextPageToken: s.optional(s.string())
 });
 
-const FineChannelByVideoIdResponse = struct.pick({
-  items: [struct.pick({
-    snippet: struct.pick({
-      channelId: 'string',
-      channelTitle: 'string',
+const FineChannelByVideoIdResponseStruct = s.type({
+  items: s.array(s.type({
+    snippet: s.type({
+      channelId: s.string(),
+      channelTitle: s.string(),
     }),
-  })],
+  })),
 });
 
 class Youtube {
@@ -135,7 +135,7 @@ class Youtube {
             },
             json: true,
           }).then(({body}) => {
-            const videos = VideosResponse(body);
+            const videos = s.coerce(body, VideosResponseStruct);
 
             videos.items.forEach((video) => {
               const previews = Object.values(video.snippet.thumbnails).sort((a, b) => {
@@ -191,7 +191,7 @@ class Youtube {
             },
             json: true,
           }).then(({body}) => {
-            const activities = ActivitiesResponse(body);
+            const activities = s.coerce(body, ActivitiesResponseStruct);
             activities.items.forEach((item) => {
               if (!item.contentDetails.upload) return;
               const videoId = item.contentDetails.upload.videoId;
@@ -240,7 +240,7 @@ class Youtube {
           },
           json: true,
         }).then(({body}) => {
-          const channelsItemsId = ChannelsItemsId(body);
+          const channelsItemsId = s.coerce(body, ChannelsItemsIdStruct);
           if (channelsItemsId.items) {
             channelsItemsId.items.forEach((item) => {
               resultChannelIds.push(item.id);
@@ -269,7 +269,7 @@ class Youtube {
       },
       json: true,
     }).then(({body}) => {
-      const searchItemsId = SearchItemsId(body);
+      const searchItemsId = s.coerce(body, SearchItemsIdStruct);
       if (!searchItemsId.items.length) {
         throw new ErrorWithCode('Channel by query is not found', 'CHANNEL_BY_QUERY_IS_NOT_FOUND');
       }
@@ -310,7 +310,7 @@ class Youtube {
       },
       json: true,
     }).then(({body}) => {
-      const channelsItemsId = ChannelsItemsId(body);
+      const channelsItemsId = s.coerce(body, ChannelsItemsIdStruct);
       if (!channelsItemsId.items || !channelsItemsId.items.length) {
         throw new ErrorWithCode('Channel by user is not found', 'CHANNEL_BY_USER_IS_NOT_FOUND');
       }
@@ -347,7 +347,7 @@ class Youtube {
       },
       json: true,
     }).then(({body}) => {
-      const videosItemsSnippet = VideosItemsSnippet(body);
+      const videosItemsSnippet = s.coerce(body, VideosItemsSnippetStruct);
       if (!videosItemsSnippet.items.length) {
         throw new ErrorWithCode('Video by id is not found', 'CHANNEL_BY_VIDEO_ID_IS_NOT_FOUND');
       }
@@ -411,7 +411,7 @@ class Youtube {
         },
         json: true,
       }).then(({body}) => {
-        const activities = ActivitiesResponse(body);
+        const activities = s.coerce(body, ActivitiesResponseStruct);
         let videoId = null;
         activities.items.some((item) => {
           if (!item.contentDetails.upload) return;
@@ -432,7 +432,7 @@ class Youtube {
         },
         json: true,
       }).then(({body}) => {
-        const searchItemsSnippet = FineChannelByVideoIdResponse(body);
+        const searchItemsSnippet = s.coerce(body, FineChannelByVideoIdResponseStruct);
         if (!searchItemsSnippet.items.length) {
           throw new ErrorWithCode('Channel is not found', 'CHANNEL_BY_ID_IS_NOT_FOUND');
         }
