@@ -1,9 +1,10 @@
-import got from "./gotWithTimeout";
+import fetchRequest from "./fetchRequest";
 
 const Events = require('events');
 const crypto = require('crypto');
 const express = require('express');
 const debug = require('debug')('app:ExpressPubSub');
+const qs = require('querystring');
 
 class ExpressPubSub extends Events {
   constructor(options) {
@@ -148,9 +149,13 @@ class ExpressPubSub extends Events {
         .update(topic)
         .digest('hex');
     }
-    return got.post(hub, {
-      form: true,
-      body: body
+    return fetchRequest(hub, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: qs.stringify(body),
+      keepAlive: true,
     }).then((res) => {
       if (![202, 204].includes(res.statusCode)) {
         const err = new Error(`Invalid response status ${res.statusCode}`);
@@ -158,7 +163,7 @@ class ExpressPubSub extends Events {
         err.response = res;
         throw err;
       }
-      return res;
+      return res.body;
     });
   }
 }

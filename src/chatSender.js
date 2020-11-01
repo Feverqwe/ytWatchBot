@@ -1,8 +1,8 @@
 import htmlSanitize from "./tools/htmlSanitize";
 import ErrorWithCode from "./tools/errorWithCode";
 import promiseTry from "./tools/promiseTry";
-import got from "./tools/gotWithTimeout";
 import inlineInspect from "./tools/inlineInspect";
+import fetchRequest from "./tools/fetchRequest";
 
 const debug = require('debug')('app:ChatSender');
 const request = require('request');
@@ -253,7 +253,11 @@ async function getValidPreviewUrl(urls) {
   let lastError = null;
   for (let i = 0, len = urls.length; i < len; i++) {
     try {
-      return await got.head(urls[i], {timeout: 5 * 1000}).then(response => {
+      return await fetchRequest(urls[i], {
+        method: 'HEAD',
+        timeout: 5 * 1000,
+        keepAlive: true,
+      }).then((response) => {
         const url = response.url;
         const contentType = response.headers['content-type'];
         return {url, contentType};
