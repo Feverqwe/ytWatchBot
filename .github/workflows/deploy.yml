@@ -13,7 +13,7 @@ jobs:
         mkdir -p ${{ secrets.HOME_PLACE }}/ytWatchBot/log &&
         chown nobody:nogroup ${{ secrets.HOME_PLACE }}/ytWatchBot/log &&
         ln -s ${{ secrets.HOME_PLACE }}/ytWatchBot/log ./log &&
-        cp ${{ secrets.HOME_PLACE }}/ytWatchBot/config.json ./config.json
+        cp ${{ secrets.HOME_PLACE }}/ytWatchBot/config.json ./config.json &&
         cp ${{ secrets.HOME_PLACE }}/ytWatchBot/liveTime.json ./liveTime.json
     - run: docker-compose build
   run:
