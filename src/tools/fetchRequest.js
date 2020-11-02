@@ -37,12 +37,7 @@ const AbortController = require('abort-controller');
 function fetchRequest(url, options) {
   const { responseType, keepAlive, searchParams, timeout = 60 * 1000, ...fetchOptions } = options || {};
 
-  let isTimeout = false;
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => {
-    isTimeout = true;
-    controller.abort();
-  }, timeout);
+  let timeoutId = null;
 
   return promiseTry(async () => {
     fetchOptions.method = fetchOptions.method || 'GET';
@@ -54,6 +49,15 @@ function fetchRequest(url, options) {
     let agentFn;
     if (keepAlive) {
       agentFn = keepAliveAgentFn;
+    }
+
+    let isTimeout = false;
+    const controller = new AbortController();
+    if (timeout) {
+      timeoutId = setTimeout(() => {
+        isTimeout = true;
+        controller.abort();
+      }, timeout);
     }
 
     const rawResponse = await fetch(url, {
@@ -117,7 +121,9 @@ function fetchRequest(url, options) {
 
     return fetchResponse;
   }).finally(() => {
-    clearTimeout(timeoutId);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
   });
 }
 
