@@ -4,7 +4,6 @@ const debug = require('debug')('app:fetchRequest');
 const http = require('http');
 const https = require('https');
 const fetch = require('node-fetch');
-const qs = require('querystring');
 const AbortController = require('abort-controller');
 
 /**
@@ -43,7 +42,9 @@ function fetchRequest(url, options) {
     fetchOptions.method = fetchOptions.method || 'GET';
 
     if (searchParams) {
-      url = url.split('?')[0] + '?' + qs.stringify(searchParams);
+      const uri = new URL(url);
+      uri.search = '?' + new URLSearchParams(searchParams).toString();
+      url = uri.toString();
     }
 
     let agentFn;
