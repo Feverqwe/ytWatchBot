@@ -4,6 +4,7 @@ const debug = require('debug')('app:fetchRequest');
 const http = require('http');
 const https = require('https');
 const fetch = require('node-fetch');
+const qs = require('querystring');
 const AbortController = require('abort-controller');
 
 /**
@@ -43,7 +44,7 @@ function fetchRequest(url, options) {
 
     if (searchParams) {
       const uri = new URL(url);
-      uri.search = '?' + new URLSearchParams(searchParams).toString();
+      uri.search = '?' + qs.stringify(searchParams);
       url = uri.toString();
     }
 
