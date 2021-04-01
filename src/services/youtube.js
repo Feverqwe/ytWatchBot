@@ -408,7 +408,7 @@ class Youtube {
         searchParams: {
           part: 'contentDetails',
           channelId: channelId,
-          maxResults: 1,
+          maxResults: 50,
           fields: 'items/contentDetails/upload/videoId',
           key: this.main.config.ytToken
         },
