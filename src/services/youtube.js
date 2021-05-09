@@ -13,42 +13,42 @@ const debug = require('debug')('app:Youtube');
 const rateLimit = new RateLimit(1000);
 const fetchRequestLimited = rateLimit.wrap(fetchRequest);
 
-const VideosItemsSnippetStruct = s.type({
-  items: s.array(s.type({
-    snippet: s.type({
+const VideosItemsSnippetStruct = s.object({
+  items: s.array(s.object({
+    snippet: s.object({
       channelId: s.string()
     })
   }))
 });
 
-const ChannelsItemsIdStruct = s.type({
-  items: s.optional(s.array(s.type({
+const ChannelsItemsIdStruct = s.object({
+  items: s.optional(s.array(s.object({
     id: s.string()
   }))),
   nextPageToken: s.optional(s.string())
 });
 
-const SearchItemsIdStruct = s.type({
-  items: s.array(s.type({
-    id: s.type({
+const SearchItemsIdStruct = s.object({
+  items: s.array(s.object({
+    id: s.object({
       channelId: s.string()
     })
   }))
 });
 
-const SearchItemsSnippetStruct = s.type({
-  items: s.array(s.type({
-    snippet: s.type({
+const SearchItemsSnippetStruct = s.object({
+  items: s.array(s.object({
+    snippet: s.object({
       channelId: s.string(),
       channelTitle: s.string()
     })
   }))
 });
 
-const ActivitiesResponseStruct = s.type({
-  items: s.array(s.type({
-    contentDetails: s.type({
-      upload: s.optional(s.type({
+const ActivitiesResponseStruct = s.object({
+  items: s.array(s.object({
+    contentDetails: s.object({
+      upload: s.optional(s.object({
         videoId: s.string()
       })),
     }),
@@ -56,15 +56,15 @@ const ActivitiesResponseStruct = s.type({
   nextPageToken: s.optional(s.string())
 });
 
-const VideosResponseStruct = s.type({
-  items: s.array(s.type({
+const VideosResponseStruct = s.object({
+  items: s.array(s.object({
     id: s.string(),
-    snippet: s.type({
+    snippet: s.object({
       publishedAt: s.string(), // 2007-03-05T08:22:25.000Z
       channelId: s.string(),
       title: s.string(),
       // description: s.string(),
-      thumbnails: s.record(s.string(), s.type({
+      thumbnails: s.record(s.string(), s.object({
         url: s.string(),
         width: s.number(),
         height: s.number(),
@@ -73,12 +73,12 @@ const VideosResponseStruct = s.type({
       // tags: [s.string()],
       // categoryId: s.string(), // 10
       // liveBroadcastContent: s.string(), // none
-      // localized: s.type({
+      // localized: s.object({
       //   title: s.string(),
       //   description: s.string(),
       // })
     }),
-    contentDetails: s.type({
+    contentDetails: s.object({
       duration: s.string(), // PT2M57S
       // dimension: s.string(), // 2d
       // definition: s.string(), // sd
@@ -90,9 +90,9 @@ const VideosResponseStruct = s.type({
   nextPageToken: s.optional(s.string())
 });
 
-const FineChannelByVideoIdResponseStruct = s.type({
-  items: s.array(s.type({
-    snippet: s.type({
+const FineChannelByVideoIdResponseStruct = s.object({
+  items: s.array(s.object({
+    snippet: s.object({
       channelId: s.string(),
       channelTitle: s.string(),
     }),
@@ -133,7 +133,7 @@ class Youtube {
             responseType: 'json',
             keepAlive: true,
           }).then(({body}) => {
-            const videos = s.coerce(body, VideosResponseStruct);
+            const videos = s.mask(body, VideosResponseStruct);
 
             videos.items.forEach((video) => {
               const previews = Object.values(video.snippet.thumbnails).sort((a, b) => {
@@ -190,7 +190,7 @@ class Youtube {
             responseType: 'json',
             keepAlive: true,
           }).then(({body}) => {
-            const activities = s.coerce(body, ActivitiesResponseStruct);
+            const activities = s.mask(body, ActivitiesResponseStruct);
             activities.items.forEach((item) => {
               if (!item.contentDetails.upload) return;
               const videoId = item.contentDetails.upload.videoId;
@@ -240,7 +240,7 @@ class Youtube {
           responseType: 'json',
           keepAlive: true,
         }).then(({body}) => {
-          const channelsItemsId = s.coerce(body, ChannelsItemsIdStruct);
+          const channelsItemsId = s.mask(body, ChannelsItemsIdStruct);
           if (channelsItemsId.items) {
             channelsItemsId.items.forEach((item) => {
               resultChannelIds.push(item.id);
@@ -270,7 +270,7 @@ class Youtube {
       responseType: 'json',
       keepAlive: true,
     }).then(({body}) => {
-      const searchItemsId = s.coerce(body, SearchItemsIdStruct);
+      const searchItemsId = s.mask(body, SearchItemsIdStruct);
       if (!searchItemsId.items.length) {
         throw new ErrorWithCode('Channel by query is not found', 'CHANNEL_BY_QUERY_IS_NOT_FOUND');
       }
@@ -312,7 +312,7 @@ class Youtube {
       responseType: 'json',
       keepAlive: true,
     }).then(({body}) => {
-      const channelsItemsId = s.coerce(body, ChannelsItemsIdStruct);
+      const channelsItemsId = s.mask(body, ChannelsItemsIdStruct);
       if (!channelsItemsId.items || !channelsItemsId.items.length) {
         throw new ErrorWithCode('Channel by user is not found', 'CHANNEL_BY_USER_IS_NOT_FOUND');
       }
@@ -350,7 +350,7 @@ class Youtube {
       responseType: 'json',
       keepAlive: true,
     }).then(({body}) => {
-      const videosItemsSnippet = s.coerce(body, VideosItemsSnippetStruct);
+      const videosItemsSnippet = s.mask(body, VideosItemsSnippetStruct);
       if (!videosItemsSnippet.items.length) {
         throw new ErrorWithCode('Video by id is not found', 'CHANNEL_BY_VIDEO_ID_IS_NOT_FOUND');
       }
@@ -415,7 +415,7 @@ class Youtube {
         responseType: 'json',
         keepAlive: true,
       }).then(({body}) => {
-        const activities = s.coerce(body, ActivitiesResponseStruct);
+        const activities = s.mask(body, ActivitiesResponseStruct);
         let videoId = null;
         activities.items.some((item) => {
           if (!item.contentDetails.upload) return;
@@ -437,7 +437,7 @@ class Youtube {
         responseType: 'json',
         keepAlive: true,
       }).then(({body}) => {
-        const searchItemsSnippet = s.coerce(body, FineChannelByVideoIdResponseStruct);
+        const searchItemsSnippet = s.mask(body, FineChannelByVideoIdResponseStruct);
         if (!searchItemsSnippet.items.length) {
           throw new ErrorWithCode('Channel is not found', 'CHANNEL_BY_ID_IS_NOT_FOUND');
         }

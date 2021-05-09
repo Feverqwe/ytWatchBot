@@ -9,12 +9,13 @@ RUN chown -R nobody:nobody ./ && \
 USER nobody:nobody
 COPY ./package.json .
 COPY ./package-lock.json .
-RUN npm install --production
+RUN npm audit --production && \
+    npm ci --production
 
 FROM base as build
 WORKDIR /opt/backend
 USER nobody:nobody
-RUN npm install
+RUN npm ci
 ADD ./src ./src
 COPY ./rollup.config.js .
 RUN npm run build
@@ -26,7 +27,7 @@ USER nobody:nobody
 COPY ./liveTime.json .
 COPY ./config.json .
 ENV NODE_ENV=production
-ENV DEBUG=*,-node-telegram-bot-api,-sequelize:*,-express:*,-body-parser:*
+ENV DEBUG=app:*
 
 EXPOSE 1337
 

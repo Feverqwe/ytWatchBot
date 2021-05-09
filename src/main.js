@@ -62,13 +62,7 @@ const config = {
 loadConfig(path.join(__dirname, '..', 'config.json'), config);
 
 class Main extends Events {
-  constructor() {
-    super();
-
-    this.init();
-  }
-
-  init() {
+  async init() {
     this.config = config;
     this.locale = new Locale();
     this.db = new Db(this);
@@ -89,22 +83,16 @@ class Main extends Events {
     this.bot = this.initBot();
     this.chat = new Chat(this);
 
-    return this.db.init().then(() => {
-      return Promise.all([
-        this.ytPubSub.init(),
-        this.checker.init(),
-        this.sender.init(),
-        this.bot.getMe().then((user) => {
-          this.botName = user.username;
-          return this.bot.startPolling();
-        }),
-      ]);
-    }).then(() => {
-      debug('ready');
-    }, (err) => {
-      debug('init error', err);
-      process.exit(1);
-    });
+    await this.db.init();
+    await Promise.all([
+      this.ytPubSub.init(),
+      this.bot.getMe().then((user) => {
+        this.botName = user.username;
+        return this.bot.startPolling();
+      }),
+    ]);
+    this.checker.init();
+    this.sender.init();
   }
 
   initBot() {
@@ -126,5 +114,11 @@ class Main extends Events {
 }
 
 const main = new Main();
+main.init().then(() => {
+  debug('ready');
+}, (err) => {
+  debug('init error', err);
+  process.exit(1);
+});
 
 export default Main;

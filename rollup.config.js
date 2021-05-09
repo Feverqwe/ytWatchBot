@@ -15,10 +15,10 @@ export default {
         ['@babel/plugin-proposal-class-properties', { "loose": true }]
       ]
     }),
-    isWatch && run({
+    isWatch && run(/*{
       options: {
         execArgv: ['--inspect']
       }
-    }),
+    }*/),
   ]
 };
