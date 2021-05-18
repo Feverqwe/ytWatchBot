@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const express = require('express');
 const debug = require('debug')('app:ExpressPubSub');
 const qs = require('querystring');
-const rateLimit = new RateLimit(1000);
+const rateLimit = new RateLimit(500);
 
 const fetchRequestLimited = rateLimit.wrap(fetchRequest);
 
