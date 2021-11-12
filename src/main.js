@@ -19,7 +19,9 @@ const debug = require('debug')('app:Main');
 
 process.on('unhandledRejection', (err, promise) => {
   debug('unhandledRejection %o', err);
-  process.exit(1);
+  if (err.code === 'EFATAL') {
+    process.exit(1);
+  }
 });
 
 const config = {
