@@ -2,9 +2,9 @@ import ErrorWithCode from "./tools/errorWithCode";
 import arrayByPart from "./tools/arrayByPart";
 import serviceId from "./tools/serviceId";
 import arrayDifference from "./tools/arrayDifference";
+import Sequelize from "sequelize";
 
 const debug = require('debug')('app:db');
-const Sequelize = require('sequelize');
 const {Op} = Sequelize;
 const ISOLATION_LEVELS = Sequelize.Transaction.ISOLATION_LEVELS;
 
@@ -14,15 +14,15 @@ class Db {
     this.sequelize = new Sequelize(main.config.db.database, main.config.db.user, main.config.db.password, {
       host: main.config.db.host,
       port: main.config.db.port,
-      dialect: 'mysql',
+      dialect: 'mariadb',
       omitNull: true,
       logging: false,
+      /*dialectOptions: {
+        charset: 'utf8mb4',
+        collate: 'utf8mb4_general_ci'
+      },*/
       define: {
         charset: 'utf8mb4',
-        dialectOptions: {
-          charset: 'utf8mb4',
-          collate: 'utf8mb4_general_ci'
-        }
       },
       pool: {
         max: 30,
@@ -358,7 +358,9 @@ class Db {
   }
 
   putChatIdChannelId(chatId, channelId) {
-    return this.model.ChatIdChannelId.upsert({chatId, channelId});
+    return this.model.ChatIdChannelId.upsert({chatId, channelId}).then(([model, isCreated]) => {
+      return isCreated;
+    });
   }
 
   deleteChatIdChannelId(chatId, channelId) {
