@@ -1,7 +1,7 @@
 import ErrorWithCode from "./tools/errorWithCode";
+import qs from "querystring";
 
 const debug = require('debug')('app:router');
-const qs = require('querystring');
 
 const messageTypes = [
   'text', 'audio', 'document', 'photo', 'sticker', 'video', 'voice', 'contact',

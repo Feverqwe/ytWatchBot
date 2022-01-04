@@ -8,12 +8,12 @@ import Chat from "./chat";
 import Checker from "./checker";
 import YtPubSub from "./ytPubSub";
 import RateLimit from "./tools/rateLimit";
+import Events from "events";
+import path from "path";
 
 process.env.NTBA_FIX_319 = true;
 process.env.NTBA_FIX_350 = true;
 const TelegramBot = require('node-telegram-bot-api');
-const Events = require('events');
-const path = require('path');
 
 const debug = require('debug')('app:Main');
 

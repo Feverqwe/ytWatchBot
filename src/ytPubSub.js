@@ -5,11 +5,11 @@ import serviceId from "./tools/serviceId";
 import {everyMinutes} from "./tools/everyTime";
 import ExpressPubSub from "./tools/expressPubSub";
 import promiseLimit from "./tools/promiseLimit";
+import express from "express";
+import qs from "querystring";
 
 const debug = require('debug')('app:YtPubSub');
-const express = require('express');
 const {XmlDocument} = require("xmldoc");
-const qs = require('querystring');
 const throttle = require('lodash.throttle');
 
 const oneLimit = promiseLimit(1);

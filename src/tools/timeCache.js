@@ -1,4 +1,4 @@
-const QuickLRU = require('quick-lru');
+import QuickLRU from "quick-lru";
 
 class TimeCache extends QuickLRU {
   constructor(options) {

@@ -8,10 +8,10 @@ import LogFile from "./logFile";
 import ensureMap from "./tools/ensureMap";
 import promiseTry from "./tools/promiseTry";
 import TimeCache from "./tools/timeCache";
+import fs from "fs";
 
 const debug = require('debug')('app:Chat');
 const jsonStringifyPretty = require("json-stringify-pretty-compact");
-const fs = require('fs');
 
 class Chat {
   constructor(/**Main*/main) {

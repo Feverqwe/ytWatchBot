@@ -1,9 +1,8 @@
-const fs = require('fs');
-const path = require('path');
+import fs from "fs";
 
 const loadConfig = (configPath, defaultConfig) => {
   Object.keys(defaultConfig).forEach(key => delete defaultConfig[key]);
-  const config = JSON.parse(fs.readFileSync(configPath));
+  const config = JSON.parse(fs.readFileSync(configPath).toString());
   Object.assign(defaultConfig, config);
 };
 

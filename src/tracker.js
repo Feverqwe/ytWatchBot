@@ -2,11 +2,11 @@ import parallel from "./tools/parallel";
 import arrayByPart from "./tools/arrayByPart";
 import promiseLimit from "./tools/promiseLimit";
 import fetchRequest from "./tools/fetchRequest";
+import qs from "querystring";
+import {v4 as uuidV4} from "uuid";
+import QuickLRU from "quick-lru";
 
 const debug = require('debug')('app:tracker');
-const qs = require('querystring');
-const uuidV4 = require('uuid').v4;
-const QuickLRU = require('quick-lru');
 const throttle = require('lodash.throttle');
 
 const oneLimit = promiseLimit(1);
