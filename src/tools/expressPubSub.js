@@ -6,7 +6,7 @@ import express from "express";
 import qs from "querystring";
 
 const debug = require('debug')('app:ExpressPubSub');
-const rateLimit = new RateLimit(500);
+const rateLimit = new RateLimit(250);
 
 const fetchRequestLimited = rateLimit.wrap(fetchRequest);
 
