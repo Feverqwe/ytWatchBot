@@ -7,9 +7,9 @@ import Sender from "./sender";
 import Chat from "./chat";
 import Checker from "./checker";
 import YtPubSub from "./ytPubSub";
-import RateLimit from "./tools/rateLimit";
 import Events from "events";
 import path from "path";
+import RateLimit2 from "./tools/rateLimit2";
 
 process.env.NTBA_FIX_319 = true;
 process.env.NTBA_FIX_350 = true;
@@ -108,7 +108,7 @@ class Main extends Events {
       debug('pollingError %s', err.message);
     });
 
-    const limit = new RateLimit(30);
+    const limit = new RateLimit2(30);
     bot.sendMessage = limit.wrap(bot.sendMessage.bind(bot));
     bot.sendPhotoQuote = limit.wrap(bot.sendPhoto.bind(bot));
 

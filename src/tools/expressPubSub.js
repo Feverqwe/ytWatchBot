@@ -1,12 +1,12 @@
 import fetchRequest from "./fetchRequest";
-import RateLimit from "./rateLimit";
 import Events from "events";
 import crypto from "crypto";
 import express from "express";
 import qs from "querystring";
+import RateLimit2 from "./rateLimit2";
 
 const debug = require('debug')('app:ExpressPubSub');
-const rateLimit = new RateLimit(250);
+const rateLimit = new RateLimit2(250);
 
 const fetchRequestLimited = rateLimit.wrap(fetchRequest);
 

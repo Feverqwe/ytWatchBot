@@ -1,16 +1,16 @@
 import ErrorWithCode from "../tools/errorWithCode";
 import * as s from "superstruct";
-import RateLimit from "../tools/rateLimit";
 import arrayByPart from "../tools/arrayByPart";
 import parallel from "../tools/parallel";
 import formatDuration from "../tools/formatDuration";
 import ensureMap from "../tools/ensureMap";
 import promiseTry from "../tools/promiseTry";
 import fetchRequest from "../tools/fetchRequest";
+import RateLimit2 from "../tools/rateLimit2";
 
 const debug = require('debug')('app:Youtube');
 
-const rateLimit = new RateLimit(1000);
+const rateLimit = new RateLimit2(1000);
 const fetchRequestLimited = rateLimit.wrap(fetchRequest);
 
 const VideosItemsSnippetStruct = s.object({
