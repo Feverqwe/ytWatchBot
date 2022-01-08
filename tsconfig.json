@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "allowJs": true,
+    "strict": true,
+    "noEmit": true,
+    "target": "ES2020",
+    "moduleResolution": "Node",
+    "skipLibCheck": true,
+    "esModuleInterop": true
+  }
+}
