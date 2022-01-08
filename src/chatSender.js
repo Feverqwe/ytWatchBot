@@ -277,7 +277,7 @@ function getDescription(video) {
   const lines = [];
 
   const firstLine = [
-    htmlSanitize(video.title), '—', htmlSanitize(video.channel.title)
+    htmlSanitize('', video.title), '—', htmlSanitize('', video.channel.title)
   ];
 
   const secondLine = [video.url];
