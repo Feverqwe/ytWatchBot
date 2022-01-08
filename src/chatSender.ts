@@ -8,7 +8,6 @@ import {TMessage} from "./router";
 import {ChatModel, VideoModelWithChannel} from "./db";
 
 const debug = require('debug')('app:ChatSender');
-const request = require('request');
 
 const videoWeakMap = new WeakMap();
 
@@ -196,7 +195,11 @@ class ChatSender {
             debug('Content-type is empty, set default content-type %s', url);
             contentType = 'image/jpeg';
           }
-          return this.main.bot.sendPhoto(this.chat.id, request(url), {caption}, {contentType}).then((message: TMessage) => {
+          return fetchRequest<ReadableStream>(url, {responseType: 'stream', keepAlive: true}).then((response) => {
+            const imageStream = response.body;
+            Object.assign(imageStream, {path: '/'});
+            return this.main.bot.sendPhoto(this.chat.id, imageStream, {caption}, {contentType});
+          }).then((message: TMessage) => {
             this.main.sender.log.write(`[send photo as file] ${this.chat.id} ${video.channelId} ${video.id}`);
             this.main.tracker.track(this.chat.id, {
               ec: 'bot',
