@@ -700,7 +700,7 @@ class Chat {
       }
 
       return this.main.bot.sendMessage(chatId, msgText, options).then((msg) => {
-        return this.router.waitResponse({
+        return this.router.waitResponse(null, {
           event: 'message',
           type: 'text',
           chatId: chatId,
