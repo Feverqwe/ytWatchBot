@@ -263,7 +263,7 @@ class Db {
         fields: ['publishedAt']
       }]
     });
-    VideoModel.belongsTo(ChatModel, {foreignKey: 'channelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
+    VideoModel.belongsTo(ChannelModel, {foreignKey: 'channelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
 
     ChatIdVideoIdModel.init({
       id: {type: Sequelize.INTEGER, allowNull: false, primaryKey: true, autoIncrement: true},
@@ -558,7 +558,7 @@ class Db {
     });
   }
 
-  putYtPubSub(feeds: Feed[], channelsChanges: ChannelModel[], channelIds: string[]) {
+  putYtPubSub(feeds: Feed[], channelsChanges: NewChannel[], channelIds: string[]) {
     return this.sequelize.transaction({
       isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
     }, async (transaction) => {
@@ -643,7 +643,7 @@ class Db {
     });
   }
 
-  putVideos(channelsChanges: ChannelModel["_attributes"][], videos: RawVideo[], chatIdVideoIdChanges: NewChatIdVideoIdModel[]) {
+  putVideos(channelsChanges: NewChannel[], videos: RawVideo[], chatIdVideoIdChanges: NewChatIdVideoIdModel[]) {
     return this.sequelize.transaction({
       isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
     }, async (transaction) => {

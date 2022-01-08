@@ -9,6 +9,7 @@ import express from "express";
 import qs from "querystring";
 import Main from "./main";
 import {Server} from "http";
+import {NewChannel} from "./db";
 
 const debug = require('debug')('app:YtPubSub');
 const {XmlDocument} = require("xmldoc");
@@ -168,7 +169,7 @@ class YtPubSub {
           return this.main.checker.oneLimit(() => {
             return this.main.db.getChannelsByIds(feedChannelIds).then((channels) => {
               const channelIds: string[] = [];
-              const channelIdChanges = new Map();
+              const channelIdChanges = new Map<string, NewChannel>();
               channels.forEach((channel) => {
                 if (!channelIds.includes(channel.id)) {
                   channelIds.push(channel.id);
