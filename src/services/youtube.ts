@@ -9,11 +9,14 @@ import fetchRequest, {HTTPError} from "../tools/fetchRequest";
 import RateLimit2 from "../tools/rateLimit2";
 import {FilterFn, RawChannel, RawVideo, ServiceInterface} from "../checker";
 import Main from "../main";
+import {RateLimiter} from "limiter";
 
 const debug = require('debug')('app:Youtube');
 
-const rateLimit = new RateLimit2(1000);
-const fetchRequestLimited = rateLimit.wrap(fetchRequest);
+const queriesPerMinute = new RateLimiter({
+  tokensPerInterval: 18000000,
+  interval: "minute",
+});
 
 const VideosItemsSnippetStruct = s.object({
   items: s.array(s.object({
@@ -122,8 +125,9 @@ class Youtube implements ServiceInterface {
     return tryFixBackendError(25, (maxResults = 50) => {
       resultVideos.splice(0);
       return parallel(10, arrayByPart(videoIds, maxResults), (videoIds) => {
-        return iterPages((pageToken) => {
-          return fetchRequestLimited('https://www.googleapis.com/youtube/v3/videos', {
+        return iterPages(async (pageToken) => {
+          await queriesPerMinute.removeTokens(1);
+          return fetchRequest('https://www.googleapis.com/youtube/v3/videos', {
             searchParams: {
               part: 'snippet,contentDetails',
               id: videoIds.join(','),
@@ -177,8 +181,9 @@ class Youtube implements ServiceInterface {
       const videoIds: string[] = [];
       return tryFixBackendError(25, (maxResults = 50) => {
         videoIds.splice(0);
-        return iterPages((pageToken) => {
-          return fetchRequestLimited('https://www.googleapis.com/youtube/v3/activities', {
+        return iterPages(async (pageToken) => {
+          await queriesPerMinute.removeTokens(1);
+          return fetchRequest('https://www.googleapis.com/youtube/v3/activities', {
             searchParams: {
               part: 'contentDetails',
               channelId: channelId,
@@ -228,8 +233,9 @@ class Youtube implements ServiceInterface {
   getExistsChannelIds(ids: string[]) {
     const resultChannelIds: string[] = [];
     return parallel(10, arrayByPart(ids, 50), (ids) => {
-      return iterPages((pageToken) => {
-        return fetchRequestLimited('https://www.googleapis.com/youtube/v3/channels', {
+      return iterPages(async (pageToken) => {
+        await queriesPerMinute.removeTokens(1);
+        return fetchRequest('https://www.googleapis.com/youtube/v3/channels', {
           searchParams: {
             part: 'id',
             id: ids.join(','),
@@ -259,7 +265,8 @@ class Youtube implements ServiceInterface {
       throw new ErrorWithCode('Query is empty', 'QUERY_IS_EMPTY')
     }
 
-    return fetchRequestLimited('https://www.googleapis.com/youtube/v3/search', {
+    await queriesPerMinute.removeTokens(100);
+    return fetchRequest('https://www.googleapis.com/youtube/v3/search', {
       searchParams: {
         part: 'snippet',
         q: query,
@@ -302,7 +309,8 @@ class Youtube implements ServiceInterface {
       throw new ErrorWithCode('Incorrect username', 'INCORRECT_USERNAME');
     }
 
-    return fetchRequestLimited('https://www.googleapis.com/youtube/v3/channels', {
+    await queriesPerMinute.removeTokens(1);
+    return fetchRequest('https://www.googleapis.com/youtube/v3/channels', {
       searchParams: {
         part: 'snippet',
         forUsername: username,
@@ -340,7 +348,8 @@ class Youtube implements ServiceInterface {
       throw new ErrorWithCode('Is not video url', 'IS_NOT_VIDEO_URL');
     }
 
-    return fetchRequestLimited('https://www.googleapis.com/youtube/v3/videos', {
+    await queriesPerMinute.removeTokens(1);
+    return fetchRequest('https://www.googleapis.com/youtube/v3/videos', {
       searchParams: {
         part: 'snippet',
         id: videoId,
@@ -404,8 +413,9 @@ class Youtube implements ServiceInterface {
         return this.requestChannelIdByQuery(query);
       }
       throw err;
-    }).then((channelId) => {
-      return fetchRequestLimited('https://www.googleapis.com/youtube/v3/activities', {
+    }).then(async (channelId) => {
+      await queriesPerMinute.removeTokens(1);
+      return fetchRequest('https://www.googleapis.com/youtube/v3/activities', {
         searchParams: {
           part: 'contentDetails',
           channelId: channelId,
@@ -427,8 +437,9 @@ class Youtube implements ServiceInterface {
         }
         return videoId;
       });
-    }).then((videoId) => {
-      return fetchRequestLimited('https://www.googleapis.com/youtube/v3/videos', {
+    }).then(async (videoId) => {
+      await queriesPerMinute.removeTokens(1);
+      return fetchRequest('https://www.googleapis.com/youtube/v3/videos', {
         searchParams: {
           part: 'snippet',
           id: videoId,
