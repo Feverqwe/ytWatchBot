@@ -11,6 +11,17 @@ import {Feed} from "./ytPubSub";
 const debug = require('debug')('app:db');
 const ISOLATION_LEVELS = Transaction.ISOLATION_LEVELS;
 
+export interface NewChat {
+  id: string;
+  channelId?: string|null;
+  isHidePreview?: boolean;
+  isMuted?: boolean;
+  sendTimeoutExpiresAt?: Date;
+  parentChatId?: string|null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 export class ChatModel extends Sequelize.Model {
   declare id: string;
   declare channelId: string|null;

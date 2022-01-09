@@ -20,7 +20,7 @@ import TimeCache from "./tools/timeCache";
 import fs from "fs";
 import Main from "./main";
 import assertType from "./tools/assertType";
-import {ChannelModel, ChatModel, ChatModelWithOptionalChannel} from "./db";
+import {ChannelModel, ChatModel, ChatModelWithOptionalChannel, NewChat} from "./db";
 
 const debug = require('debug')('app:Chat');
 const jsonStringifyPretty = require("json-stringify-pretty-compact");
@@ -583,7 +583,7 @@ class Chat {
 
       const {optionsType, key, value} = req.params;
       return promiseTry(() => {
-        const changes: Partial<ChatModel> = {};
+        const changes: Partial<NewChat> = {};
         switch (key) {
           case 'isHidePreview': {
             changes.isHidePreview = value === 'true';
