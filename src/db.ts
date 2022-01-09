@@ -644,29 +644,40 @@ class Db {
   }
 
   putVideos(channelsChanges: NewChannel[], videos: RawVideo[], chatIdVideoIdChanges: NewChatIdVideoIdModel[]) {
-    return this.sequelize.transaction({
-      isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
-    }, async (transaction) => {
-      await Promise.all([
-        bulk(channelsChanges, (channelsChanges) => {
-          return ChannelModel.bulkCreate(channelsChanges, {
-            updateOnDuplicate: ['lastSyncAt', 'lastFullSyncAt', 'lastVideoPublishedAt', 'title'],
-            transaction
-          });
-        }),
-        bulk(videos, (videos) => {
-          return VideoModel.bulkCreate(videos, {
-            transaction
-          });
-        }),
-      ]);
+    let retry = 3;
 
-      await bulk(chatIdVideoIdChanges, (chatIdVideoIdChanges) => {
-        return ChatIdVideoIdModel.bulkCreate(chatIdVideoIdChanges, {
-          transaction
+    const doTry = (): Promise<void> => {
+      return this.sequelize.transaction({
+        isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
+      }, async (transaction) => {
+        await Promise.all([
+          bulk(channelsChanges, (channelsChanges) => {
+            return ChannelModel.bulkCreate(channelsChanges, {
+              updateOnDuplicate: ['lastSyncAt', 'lastFullSyncAt', 'lastVideoPublishedAt', 'title'],
+              transaction
+            });
+          }),
+          bulk(videos, (videos) => {
+            return VideoModel.bulkCreate(videos, {
+              transaction
+            });
+          }),
+        ]);
+
+        await bulk(chatIdVideoIdChanges, (chatIdVideoIdChanges) => {
+          return ChatIdVideoIdModel.bulkCreate(chatIdVideoIdChanges, {
+            transaction
+          });
         });
+      }).catch((err) => {
+        if (/Deadlock found when trying to get lock/.test(err.message) && --retry > 0) {
+          return new Promise(r => setTimeout(r, 250)).then(() => doTry());
+        }
+        throw err;
       });
-    });
+    };
+
+    return doTry();
   }
 
   getDistinctChatIdVideoIdChatIds() {
