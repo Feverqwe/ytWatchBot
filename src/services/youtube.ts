@@ -6,7 +6,6 @@ import formatDuration from "../tools/formatDuration";
 import ensureMap from "../tools/ensureMap";
 import promiseTry from "../tools/promiseTry";
 import fetchRequest, {HTTPError} from "../tools/fetchRequest";
-import RateLimit2 from "../tools/rateLimit2";
 import {FilterFn, RawChannel, RawVideo, ServiceInterface} from "../checker";
 import Main from "../main";
 import {RateLimiter} from "limiter";
