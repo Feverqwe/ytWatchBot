@@ -461,6 +461,9 @@ class Chat {
       assertType<typeof req & WithChat>(req);
 
       return promiseTry(() => {
+        if (!req.chat.channelId) {
+          throw new Error('ChannelId is not set');
+        }
         return this.main.db.deleteChatById(req.chat.channelId);
       }).then(() => {
         return this.main.bot.editMessageReplyMarkup(JSON.stringify({

@@ -13,7 +13,7 @@ const ISOLATION_LEVELS = Transaction.ISOLATION_LEVELS;
 
 export class ChatModel extends Sequelize.Model {
   declare id: string;
-  declare channelId: string;
+  declare channelId: string|null;
   declare isHidePreview: boolean;
   declare isMuted: boolean;
   declare sendTimeoutExpiresAt: Date;
