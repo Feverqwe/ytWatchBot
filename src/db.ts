@@ -4,7 +4,7 @@ import serviceId from "./tools/serviceId";
 import arrayDifference from "./tools/arrayDifference";
 import Sequelize, {Op, Transaction} from "sequelize";
 import Main from "./main";
-import {RawVideo, ServiceChannel, ServiceInterface} from "./checker";
+import {ServiceChannel, ServiceInterface} from "./checker";
 import assertType from "./tools/assertType";
 import {Feed} from "./ytPubSub";
 
@@ -102,17 +102,17 @@ export class VideoModel extends Sequelize.Model {
 export interface VideoModelWithChannel extends VideoModel {
   channel: ChannelModel,
 }
-export interface NewVideoModel {
+export interface NewVideo {
   id: string;
   url: string;
   title: string;
   previews: string[];
-  duration: string|null;
+  duration?: string|null;
   channelId: string;
   publishedAt: Date;
-  telegramPreviewFileId: string|null;
-  mergedId: string | null;
-  mergedChannelId: string | null;
+  telegramPreviewFileId?: string|null;
+  mergedId?: string | null;
+  mergedChannelId?: string | null;
 }
 
 export class ChatIdVideoIdModel extends Sequelize.Model {
@@ -121,7 +121,7 @@ export class ChatIdVideoIdModel extends Sequelize.Model {
   declare videoId: string;
   declare createdAt: Date;
 }
-export interface NewChatIdVideoIdModel {
+export interface NewChatIdVideoId {
   chatId: string;
   videoId: string;
 }
@@ -654,7 +654,7 @@ class Db {
     });
   }
 
-  putVideos(channelsChanges: NewChannel[], videos: RawVideo[], chatIdVideoIdChanges: NewChatIdVideoIdModel[]) {
+  putVideos(channelsChanges: NewChannel[], videos: NewVideo[], chatIdVideoIdChanges: NewChatIdVideoId[]) {
     let retry = 3;
 
     const doTry = (): Promise<void> => {

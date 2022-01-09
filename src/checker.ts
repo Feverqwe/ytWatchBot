@@ -7,7 +7,7 @@ import parallel from "./tools/parallel";
 import {everyMinutes} from "./tools/everyTime";
 import promiseLimit from "./tools/promiseLimit";
 import Main from "./main";
-import {ChannelModel, NewChannel, NewChatIdVideoIdModel} from "./db";
+import {ChannelModel, NewChannel, NewChatIdVideoId, NewVideo} from "./db";
 
 const debug = require('debug')('app:Checker');
 
@@ -36,17 +36,8 @@ export interface RawChannel {
   publishedAfter: Date,
 }
 
-export interface RawVideo {
-  id: string
-  url: string,
-  title: string,
-  previews: string[],
-  duration: string | null,
-  channelId: string,
+export type RawVideo = NewVideo & {
   channelTitle: string,
-  publishedAt: Date,
-  mergedId?: string,
-  mergedChannelId?: string,
 }
 
 class Checker {
@@ -229,7 +220,7 @@ class Checker {
               }
             });
 
-            const chatIdVideoIdChanges: NewChatIdVideoIdModel[] = [];
+            const chatIdVideoIdChanges: NewChatIdVideoId[] = [];
             for (const [channelId, chats] of channelIdChats.entries()) {
               const videoIds = channelIdVideoIds.get(channelId);
               if (videoIds) {
