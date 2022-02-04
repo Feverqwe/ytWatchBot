@@ -401,7 +401,7 @@ class Db {
 
     return ChannelModel.findOrCreate({
       where: {id},
-      defaults: Object.assign({}, rawChannel, {id, service: service.id})
+      defaults: Object.assign({}, rawChannel, {id, service: service.id}) as any,
     }).then(([channel, isCreated]) => {
       return channel;
     });
@@ -581,7 +581,7 @@ class Db {
           });
         }),*/
         bulk(channelsChanges, (channelsChanges) => {
-          return ChannelModel.bulkCreate(channelsChanges, {
+          return ChannelModel.bulkCreate(channelsChanges as any, {
             updateOnDuplicate: ['lastVideoPublishedAt'],
             transaction,
           });
@@ -663,20 +663,20 @@ class Db {
       }, async (transaction) => {
         await Promise.all([
           bulk(channelsChanges, (channelsChanges) => {
-            return ChannelModel.bulkCreate(channelsChanges, {
+            return ChannelModel.bulkCreate(channelsChanges as any, {
               updateOnDuplicate: ['lastSyncAt', 'lastFullSyncAt', 'lastVideoPublishedAt', 'title'],
               transaction
             });
           }),
           bulk(videos, (videos) => {
-            return VideoModel.bulkCreate(videos, {
+            return VideoModel.bulkCreate(videos as any, {
               transaction
             });
           }),
         ]);
 
         await bulk(chatIdVideoIdChanges, (chatIdVideoIdChanges) => {
-          return ChatIdVideoIdModel.bulkCreate(chatIdVideoIdChanges, {
+          return ChatIdVideoIdModel.bulkCreate(chatIdVideoIdChanges as any, {
             transaction
           });
         });
