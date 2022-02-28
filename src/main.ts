@@ -65,6 +65,7 @@ const config = {
     password: ''
   },
   adminIds: [] as number[],
+  channelBlackList: [] as string[],
 };
 
 loadConfig(path.join(__dirname, '..', 'config.json'), config);
