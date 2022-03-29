@@ -73,7 +73,7 @@ class YtPubSub {
 
   inProgress = getInProgress();
 
-  updateSubscribes() {
+  updateSubscribes = () => {
     return this.inProgress(() => oneLimit(async () => {
       while (true) {
         const channelIds = await this.main.db.getChannelIdsWithExpiresSubscription();
@@ -103,7 +103,7 @@ class YtPubSub {
     }));
   }
 
-  clean() {
+  clean = () => {
     return oneLimit(() => {
       return this.main.db.cleanYtPubSub().then((count) => {
         return {removedVideoIds: count};

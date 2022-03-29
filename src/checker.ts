@@ -81,7 +81,7 @@ class Checker {
     return defaultDate;
   }
 
-  check() {
+  check = () => {
     return this.inProgress(() => this.oneLimit(async () => {
       while (true) {
         const channels = await this.main.db.getChannelsForSync(50);
@@ -270,7 +270,7 @@ class Checker {
   }
 
   checkChannelsExistsInProgress = getInProgress();
-  checkChannelsExists() {
+  checkChannelsExists = () => {
     return this.checkChannelsExistsInProgress(async () => {
       return parallel(1, this.main.services, async (service) => {
         const result = {
@@ -303,7 +303,7 @@ class Checker {
     });
   }
 
-  clean() {
+  clean = () => {
     return this.oneLimit(() => {
       return Promise.all([
         this.main.db.cleanChats().then((chatsCount) => {
