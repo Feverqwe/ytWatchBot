@@ -284,7 +284,7 @@ class Youtube implements ServiceInterface {
   }
 
   async requestChannelIdByUserUrl(url: string) {
-    let username = null;
+    let username = '';
     [
       /youtube\.com\/(?:#\/)?user\/([\w\-]+)/i,
       /youtube\.com\/c\/([\w\-]+)/i,
@@ -323,6 +323,11 @@ class Youtube implements ServiceInterface {
       }
 
       return channelsItemsId.items[0].id;
+    }).catch((err) => {
+      if (err.code === 'CHANNEL_BY_USER_IS_NOT_FOUND') {
+        return this.requestChannelIdByQuery(username);
+      }
+      throw err;
     });
   }
 
