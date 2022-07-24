@@ -12,6 +12,8 @@ const debug = require('debug')('app:ChatSender');
 const videoWeakMap = new WeakMap();
 
 class ChatSender {
+  aborted = false;
+  lockCount = 0;
   startAt = Date.now();
   lastActivityAt = Date.now();
 
