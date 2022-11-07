@@ -157,6 +157,7 @@ class Youtube implements ServiceInterface {
                 channelId: video.snippet.channelId,
                 channelTitle: video.snippet.channelTitle,
                 publishedAt: new Date(video.snippet.publishedAt),
+                rawPublishedAt: video.snippet.publishedAt,
               };
 
               resultVideos.push(result);
