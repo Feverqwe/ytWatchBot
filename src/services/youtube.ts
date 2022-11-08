@@ -136,9 +136,6 @@ class Youtube implements ServiceInterface {
           }).then(({body}) => {
             const videos = s.mask(body, VideosResponseStruct);
 
-            const publishedAfter = new Date();
-            publishedAfter.setDate(publishedAfter.getDate() - this.main.config.cleanVideosIfPublishedOlderThanDays);
-
             videos.items.forEach((video) => {
               const previews = Object.values(video.snippet.thumbnails).sort((a, b) => {
                 return a.width > b.width ? -1 : 1;
@@ -151,13 +148,6 @@ class Youtube implements ServiceInterface {
                 debug('formatDuration %s error %o', video.id, err);
               }
 
-              const publishedAt = new Date(video.snippet.publishedAt);
-
-              if (publishedAt.getTime() < publishedAfter.getTime()) {
-                debug('Skip video %s, cause published before than expected (%s < %s)', video.id, publishedAt.toISOString(), publishedAfter.toISOString());
-                return;
-              }
-
               const result = {
                 id: video.id,
                 url: getVideoUrl(video.id),
@@ -166,7 +156,7 @@ class Youtube implements ServiceInterface {
                 duration: duration,
                 channelId: video.snippet.channelId,
                 channelTitle: video.snippet.channelTitle,
-                publishedAt,
+                publishedAt: new Date(video.snippet.publishedAt),
               };
 
               resultVideos.push(result);

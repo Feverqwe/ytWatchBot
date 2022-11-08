@@ -220,6 +220,9 @@ class Checker {
               }
             });
 
+            const minPublishedAfter = new Date();
+            minPublishedAfter.setDate(minPublishedAfter.getDate() - this.main.config.cleanVideosIfPublishedOlderThanDays);
+
             const chatIdVideoIdChanges: NewChatIdVideoId[] = [];
             for (const [channelId, chats] of channelIdChats.entries()) {
               const videoIds = channelIdVideoIds.get(channelId);
@@ -227,7 +230,7 @@ class Checker {
                 videoIds.forEach((videoId) => {
                   const video = videoIdVideo.get(videoId)!;
                   chats.forEach(({chatId, createdAt}) => {
-                    if (video.publishedAt.getTime() > createdAt.getTime()) {
+                    if (video.publishedAt.getTime() > minPublishedAfter.getTime() && video.publishedAt.getTime() > createdAt.getTime()) {
                       chatIdVideoIdChanges.push({chatId, videoId});
                     }
                   });
