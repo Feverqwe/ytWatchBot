@@ -38,7 +38,6 @@ export interface RawChannel {
 
 export type RawVideo = NewVideo & {
   channelTitle: string,
-  rawPublishedAt: string;
 }
 
 class Checker {
@@ -244,7 +243,7 @@ class Checker {
                 if (channelIdIsFullCheck.has(video.channelId)) {
                   const publishedAfter = channelIdIsFullCheck.get(video.channelId)!;
                   if (video.publishedAt.getTime() >= publishedAfter.getTime()) {
-                    type = `insert as full ${video.rawPublishedAt}`
+                    type = 'insert as full'
                   } else {
                     type = 'insert full'
                   }
