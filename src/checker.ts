@@ -314,7 +314,7 @@ class Checker {
             return [chatsCount, channelsCount];
           });
         }),
-        this.main.db.cleanVideos()
+        0, // this.main.db.cleanVideos()
       ]).then(([[removedChats, removedChannels], removedVideos]) => {
         return {removedChats, removedChannels, removedVideos};
       });
