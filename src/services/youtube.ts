@@ -107,16 +107,16 @@ class Youtube implements ServiceInterface {
   constructor(private main: Main) {}
 
   getVideos(channels: RawChannel[], filterFn: FilterFn) {
-    return this.getVideoIds(channels).then(({videoIds, videoIdChannelIds, skippedChannelIds}) => {
+    return this.getVideoIds(channels).then(({videoIds, videoIdChannelIds, skippedChannelIds, videoIdPublishedAfter}) => {
       return filterFn(videoIds).then((videoIds) => {
-        return this.getVideosByIds(videoIds);
+        return this.getVideosByIds(videoIds, videoIdPublishedAfter);
       }).then((videos) => {
         return {videos, videoIdChannelIds, skippedChannelIds};
       });
     });
   }
 
-  getVideosByIds(videoIds: string[]) {
+  getVideosByIds(videoIds: string[], videoIdPublishedAfter: Map<string, Date>) {
     const resultVideos: RawVideo[] = [];
     return tryFixBackendError(25, (maxResults = 50) => {
       resultVideos.splice(0);
@@ -148,6 +148,14 @@ class Youtube implements ServiceInterface {
                 debug('formatDuration %s error %o', video.id, err);
               }
 
+              const publishedAt = new Date(video.snippet.publishedAt);
+
+              const publishedAfter = videoIdPublishedAfter.get(video.id);
+              if (publishedAfter && publishedAt.getTime() < publishedAfter.getTime()) {
+                debug('Skip video %s, cause published before than expected (%s < %s)', video.id, publishedAt.toISOString(), publishedAfter.toISOString());
+                return;
+              }
+
               const result = {
                 id: video.id,
                 url: getVideoUrl(video.id),
@@ -156,7 +164,7 @@ class Youtube implements ServiceInterface {
                 duration: duration,
                 channelId: video.snippet.channelId,
                 channelTitle: video.snippet.channelTitle,
-                publishedAt: new Date(video.snippet.publishedAt),
+                publishedAt,
               };
 
               resultVideos.push(result);
@@ -172,6 +180,7 @@ class Youtube implements ServiceInterface {
   getVideoIds(channels: RawChannel[]) {
     const resultSkippedChannelIds: string[] = [];
     const videoIdChannelIds = new Map<string, string[]>();
+    const videoIdPublishedAfter = new Map<string, Date>();
     const resultVideoIds: string[] = [];
     return parallel(10, channels, ({id: channelId, publishedAfter}) => {
       const videoIds: string[] = [];
@@ -212,6 +221,8 @@ class Youtube implements ServiceInterface {
           if (!channelIds.includes(channelId)) {
             channelIds.push(channelId);
           }
+
+          videoIdPublishedAfter.set(videoId, publishedAfter);
         });
       }, (err) => {
         debug(`getVideoIds for channel (%s) skip, cause: %o`, channelId, err);
@@ -222,6 +233,7 @@ class Youtube implements ServiceInterface {
         videoIds: resultVideoIds,
         videoIdChannelIds: videoIdChannelIds,
         skippedChannelIds: resultSkippedChannelIds,
+        videoIdPublishedAfter,
       };
     });
   }
