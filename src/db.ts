@@ -667,7 +667,9 @@ class Db {
       });
       offset += limit;
       if (!videos.length) break;
-      await VideoIdModel.bulkCreate(videos);
+      await VideoIdModel.bulkCreate(videos, {
+        updateOnDuplicate: ['id'],
+      });
     }
   }
 
