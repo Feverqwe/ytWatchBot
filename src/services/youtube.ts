@@ -73,7 +73,7 @@ const VideosResponseStruct = s.object({
       channelTitle: s.string(),
       // tags: [s.string()],
       // categoryId: s.string(), // 10
-      // liveBroadcastContent: s.string(), // none
+      liveBroadcastContent: s.string(), // live none upcoming
       // localized: s.object({
       //   title: s.string(),
       //   description: s.string(),
@@ -137,6 +137,8 @@ class Youtube implements ServiceInterface {
             const videos = s.mask(body, VideosResponseStruct);
 
             videos.items.forEach((video) => {
+              if (video.snippet.liveBroadcastContent === 'upcoming') return;
+
               const previews = Object.values(video.snippet.thumbnails).sort((a, b) => {
                 return a.width > b.width ? -1 : 1;
               }).map(thumbnail => thumbnail.url);
