@@ -650,7 +650,7 @@ class Db {
   }
 
   status = -1;
-  async syncVideoIds() {
+  syncVideoIds = async () => {
     if (this.status !== -1) return this.status;
     let limit = 50000;
     let offset = 0;
