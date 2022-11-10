@@ -126,6 +126,12 @@ export interface NewChatIdVideoId {
   videoId: string;
 }
 
+export class VideoIdModel extends Sequelize.Model {
+  declare id: string;
+  declare channelId: string;
+  declare createdAt: Date;
+}
+
 class Db {
   private sequelize: Sequelize.Sequelize;
   constructor(private main: Main) {
@@ -275,6 +281,18 @@ class Db {
       }]
     });
     VideoModel.belongsTo(ChannelModel, {foreignKey: 'channelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
+
+    VideoIdModel.init({
+      id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
+      channelId: {type: Sequelize.STRING(191), allowNull: false},
+    }, {
+      sequelize: this.sequelize,
+      modelName: 'videoIds',
+      tableName: 'videoIds',
+      timestamps: true,
+      updatedAt: false,
+    })
+    VideoIdModel.belongsTo(ChannelModel, {foreignKey: 'channelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
 
     ChatIdVideoIdModel.init({
       id: {type: Sequelize.INTEGER, allowNull: false, primaryKey: true, autoIncrement: true},
@@ -631,6 +649,28 @@ class Db {
     });
   }
 
+  status = -1;
+  async syncVideoIds() {
+    if (this.status !== -1) return this.status;
+    let limit = 50000;
+    let offset = 0;
+    while (true) {
+      this.status = offset;
+      const videos = await VideoModel.findAll({
+        attributes: ['id', 'channelId', 'createdAt'],
+        offset,
+        limit,
+      }).then((items) => {
+        return items.map(({id, channelId, createdAt}) => {
+          return ({id, channelId, createdAt});
+        });
+      });
+      offset += limit;
+      if (!videos.length) break;
+      await VideoIdModel.bulkCreate(videos);
+    }
+  }
+
   getNoExistsVideoIds(ids: string[]) {
     return this.getExistsVideoIds(ids).then((results) => {
       return arrayDifference(ids, results);
@@ -677,6 +717,15 @@ class Db {
           }),
           bulk(videos, (videos) => {
             return VideoModel.bulkCreate(videos as any, {
+              transaction
+            });
+          }),
+          bulk(videos, (videos) => {
+            const videoIds = videos.map(video => ({
+              id: video.id,
+              channelId: video.channelId,
+            }));
+            return VideoIdModel.bulkCreate(videoIds, {
               transaction
             });
           }),

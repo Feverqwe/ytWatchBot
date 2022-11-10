@@ -820,6 +820,7 @@ class Chat {
       {name: 'Update pubsub', method: this.main.ytPubSub.updateSubscribes},
       {name: 'Clean chats & channels & videos', method: this.main.checker.clean},
       {name: 'Clean pubsub', method: this.main.ytPubSub.clean},
+      {name: 'Sync videoId model', method: this.main.db.syncVideoIds},
     ];
 
     this.router.callback_query(/\/admin\/(?<commandIndex>.+)/, isAdmin, (req, res) => {
