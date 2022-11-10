@@ -641,10 +641,10 @@ class Db {
   }
 
   getExistsVideoIds(ids: string[]) {
-    return VideoModel.findAll({
+    return VideoIdModel.findAll({
       where: {id: ids},
       attributes: ['id']
-    }).then((videos: Pick<VideoModel, 'id'>[]) => {
+    }).then((videos: Pick<VideoIdModel, 'id'>[]) => {
       return videos.map(video => video.id);
     });
   }
