@@ -137,7 +137,7 @@ class Youtube implements ServiceInterface {
             const videos = s.mask(body, VideosResponseStruct);
 
             videos.items.forEach((video) => {
-              if (video.snippet.liveBroadcastContent === 'upcoming') return;
+              if (video.snippet.liveBroadcastContent !== 'none') return;
 
               const previews = Object.values(video.snippet.thumbnails).sort((a, b) => {
                 return a.width > b.width ? -1 : 1;
