@@ -50,6 +50,11 @@ class ChatSender {
           const body = err.response.body;
 
           const isBlocked = isBlockedError(err);
+          const isSkipMessage = isSkipMessageError(err);
+          if (isSkipMessage) {
+            debug('skip message %s error: %o', this.chat.id, err);
+            return this.main.db.deleteChatIdVideoId(this.chat.id, video.id);
+          } else
           if (isBlocked) {
             return this.main.db.deleteChatById(this.chat.id).then(() => {
               this.main.chat.log.write(`[deleted] ${this.chat.id}, cause: (${body.error_code}) ${JSON.stringify(body.description)}`);
@@ -238,7 +243,11 @@ const blockedErrors = [
   /CHAT_SEND_MEDIA_FORBIDDEN/,
   /CHAT_RESTRICTED/,
   /not enough rights to send text messages to the chat/,
+];
+
+const skipMsgErrors = [
   /TOPIC_DELETED/,
+  /TOPIC_CLOSED/,
 ];
 
 const sendUrlErrors = [
@@ -324,6 +333,15 @@ export function isBlockedError(err: any) {
     }
 
     return isBlocked;
+  }
+  return false;
+}
+
+export function isSkipMessageError(err: any) {
+  if (err.code === 'ETELEGRAM') {
+    const body = err.response.body;
+
+    return skipMsgErrors.some(re => re.test(body.description));
   }
   return false;
 }
