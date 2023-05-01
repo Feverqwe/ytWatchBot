@@ -696,11 +696,18 @@ class Db {
   cleanVideos() {
     const date = new Date();
     date.setDate(date.getDate() - this.main.config.cleanVideosIfPublishedOlderThanDays);
-    return VideoModel.destroy({
-      where: {
-        publishedAt: {[Op.lt]: date}
-      }
-    });
+    return Promise.all([
+      VideoModel.destroy({
+        where: {
+          publishedAt: {[Op.lt]: date},
+        },
+      }),
+      VideoIdModel.destroy({
+        where: {
+          createdAt: {[Op.lt]: date},
+        },
+      }),
+    ]);
   }
 
   putVideos(channelsChanges: NewChannel[], videos: NewVideo[], chatIdVideoIdChanges: NewChatIdVideoId[]) {
