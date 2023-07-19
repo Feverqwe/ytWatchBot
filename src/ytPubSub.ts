@@ -8,7 +8,7 @@ import promiseLimit from "./tools/promiseLimit";
 import express from "express";
 import qs from "querystring";
 import Main from "./main";
-import {Server} from "http";
+import {IncomingHttpHeaders, Server} from "http";
 import {NewChannel} from "./db";
 
 const debug = require('debug')('app:YtPubSub');
@@ -20,19 +20,23 @@ const checkOneLimit = promiseLimit(1);
 
 class YtPubSub {
   private hubUrl = 'https://pubsubhubbub.appspot.com/subscribe';
-  private host = this.main.config.push.host || 'localhost';
-  private port = this.main.config.push.port;
-  private expressPubSub = new ExpressPubSub({
-    path: this.main.config.push.path,
-    secret: this.main.config.push.secret,
-    callbackUrl: this.main.config.push.callbackUrl,
-    leaseSeconds: this.main.config.push.leaseSeconds,
-  });
+  private host;
+  private port;
+  private expressPubSub;
   // private log = new LogFile('ytPubSub');
   private server: Server | undefined;
   private app = express();
 
-  constructor(private main: Main) {}
+  constructor(private main: Main) {
+    this.host = this.main.config.push.host || 'localhost';
+    this.port = this.main.config.push.port;
+    this.expressPubSub = new ExpressPubSub({
+      path: this.main.config.push.path,
+      secret: this.main.config.push.secret,
+      callbackUrl: this.main.config.push.callbackUrl,
+      leaseSeconds: this.main.config.push.leaseSeconds,
+    });
+  }
 
   init() {
     this.expressPubSub.bind(this.app);
@@ -227,7 +231,7 @@ interface PubSubFeed {
   hub: string|undefined,
   callback: string,
   feed: Buffer
-  headers: Headers
+  headers: IncomingHttpHeaders
 }
 
 export interface Feed {

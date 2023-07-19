@@ -37,8 +37,9 @@ interface WithChannels {
 class Chat {
   public log = new LogFile('chat');
   private chatIdAdminIdsCache = new TimeCache({maxSize: 100, ttl: 5 * 60 * 1000});
-  private router = new Router(this.main);
+  private router: Router;
   constructor(private main: Main) {
+    this.router = new Router(this.main);
     this.main.bot.on('message', (message: TMessage) => {
       this.router.handle('message', message);
     });

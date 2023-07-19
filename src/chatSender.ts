@@ -6,6 +6,7 @@ import fetchRequest from "./tools/fetchRequest";
 import Main from "./main";
 import {TMessage} from "./router";
 import {ChatModel, VideoModelWithChannel} from "./db";
+import ReadableStream = NodeJS.ReadableStream;
 
 const debug = require('debug')('app:ChatSender');
 
