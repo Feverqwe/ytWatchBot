@@ -9,12 +9,12 @@ RUN chown -R nobody:nobody ./ && \
 USER nobody:nobody
 COPY ./package.json .
 COPY ./package-lock.json .
-RUN npm ci --production
+RUN npm ci --omit=dev
 
 FROM base as build
 WORKDIR /opt/backend
 USER nobody:nobody
-RUN npm i
+RUN npm ci
 ADD ./src ./src
 COPY ./tsconfig.json .
 RUN npm run build
