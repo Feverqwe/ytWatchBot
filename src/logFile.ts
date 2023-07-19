@@ -9,7 +9,7 @@ class LogFile {
   constructor(name: string) {
     this.name = name;
 
-    const place = path.join(__dirname, '..', 'log');
+    const place = path.join(process.cwd(), 'log');
     ensureDir(place);
 
     this.stream = fs.createWriteStream(path.join(place, `${name}.log`), {

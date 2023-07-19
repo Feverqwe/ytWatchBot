@@ -22,6 +22,7 @@ import fs from "fs";
 import Main from "./main";
 import assertType from "./tools/assertType";
 import {ChannelModel, ChatModel, ChatModelWithOptionalChannel, NewChat} from "./db";
+import path from "path";
 
 const debug = require('debug')('app:Chat');
 const jsonStringifyPretty = require("json-stringify-pretty-compact");
@@ -212,7 +213,7 @@ class Chat {
     this.router.textOrCallbackQuery(/\/about/, (req, res) => {
       if (!liveTime) {
         try {
-          liveTime = JSON.parse(fs.readFileSync('./liveTime.json', 'utf8')).message;
+          liveTime = JSON.parse(fs.readFileSync(path.join(process.cwd(), './liveTime.json'), 'utf8')).message;
         } catch (err) {
           debug('Read liveTime.json error! %o', err);
           liveTime = '';

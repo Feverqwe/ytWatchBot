@@ -68,7 +68,7 @@ const config = {
   channelBlackList: [] as string[],
 };
 
-loadConfig(path.join(__dirname, '..', 'config.json'), config);
+loadConfig(path.join(process.cwd(), 'config.json'), config);
 
 class Main extends Events {
   config = config;
