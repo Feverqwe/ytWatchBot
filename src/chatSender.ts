@@ -6,6 +6,7 @@ import fetchRequest from "./tools/fetchRequest";
 import Main from "./main";
 import {TMessage} from "./router";
 import {ChatModel, VideoModelWithChannel} from "./db";
+import {tracker} from "./tracker";
 import ReadableStream = NodeJS.ReadableStream;
 
 const debug = require('debug')('app:ChatSender');
@@ -106,7 +107,7 @@ class ChatSender {
       } else {
         type = 'send message';
       }
-      this.main.tracker.track(this.chat.id, {
+      tracker.track(this.chat.id, {
         ec: 'bot',
         ea: 'sendMsg',
         el: video.channelId,
@@ -122,7 +123,7 @@ class ChatSender {
       return this.main.bot.sendPhotoQuote(this.chat.id, video.telegramPreviewFileId, {
         caption: getCaption(video)
       }).then((message: TMessage) => {
-        this.main.tracker.track(this.chat.id, {
+        tracker.track(this.chat.id, {
           ec: 'bot',
           ea: 'sendPhoto',
           el: video.channelId,
@@ -185,7 +186,7 @@ class ChatSender {
       const caption = getCaption(video);
       return this.main.bot.sendPhoto(this.chat.id, url, {caption}).then((message: TMessage) => {
         this.main.sender.log.write(`[send photo as url] ${this.chat.id} ${video.channelId} ${video.id}`);
-        this.main.tracker.track(this.chat.id, {
+        tracker.track(this.chat.id, {
           ec: 'bot',
           ea: 'sendPhoto',
           el: video.channelId,
@@ -207,7 +208,7 @@ class ChatSender {
             return this.main.bot.sendPhoto(this.chat.id, response.body, {caption}, {contentType, filename: '-'});
           }).then((message: TMessage) => {
             this.main.sender.log.write(`[send photo as file] ${this.chat.id} ${video.channelId} ${video.id}`);
-            this.main.tracker.track(this.chat.id, {
+            tracker.track(this.chat.id, {
               ec: 'bot',
               ea: 'sendPhoto',
               el: video.channelId,

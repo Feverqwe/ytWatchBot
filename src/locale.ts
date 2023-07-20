@@ -38,4 +38,8 @@ class Locale {
   }
 }
 
+const locale = new Locale();
+
+export {locale};
+
 export default Locale;

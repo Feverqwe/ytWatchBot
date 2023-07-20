@@ -19,7 +19,7 @@ RUN npm run build
 
 FROM base as release
 COPY --from=build /opt/dist ./dist
-COPY ./config.json .
+COPY ./.env .
 
 ENV NODE_ENV=production
 ENV DEBUG=app:*

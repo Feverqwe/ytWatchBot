@@ -7,6 +7,7 @@ import Main from "./main";
 import {ServiceChannel, ServiceInterface} from "./checker";
 import assertType from "./tools/assertType";
 import {Feed} from "./ytPubSub";
+import {appConfig} from "./appConfig";
 
 const debug = require('debug')('app:db');
 const ISOLATION_LEVELS = Transaction.ISOLATION_LEVELS;
@@ -129,9 +130,9 @@ export interface NewChatIdVideoId {
 class Db {
   private sequelize: Sequelize.Sequelize;
   constructor(private main: Main) {
-    this.sequelize = new Sequelize.Sequelize(main.config.db.database, main.config.db.user, main.config.db.password, {
-      host: main.config.db.host,
-      port: main.config.db.port,
+    this.sequelize = new Sequelize.Sequelize(appConfig.db.database, appConfig.db.user, appConfig.db.password, {
+      host: appConfig.db.host,
+      port: appConfig.db.port,
       dialect: 'mariadb',
       omitNull: true,
       logging: false,
@@ -303,7 +304,7 @@ class Db {
     return this.sequelize.authenticate().then(() => {
       return this.sequelize.sync();
     }).then(() => {
-      return this.removeChannelByIds(this.main.config.channelBlackList);
+      return this.removeChannelByIds(appConfig.channelBlackList);
     });
   }
 
@@ -371,7 +372,7 @@ class Db {
 
   setChatSendTimeoutExpiresAt(ids: string[]) {
     const date = new Date();
-    date.setSeconds(date.getSeconds() + this.main.config.chatSendTimeoutAfterErrorMinutes * 60);
+    date.setSeconds(date.getSeconds() + appConfig.chatSendTimeoutAfterErrorMinutes * 60);
     return ChatModel.update({sendTimeoutExpiresAt: date}, {
       where: {id: ids}
     });
@@ -401,7 +402,7 @@ class Db {
   async ensureChannel(service: ServiceInterface, rawChannel: ServiceChannel) {
     const id = serviceId.wrap(service, rawChannel.id);
 
-    if (this.main.config.channelBlackList.includes(id)) {
+    if (appConfig.channelBlackList.includes(id)) {
       throw new ErrorWithCode('Channel in black list', 'CHANNEL_IN_BLACK_LIST');
     }
 
@@ -499,7 +500,7 @@ class Db {
 
   getChannelIdsWithExpiresSubscription(limit = 50) {
     const date = new Date();
-    date.setSeconds(date.getSeconds() + this.main.config.updateChannelPubSubSubscribeIfExpiresLessThenMinutes * 60);
+    date.setSeconds(date.getSeconds() + appConfig.updateChannelPubSubSubscribeIfExpiresLessThenMinutes * 60);
     return ChannelModel.findAll({
       where: {
         subscriptionExpiresAt: {[Op.lt]: date},
@@ -514,7 +515,7 @@ class Db {
 
   getChannelsForSync(limit: number) {
     const date = new Date();
-    date.setHours(date.getHours() - this.main.config.checkChannelIfLastSyncLessThenHours);
+    date.setHours(date.getHours() - appConfig.checkChannelIfLastSyncLessThenHours);
     return ChannelModel.findAll({
       where: {
         syncTimeoutExpiresAt: {[Op.lt]: new Date()},
@@ -540,7 +541,7 @@ class Db {
 
   setChannelsSyncTimeoutExpiresAtAndUncheckChanges(ids: string[]) {
     const date = new Date();
-    date.setSeconds(date.getSeconds() + this.main.config.channelSyncTimeoutMinutes * 60);
+    date.setSeconds(date.getSeconds() + appConfig.channelSyncTimeoutMinutes * 60);
     return ChannelModel.update({
       syncTimeoutExpiresAt: date,
       hasChanges: false
@@ -557,7 +558,7 @@ class Db {
 
   setChannelsSubscriptionTimeoutExpiresAt(ids: string[]) {
     const date = new Date();
-    date.setSeconds(date.getSeconds() + this.main.config.channelPubSubSubscribeTimeoutMinutes * 60);
+    date.setSeconds(date.getSeconds() + appConfig.channelPubSubSubscribeTimeoutMinutes * 60);
     return ChannelModel.update({subscriptionTimeoutExpiresAt: date}, {
       where: {id: ids}
     });
@@ -614,7 +615,7 @@ class Db {
 
   cleanYtPubSub() {
     const date = new Date();
-    date.setDate(date.getDate() - this.main.config.cleanPubSubFeedIfPushOlderThanDays);
+    date.setDate(date.getDate() - appConfig.cleanPubSubFeedIfPushOlderThanDays);
     return YtPubSubModel.destroy({
       where: {
         lastPushAt: {[Op.lt]: date}
@@ -653,7 +654,7 @@ class Db {
 
   cleanVideos() {
     const date = new Date();
-    date.setDate(date.getDate() - this.main.config.cleanVideosIfPublishedOlderThanDays);
+    date.setDate(date.getDate() - appConfig.cleanVideosIfPublishedOlderThanDays);
     return Promise.all([
       VideoModel.destroy({
         where: {

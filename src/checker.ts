@@ -8,6 +8,7 @@ import {everyMinutes} from "./tools/everyTime";
 import promiseLimit from "./tools/promiseLimit";
 import Main from "./main";
 import {ChannelModel, NewChannel, NewChatIdVideoId, NewVideo} from "./db";
+import {appConfig} from "./appConfig";
 
 const debug = require('debug')('app:Checker');
 
@@ -56,7 +57,7 @@ class Checker {
   updateTimer: (() => void) | null = null;
   startUpdateInterval() {
     this.updateTimer && this.updateTimer();
-    this.updateTimer = everyMinutes(this.main.config.emitCheckChannelsEveryMinutes, () => {
+    this.updateTimer = everyMinutes(appConfig.emitCheckChannelsEveryMinutes, () => {
       this.check().catch((err) => {
         debug('check error', err);
       });
@@ -66,7 +67,7 @@ class Checker {
   cleanTimer: (() => void) | null = null;
   startCleanInterval() {
     this.cleanTimer && this.cleanTimer();
-    this.cleanTimer = everyMinutes(this.main.config.emitCleanChatsAndVideosEveryHours * 60, () => {
+    this.cleanTimer = everyMinutes(appConfig.emitCleanChatsAndVideosEveryHours * 60, () => {
       this.clean().catch((err) => {
         debug('clean error', err);
       });
@@ -77,7 +78,7 @@ class Checker {
 
   getDefaultDate() {
     const defaultDate = new Date();
-    defaultDate.setDate(defaultDate.getDate() - this.main.config.fullCheckChannelActivityForDays);
+    defaultDate.setDate(defaultDate.getDate() - appConfig.fullCheckChannelActivityForDays);
     return defaultDate;
   }
 
@@ -96,7 +97,7 @@ class Checker {
 
         const defaultDate = this.getDefaultDate();
         const minFullCheckDate = new Date();
-        minFullCheckDate.setHours(minFullCheckDate.getHours() - this.main.config.doFullCheckChannelActivityEveryHours);
+        minFullCheckDate.setHours(minFullCheckDate.getHours() - appConfig.doFullCheckChannelActivityEveryHours);
 
         channels.forEach((channel) => {
           channelIds.push(channel.id);
@@ -221,7 +222,7 @@ class Checker {
             });
 
             const minPublishedAfter = new Date();
-            minPublishedAfter.setDate(minPublishedAfter.getDate() - this.main.config.cleanVideosIfPublishedOlderThanDays);
+            minPublishedAfter.setDate(minPublishedAfter.getDate() - appConfig.cleanVideosIfPublishedOlderThanDays);
 
             const chatIdVideoIdChanges: NewChatIdVideoId[] = [];
             for (const [channelId, chats] of channelIdChats.entries()) {

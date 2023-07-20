@@ -7,6 +7,7 @@ import getInProgress from "./tools/getInProgress";
 import promiseLimit from "./tools/promiseLimit";
 import Main from "./main";
 import {Error} from "sequelize";
+import {appConfig} from "./appConfig";
 
 const debug = require('debug')('app:Sender');
 const throttle = require('lodash.throttle');
@@ -25,7 +26,7 @@ class Sender {
   checkTimer: (() => void) | null = null;
   startCheckInterval() {
     this.checkTimer && this.checkTimer();
-    this.checkTimer = everyMinutes(this.main.config.emitSendMessagesEveryMinutes, () => {
+    this.checkTimer = everyMinutes(appConfig.emitSendMessagesEveryMinutes, () => {
       this.check().catch((err) => {
         debug('check error', err);
       });
@@ -35,7 +36,7 @@ class Sender {
   cleanTimer: (() => void) | null = null;
   startCleanInterval() {
     this.cleanTimer && this.cleanTimer();
-    this.cleanTimer = everyMinutes(this.main.config.emitCheckExistsChatsEveryHours * 60, () => {
+    this.cleanTimer = everyMinutes(appConfig.emitCheckExistsChatsEveryHours * 60, () => {
       this.checkChatsExists().catch((err) => {
         debug('checkChatsExists error', err);
       });

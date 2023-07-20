@@ -1,11 +1,11 @@
 import parallel from "./tools/parallel";
 import arrayByPart from "./tools/arrayByPart";
-import Main from "./main";
 import promiseLimit from "./tools/promiseLimit";
 import fetchRequest from "./tools/fetchRequest";
 import qs from "querystring";
 import {v4 as uuidV4} from "uuid";
 import QuickLRU from "quick-lru";
+import {appConfig} from "./appConfig";
 
 const debug = require('debug')('app:tracker');
 const throttle = require('lodash.throttle');
@@ -17,8 +17,8 @@ class Tracker {
   defaultParams;
   lru = new QuickLRU<string | number, string>({maxSize: 100});
   queue: [number, {[s: string]: string|number}][] = [];
-  constructor(private main: Main) {
-    this.tid = this.main.config.gaId;
+  constructor() {
+    this.tid = appConfig.gaId;
     this.defaultParams = {
       v: 1,
       tid: this.tid,
@@ -105,5 +105,9 @@ class Tracker {
     return result;
   }
 }
+
+const tracker = new Tracker();
+
+export {tracker};
 
 export default Tracker;

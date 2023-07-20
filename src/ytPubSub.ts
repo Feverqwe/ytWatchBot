@@ -10,6 +10,7 @@ import qs from "querystring";
 import Main from "./main";
 import {IncomingHttpHeaders, Server} from "http";
 import {NewChannel} from "./db";
+import {appConfig} from "./appConfig";
 
 const debug = require('debug')('app:YtPubSub');
 const {XmlDocument} = require("xmldoc");
@@ -28,13 +29,13 @@ class YtPubSub {
   private app = express();
 
   constructor(private main: Main) {
-    this.host = this.main.config.push.host || 'localhost';
-    this.port = this.main.config.push.port;
+    this.host = appConfig.push.host || 'localhost';
+    this.port = appConfig.push.port;
     this.expressPubSub = new ExpressPubSub({
-      path: this.main.config.push.path,
-      secret: this.main.config.push.secret,
-      callbackUrl: this.main.config.push.callbackUrl,
-      leaseSeconds: this.main.config.push.leaseSeconds,
+      path: appConfig.push.path,
+      secret: appConfig.push.secret,
+      callbackUrl: appConfig.push.callbackUrl,
+      leaseSeconds: appConfig.push.leaseSeconds,
     });
   }
 
@@ -58,7 +59,7 @@ class YtPubSub {
   updateTimer: (() => void) | null = null;
   startUpdateInterval() {
     this.updateTimer && this.updateTimer();
-    this.updateTimer = everyMinutes(this.main.config.emitUpdateChannelPubSubSubscribeEveryMinutes, () => {
+    this.updateTimer = everyMinutes(appConfig.emitUpdateChannelPubSubSubscribeEveryMinutes, () => {
       this.updateSubscribes().catch((err) => {
         debug('updateSubscribes error', err);
       });
@@ -68,7 +69,7 @@ class YtPubSub {
   cleanTimer: (() => void) | null = null;
   startCleanInterval() {
     this.cleanTimer && this.cleanTimer();
-    this.cleanTimer = everyMinutes(this.main.config.emitCleanPubSubFeedEveryHours * 60, () => {
+    this.cleanTimer = everyMinutes(appConfig.emitCleanPubSubFeedEveryHours * 60, () => {
       this.clean().catch((err) => {
         debug('clean error', err);
       });
@@ -87,7 +88,7 @@ class YtPubSub {
 
         await this.main.db.setChannelsSubscriptionTimeoutExpiresAt(channelIds).then(() => {
           const expiresAt = new Date();
-          expiresAt.setSeconds(expiresAt.getSeconds() + this.main.config.push.leaseSeconds);
+          expiresAt.setSeconds(expiresAt.getSeconds() + appConfig.push.leaseSeconds);
 
           const subscribedChannelIds: string[] = [];
           return parallel(10, channelIds, (id) => {
