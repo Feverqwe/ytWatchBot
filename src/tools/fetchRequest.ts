@@ -4,7 +4,7 @@ import https from "https";
 import qs from "querystring";
 import FormData from "form-data";
 
-import fetch, {Response, Headers} from "node-fetch";
+import fetch, {Headers, Response} from "node-fetch";
 
 const debug = require('debug')('app:fetchRequest');
 

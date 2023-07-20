@@ -13,16 +13,13 @@ import htmlSanitize from "./tools/htmlSanitize";
 import ErrorWithCode from "./tools/errorWithCode";
 import pageBtnList from "./tools/pageBtnList";
 import splitTextByPages from "./tools/splitTextByPages";
-import resolvePath from "./tools/resolvePath";
 import LogFile from "./logFile";
 import ensureMap from "./tools/ensureMap";
 import promiseTry from "./tools/promiseTry";
 import TimeCache from "./tools/timeCache";
-import fs from "fs";
 import Main from "./main";
 import assertType from "./tools/assertType";
 import {ChannelModel, ChatModel, ChatModelWithOptionalChannel, NewChat} from "./db";
-import path from "path";
 
 const debug = require('debug')('app:Chat');
 const jsonStringifyPretty = require("json-stringify-pretty-compact");
@@ -209,28 +206,8 @@ class Chat {
       });
     });
 
-    let liveTime = '';
     this.router.textOrCallbackQuery(/\/about/, (req, res) => {
-      if (!liveTime) {
-        try {
-          liveTime = JSON.parse(fs.readFileSync(path.join(process.cwd(), './liveTime.json'), 'utf8')).message;
-        } catch (err) {
-          debug('Read liveTime.json error! %o', err);
-          liveTime = '';
-        }
-      }
-
-      const message = liveTime.replace(/\$remainFrom\(([^)]+)\)/, (str, date) => {
-        const m = /(\d{4}).(\d{2}).(\d{2})/.exec(date);
-        if (m) {
-          const endTime = (new Date(Number(m[1]), Number(m[2]), Number(m[3]))).getTime();
-          const month =Math.trunc((endTime - Date.now()) / 1000 / 60 / 60 / 24 / 30 * 10) / 10;
-          return `${month} months`;
-        }
-        return str;
-      });
-
-      return this.main.bot.sendMessage(req.chatId, message).catch((err: any) => {
+      return this.main.bot.sendMessage(req.chatId, this.main.locale.getMessage('about')).catch((err: any) => {
         debug('%j error %o', req.command, err);
       });
     });

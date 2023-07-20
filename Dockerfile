@@ -19,7 +19,6 @@ RUN npm run build
 
 FROM base as release
 COPY --from=build /opt/dist ./dist
-COPY ./liveTime.json .
 COPY ./config.json .
 
 ENV NODE_ENV=production

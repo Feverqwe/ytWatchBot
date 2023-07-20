@@ -3,7 +3,6 @@ import qs from "querystring";
 import FormData from "form-data";
 import {Stream} from "stream";
 import * as Buffer from "buffer";
-import {Module} from "module";
 
 const {BaseError, FatalError, ParseError, TelegramError} = require('node-telegram-bot-api/src/errors');
 
