@@ -5,8 +5,9 @@ import qs from "querystring";
 import FormData from "form-data";
 
 import fetch, {Headers, Response} from "node-fetch";
+import {getDebug} from "./getDebug";
 
-const debug = require('debug')('app:fetchRequest');
+const debug = getDebug('app:fetchRequest');
 
 export interface FetchRequestOptions {
   method?: 'GET' | 'HEAD' | 'POST';

@@ -6,9 +6,10 @@ import qs from "querystring";
 import {v4 as uuidV4} from "uuid";
 import QuickLRU from "quick-lru";
 import {appConfig} from "./appConfig";
+import throttle from 'lodash.throttle';
+import {getDebug} from "./tools/getDebug";
 
-const debug = require('debug')('app:tracker');
-const throttle = require('lodash.throttle');
+const debug = getDebug('app:tracker');
 
 const oneLimit = promiseLimit(1);
 

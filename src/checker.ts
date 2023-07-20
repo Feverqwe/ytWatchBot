@@ -9,8 +9,9 @@ import promiseLimit from "./tools/promiseLimit";
 import Main from "./main";
 import {ChannelModel, NewChannel, NewChatIdVideoId, NewVideo} from "./db";
 import {appConfig} from "./appConfig";
+import {getDebug} from "./tools/getDebug";
 
-const debug = require('debug')('app:Checker');
+const debug = getDebug('app:Checker');
 
 export type FilterFn = (videoIds: string[]) => Promise<string[]>;
 

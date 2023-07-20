@@ -8,8 +8,9 @@ import {ServiceChannel, ServiceInterface} from "./checker";
 import assertType from "./tools/assertType";
 import {Feed} from "./ytPubSub";
 import {appConfig} from "./appConfig";
+import {getDebug} from "./tools/getDebug";
 
-const debug = require('debug')('app:db');
+const debug = getDebug('app:db');
 const ISOLATION_LEVELS = Transaction.ISOLATION_LEVELS;
 
 export interface NewChat {

@@ -1,7 +1,8 @@
 import fs, {WriteStream} from "fs";
 import path from "path";
+import {getDebug} from "./tools/getDebug";
 
-const debug = require('debug')('app:LogFile');
+const debug = getDebug('app:LogFile');
 
 class LogFile {
   name: string;

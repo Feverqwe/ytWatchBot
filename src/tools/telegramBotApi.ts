@@ -5,6 +5,7 @@ import {Stream} from "stream";
 import * as Buffer from "buffer";
 import RateLimit2 from "./rateLimit2";
 import TelegramBot from "node-telegram-bot-api";
+import {getDebug} from "./getDebug";
 
 Object.assign(process.env, {
   NTBA_FIX_319: true,
@@ -13,7 +14,7 @@ Object.assign(process.env, {
 
 const {BaseError, FatalError, ParseError, TelegramError} = require('node-telegram-bot-api/src/errors');
 
-const debug = require('debug')('app:replaceBotRequest');
+const debug = getDebug('app:replaceBotRequest');
 
 /*(Module as any)._resolveFilename = ((origFn) => {
   return (...args: any[]) => {
