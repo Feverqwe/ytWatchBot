@@ -3,6 +3,13 @@ import qs from "querystring";
 import FormData from "form-data";
 import {Stream} from "stream";
 import * as Buffer from "buffer";
+import RateLimit2 from "./rateLimit2";
+import TelegramBot from "node-telegram-bot-api";
+
+Object.assign(process.env, {
+  NTBA_FIX_319: true,
+  NTBA_FIX_350: true,
+});
 
 const {BaseError, FatalError, ParseError, TelegramError} = require('node-telegram-bot-api/src/errors');
 
@@ -34,12 +41,15 @@ interface Bot {
   token?: string,
   _request: (path: string, options: RequestOptions) => Promise<unknown>,
   options: any,
+
   _fixReplyMarkup(obj: any): void;
+
   _fixEntitiesField(obj: any): void;
+
   _buildURL: (path: string) => string;
 }
 
-function replaceBotRequest(botProto: Bot) {
+function telegramBotApi(botProto: Bot) {
   botProto._request = function (_path: string, reqOptions: RequestOptions) {
     const self = this;
 
@@ -119,7 +129,7 @@ function replaceBotRequest(botProto: Bot) {
   };
 }
 
-function hideResponse(err: Error & {response: any}) {
+function hideResponse(err: Error & { response: any }) {
   const response = err.response;
   delete err.response;
   Object.defineProperty(err, 'response', {
@@ -128,4 +138,29 @@ function hideResponse(err: Error & {response: any}) {
   });
 }
 
-export default replaceBotRequest;
+telegramBotApi(TelegramBot.prototype as unknown as Bot);
+
+export type TelegramBotWrapped = TelegramBot & { sendPhotoQuote: TelegramBot['sendPhoto'] };
+
+export const getTelegramBot = (token: string) => {
+  const bot = new TelegramBot(token, {
+    polling: {
+      autoStart: false
+    },
+  });
+
+  bot.on('polling_error', function (err: any) {
+    debug('pollingError %s', err.message);
+  });
+
+  const limit = new RateLimit2(30);
+  const chatActionLimit = new RateLimit2(30);
+
+  Object.assign(bot, {
+    sendMessage: limit.wrap(bot.sendMessage.bind(bot)),
+    sendPhotoQuote: limit.wrap(bot.sendPhoto.bind(bot)),
+    sendChatAction: chatActionLimit.wrap(bot.sendChatAction.bind(bot)),
+  });
+
+  return bot as TelegramBotWrapped;
+};
