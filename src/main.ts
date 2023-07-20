@@ -5,17 +5,9 @@ import Chat from "./chat";
 import Checker, {ServiceInterface} from "./checker";
 import YtPubSub from "./ytPubSub";
 import Events from "events";
-import RateLimit2 from "./tools/rateLimit2";
-import replaceBotRequest from "./tools/replaceBotRequest";
-import {TUser} from "./router";
 import {appConfig} from "./appConfig";
-
-Object.assign(process.env, {
-  NTBA_FIX_319: true,
-  NTBA_FIX_350: true,
-});
-
-const TelegramBot = require('node-telegram-bot-api');
+import {getTelegramBot, TelegramBotWrapped} from "./tools/telegramBotApi";
+import TelegramBot from "node-telegram-bot-api";
 
 const debug = require('debug')('app:Main');
 
@@ -33,7 +25,7 @@ class Main extends Events  {
   serviceIdService: Map<string, ServiceInterface>;
   sender: Sender;
   checker: Checker;
-  bot: typeof TelegramBot;
+  bot: TelegramBotWrapped;
   chat: Chat;
   botName!: string;
   ytPubSub: YtPubSub;
@@ -54,7 +46,7 @@ class Main extends Events  {
     this.checker = new Checker(this);
     this.ytPubSub = new YtPubSub(this);
 
-    this.bot = this.initBot();
+    this.bot = getTelegramBot(appConfig.token);
     this.chat = new Chat(this);
   }
 
@@ -62,7 +54,7 @@ class Main extends Events  {
     await this.db.init();
     await Promise.all([
       this.ytPubSub.init(),
-      this.bot.getMe().then((user: TUser) => {
+      this.bot.getMe().then((user: TelegramBot.User) => {
         if (!user.username) throw new Error('Bot name is empty');
 
         this.botName = user.username;
@@ -71,28 +63,6 @@ class Main extends Events  {
     ]);
     this.checker.init();
     this.sender.init();
-  }
-
-  initBot() {
-    replaceBotRequest(TelegramBot.prototype);
-
-    const bot = new TelegramBot(appConfig.token, {
-      polling: {
-        autoStart: false
-      },
-    });
-    bot.on('polling_error', function (err: any) {
-      debug('pollingError %s', err.message);
-    });
-
-    const limit = new RateLimit2(30);
-    bot.sendMessage = limit.wrap(bot.sendMessage.bind(bot));
-    bot.sendPhotoQuote = limit.wrap(bot.sendPhoto.bind(bot));
-
-    const chatActionLimit = new RateLimit2(30);
-    bot.sendChatAction = chatActionLimit.wrap(bot.sendChatAction.bind(bot));
-
-    return bot;
   }
 
   getServiceById(id: string) {
