@@ -1,105 +1,126 @@
-import ErrorWithCode from "../tools/errorWithCode";
-import * as s from "superstruct";
-import arrayByPart from "../tools/arrayByPart";
-import parallel from "../tools/parallel";
-import formatDuration from "../tools/formatDuration";
-import ensureMap from "../tools/ensureMap";
-import promiseTry from "../tools/promiseTry";
-import fetchRequest, {HTTPError} from "../tools/fetchRequest";
-import {FilterFn, RawChannel, RawVideo, ServiceInterface} from "../checker";
-import Main from "../main";
-import ytCostCounter from "../tools/ytCostCounter";
-import {appConfig} from "../appConfig";
-import {getDebug} from "../tools/getDebug";
+import ErrorWithCode from '../tools/errorWithCode';
+import * as s from 'superstruct';
+import arrayByPart from '../tools/arrayByPart';
+import parallel from '../tools/parallel';
+import formatDuration from '../tools/formatDuration';
+import ensureMap from '../tools/ensureMap';
+import promiseTry from '../tools/promiseTry';
+import fetchRequest, {HTTPError} from '../tools/fetchRequest';
+import {FilterFn, RawChannel, RawVideo, ServiceInterface} from '../checker';
+import Main from '../main';
+import ytCostCounter from '../tools/ytCostCounter';
+import {appConfig} from '../appConfig';
+import {getDebug} from '../tools/getDebug';
 
 const debug = getDebug('app:Youtube');
 
 const costCounter = ytCostCounter(150000);
 
 const VideosItemsSnippetStruct = s.object({
-  items: s.array(s.object({
-    snippet: s.object({
-      channelId: s.string()
-    })
-  }))
+  items: s.array(
+    s.object({
+      snippet: s.object({
+        channelId: s.string(),
+      }),
+    }),
+  ),
 });
 
 const ChannelsItemsIdStruct = s.object({
-  items: s.optional(s.array(s.object({
-    id: s.string()
-  }))),
-  nextPageToken: s.optional(s.string())
+  items: s.optional(
+    s.array(
+      s.object({
+        id: s.string(),
+      }),
+    ),
+  ),
+  nextPageToken: s.optional(s.string()),
 });
 
 const SearchItemsIdStruct = s.object({
-  items: s.array(s.object({
-    id: s.object({
-      channelId: s.string()
-    })
-  }))
+  items: s.array(
+    s.object({
+      id: s.object({
+        channelId: s.string(),
+      }),
+    }),
+  ),
 });
 
 const SearchItemsSnippetStruct = s.object({
-  items: s.array(s.object({
-    snippet: s.object({
-      channelId: s.string(),
-      channelTitle: s.string()
-    })
-  }))
+  items: s.array(
+    s.object({
+      snippet: s.object({
+        channelId: s.string(),
+        channelTitle: s.string(),
+      }),
+    }),
+  ),
 });
 
 const ActivitiesResponseStruct = s.object({
-  items: s.array(s.object({
-    contentDetails: s.object({
-      upload: s.optional(s.object({
-        videoId: s.string()
-      })),
+  items: s.array(
+    s.object({
+      contentDetails: s.object({
+        upload: s.optional(
+          s.object({
+            videoId: s.string(),
+          }),
+        ),
+      }),
     }),
-  })),
-  nextPageToken: s.optional(s.string())
+  ),
+  nextPageToken: s.optional(s.string()),
 });
 
 const VideosResponseStruct = s.object({
-  items: s.array(s.object({
-    id: s.string(),
-    snippet: s.object({
-      publishedAt: s.string(), // 2007-03-05T08:22:25.000Z
-      channelId: s.string(),
-      title: s.string(),
-      // description: s.string(),
-      thumbnails: s.record(s.string(), s.object({
-        url: s.string(),
-        width: s.number(),
-        height: s.number(),
-      })),
-      channelTitle: s.string(),
-      // tags: [s.string()],
-      // categoryId: s.string(), // 10
-      liveBroadcastContent: s.string(), // live none upcoming
-      // localized: s.object({
-      //   title: s.string(),
-      //   description: s.string(),
-      // })
+  items: s.array(
+    s.object({
+      id: s.string(),
+      snippet: s.object({
+        publishedAt: s.string(), // 2007-03-05T08:22:25.000Z
+        channelId: s.string(),
+        title: s.string(),
+        // description: s.string(),
+        thumbnails: s.record(
+          s.string(),
+          s.object({
+            url: s.string(),
+            width: s.number(),
+            height: s.number(),
+          }),
+        ),
+        channelTitle: s.string(),
+        // tags: [s.string()],
+        // categoryId: s.string(), // 10
+        liveBroadcastContent: s.string(), // live none upcoming
+        // localized: s.object({
+        //   title: s.string(),
+        //   description: s.string(),
+        // })
+      }),
+      contentDetails: s.object({
+        duration: s.string(), // PT2M57S
+        // dimension: s.string(), // 2d
+        // definition: s.string(), // sd
+        // caption: s.string(), // false
+        // licensedContent: 'boolean', // true
+        // projection: s.string(), // rectangular
+      }),
     }),
-    contentDetails: s.object({
-      duration: s.string(), // PT2M57S
-      // dimension: s.string(), // 2d
-      // definition: s.string(), // sd
-      // caption: s.string(), // false
-      // licensedContent: 'boolean', // true
-      // projection: s.string(), // rectangular
-    }),
-  })),
-  nextPageToken: s.optional(s.string())
+  ),
+  nextPageToken: s.optional(s.string()),
 });
 
 const FineChannelByVideoIdResponseStruct = s.object({
-  items: s.array(s.object({
-    snippet: s.object({
-      channelId: s.string(),
-      channelTitle: s.string(),
+  items: s.array(
+    s.object({
+      snippet: s.object({
+        channelId: s.string(),
+        channelTitle: s.string(),
+      }),
     }),
-  })),
+  ),
 });
 
 class Youtube implements ServiceInterface {
@@ -110,11 +131,13 @@ class Youtube implements ServiceInterface {
 
   getVideos(channels: RawChannel[], filterFn: FilterFn) {
     return this.getVideoIds(channels).then(({videoIds, videoIdChannelIds, skippedChannelIds}) => {
-      return filterFn(videoIds).then((videoIds) => {
-        return this.getVideosByIds(videoIds);
-      }).then((videos) => {
-        return {videos, videoIdChannelIds, skippedChannelIds};
-      });
+      return filterFn(videoIds)
+        .then((videoIds) => {
+          return this.getVideosByIds(videoIds);
+        })
+        .then((videos) => {
+          return {videos, videoIdChannelIds, skippedChannelIds};
+        });
     });
   }
 
@@ -131,7 +154,7 @@ class Youtube implements ServiceInterface {
               id: videoIds.join(','),
               pageToken: pageToken,
               fields: 'items/id,items/snippet,items/contentDetails,nextPageToken',
-              key: appConfig.ytToken
+              key: appConfig.ytToken,
             },
             responseType: 'json',
             keepAlive: true,
@@ -141,9 +164,11 @@ class Youtube implements ServiceInterface {
             videos.items.forEach((video) => {
               if (video.snippet.liveBroadcastContent !== 'none') return;
 
-              const previews = Object.values(video.snippet.thumbnails).sort((a, b) => {
-                return a.width > b.width ? -1 : 1;
-              }).map(thumbnail => thumbnail.url);
+              const previews = Object.values(video.snippet.thumbnails)
+                .sort((a, b) => {
+                  return a.width > b.width ? -1 : 1;
+                })
+                .map((thumbnail) => thumbnail.url);
 
               let duration = null;
               try {
@@ -191,7 +216,7 @@ class Youtube implements ServiceInterface {
               pageToken: pageToken,
               fields: 'items/contentDetails/upload/videoId,nextPageToken',
               publishedAfter: publishedAfter.toISOString(),
-              key: appConfig.ytToken
+              key: appConfig.ytToken,
             },
             responseType: 'json',
             keepAlive: true,
@@ -206,21 +231,24 @@ class Youtube implements ServiceInterface {
             return activities.nextPageToken;
           });
         });
-      }).then(() => {
-        videoIds.forEach((videoId) => {
-          if (!resultVideoIds.includes(videoId)) {
-            resultVideoIds.push(videoId);
-          }
+      }).then(
+        () => {
+          videoIds.forEach((videoId) => {
+            if (!resultVideoIds.includes(videoId)) {
+              resultVideoIds.push(videoId);
+            }
 
-          const channelIds = ensureMap(videoIdChannelIds, videoId, []);
-          if (!channelIds.includes(channelId)) {
-            channelIds.push(channelId);
-          }
-        });
-      }, (err) => {
-        debug(`getVideoIds for channel (%s) skip, cause: %o`, channelId, err);
-        resultSkippedChannelIds.push(channelId);
-      });
+            const channelIds = ensureMap(videoIdChannelIds, videoId, []);
+            if (!channelIds.includes(channelId)) {
+              channelIds.push(channelId);
+            }
+          });
+        },
+        (err) => {
+          debug(`getVideoIds for channel (%s) skip, cause: %o`, channelId, err);
+          resultSkippedChannelIds.push(channelId);
+        },
+      );
     }).then(() => {
       return {
         videoIds: resultVideoIds,
@@ -242,7 +270,7 @@ class Youtube implements ServiceInterface {
             pageToken: pageToken,
             maxResults: 50,
             fields: 'items/id,nextPageToken',
-            key: appConfig.ytToken
+            key: appConfig.ytToken,
           },
           responseType: 'json',
           keepAlive: true,
@@ -262,7 +290,7 @@ class Youtube implements ServiceInterface {
 
   async requestChannelIdByQuery(query: string) {
     if (!query) {
-      throw new ErrorWithCode('Query is empty', 'QUERY_IS_EMPTY')
+      throw new ErrorWithCode('Query is empty', 'QUERY_IS_EMPTY');
     }
 
     await costCounter.inc(100);
@@ -273,7 +301,7 @@ class Youtube implements ServiceInterface {
         type: 'channel',
         maxResults: 1,
         fields: 'items(id)',
-        key: appConfig.ytToken
+        key: appConfig.ytToken,
       },
       responseType: 'json',
       keepAlive: true,
@@ -316,23 +344,25 @@ class Youtube implements ServiceInterface {
         forUsername: username,
         maxResults: 1,
         fields: 'items/id',
-        key: appConfig.ytToken
+        key: appConfig.ytToken,
       },
       responseType: 'json',
       keepAlive: true,
-    }).then(({body}) => {
-      const channelsItemsId = s.mask(body, ChannelsItemsIdStruct);
-      if (!channelsItemsId.items || !channelsItemsId.items.length) {
-        throw new ErrorWithCode('Channel by user is not found', 'CHANNEL_BY_USER_IS_NOT_FOUND');
-      }
+    })
+      .then(({body}) => {
+        const channelsItemsId = s.mask(body, ChannelsItemsIdStruct);
+        if (!channelsItemsId.items || !channelsItemsId.items.length) {
+          throw new ErrorWithCode('Channel by user is not found', 'CHANNEL_BY_USER_IS_NOT_FOUND');
+        }
 
-      return channelsItemsId.items[0].id;
-    }).catch((err) => {
-      if (err.code === 'CHANNEL_BY_USER_IS_NOT_FOUND') {
-        return this.requestChannelIdByQuery(username);
-      }
-      throw err;
-    });
+        return channelsItemsId.items[0].id;
+      })
+      .catch((err) => {
+        if (err.code === 'CHANNEL_BY_USER_IS_NOT_FOUND') {
+          return this.requestChannelIdByQuery(username);
+        }
+        throw err;
+      });
   }
 
   async requestChannelIdByVideoUrl(url: string) {
@@ -340,7 +370,7 @@ class Youtube implements ServiceInterface {
     [
       /youtu\.be\/([\w\-]+)/i,
       /youtube\.com\/.+[?&]v=([\w\-]+)/i,
-      /youtube\.com\/(?:.+\/)?(?:v|embed)\/([\w\-]+)/i
+      /youtube\.com\/(?:.+\/)?(?:v|embed)\/([\w\-]+)/i,
     ].some((re) => {
       const m = re.exec(url);
       if (m) {
@@ -360,7 +390,7 @@ class Youtube implements ServiceInterface {
         id: videoId,
         maxResults: 1,
         fields: 'items/snippet',
-        key: appConfig.ytToken
+        key: appConfig.ytToken,
       },
       responseType: 'json',
       keepAlive: true,
@@ -376,9 +406,7 @@ class Youtube implements ServiceInterface {
 
   async getChannelIdByUrl(url: string) {
     let channelId = null;
-    [
-      /youtube\.com\/(?:#\/)?channel\/([\w\-]+)/i
-    ].some((re) => {
+    [/youtube\.com\/(?:#\/)?channel\/([\w\-]+)/i].some((re) => {
       const m = re.exec(url);
       if (m) {
         channelId = m[1];
@@ -403,69 +431,74 @@ class Youtube implements ServiceInterface {
   }
 
   findChannel(query: string) {
-    return this.getChannelIdByUrl(query).catch((err) => {
-      if (err.code === 'IS_NOT_CHANNEL_URL') {
-        return this.requestChannelIdByVideoUrl(query);
-      }
-      throw err;
-    }).catch((err) => {
-      if (err.code === 'IS_NOT_VIDEO_URL') {
-        return this.requestChannelIdByUserUrl(query);
-      }
-      throw err;
-    }).catch((err) => {
-      if (err.code === 'IS_NOT_USER_URL') {
-        return this.requestChannelIdByQuery(query);
-      }
-      throw err;
-    }).then(async (channelId) => {
-      await costCounter.inc(1);
-      return fetchRequest('https://www.googleapis.com/youtube/v3/activities', {
-        searchParams: {
-          part: 'contentDetails',
-          channelId: channelId,
-          maxResults: 50,
-          fields: 'items/contentDetails/upload/videoId',
-          key: appConfig.ytToken
-        },
-        responseType: 'json',
-        keepAlive: true,
-      }).then(({body}) => {
-        const activities = s.mask(body, ActivitiesResponseStruct);
-        let videoId = null;
-        activities.items.some((item) => {
-          if (!item.contentDetails.upload) return;
-          return videoId = item.contentDetails.upload.videoId;
+    return this.getChannelIdByUrl(query)
+      .catch((err) => {
+        if (err.code === 'IS_NOT_CHANNEL_URL') {
+          return this.requestChannelIdByVideoUrl(query);
+        }
+        throw err;
+      })
+      .catch((err) => {
+        if (err.code === 'IS_NOT_VIDEO_URL') {
+          return this.requestChannelIdByUserUrl(query);
+        }
+        throw err;
+      })
+      .catch((err) => {
+        if (err.code === 'IS_NOT_USER_URL') {
+          return this.requestChannelIdByQuery(query);
+        }
+        throw err;
+      })
+      .then(async (channelId) => {
+        await costCounter.inc(1);
+        return fetchRequest('https://www.googleapis.com/youtube/v3/activities', {
+          searchParams: {
+            part: 'contentDetails',
+            channelId: channelId,
+            maxResults: 50,
+            fields: 'items/contentDetails/upload/videoId',
+            key: appConfig.ytToken,
+          },
+          responseType: 'json',
+          keepAlive: true,
+        }).then(({body}) => {
+          const activities = s.mask(body, ActivitiesResponseStruct);
+          let videoId = null;
+          activities.items.some((item) => {
+            if (!item.contentDetails.upload) return;
+            return (videoId = item.contentDetails.upload.videoId);
+          });
+          if (!videoId) {
+            throw new ErrorWithCode(`Can't find any videos`, 'VIDEOS_IS_NOT_FOUND');
+          }
+          return videoId;
         });
-        if (!videoId) {
-          throw new ErrorWithCode(`Can't find any videos`, 'VIDEOS_IS_NOT_FOUND');
-        }
-        return videoId;
-      });
-    }).then(async (videoId) => {
-      await costCounter.inc(1);
-      return fetchRequest('https://www.googleapis.com/youtube/v3/videos', {
-        searchParams: {
-          part: 'snippet',
-          id: videoId,
-          fields: 'items/snippet',
-          key: appConfig.ytToken
-        },
-        responseType: 'json',
-        keepAlive: true,
-      }).then(({body}) => {
-        const searchItemsSnippet = s.mask(body, FineChannelByVideoIdResponseStruct);
-        if (!searchItemsSnippet.items.length) {
-          throw new ErrorWithCode('Channel is not found', 'CHANNEL_BY_ID_IS_NOT_FOUND');
-        }
+      })
+      .then(async (videoId) => {
+        await costCounter.inc(1);
+        return fetchRequest('https://www.googleapis.com/youtube/v3/videos', {
+          searchParams: {
+            part: 'snippet',
+            id: videoId,
+            fields: 'items/snippet',
+            key: appConfig.ytToken,
+          },
+          responseType: 'json',
+          keepAlive: true,
+        }).then(({body}) => {
+          const searchItemsSnippet = s.mask(body, FineChannelByVideoIdResponseStruct);
+          if (!searchItemsSnippet.items.length) {
+            throw new ErrorWithCode('Channel is not found', 'CHANNEL_BY_ID_IS_NOT_FOUND');
+          }
 
-        const snippet = searchItemsSnippet.items[0].snippet;
-        const title = snippet.channelTitle;
-        const id = snippet.channelId;
-        const url = getChannelUrl(id);
-        return {id, title, url};
+          const snippet = searchItemsSnippet.items[0].snippet;
+          const title = snippet.channelTitle;
+          const id = snippet.channelId;
+          const url = getChannelUrl(id);
+          return {id, title, url};
+        });
       });
-    });
   }
 }
 
@@ -478,20 +511,34 @@ function getChannelUrl(channelId: string) {
 }
 
 function isDailyLimitExceeded(err: HTTPError) {
-  if (err.name === 'HTTPError' && err.response.statusCode === 403 && err.response.body && err.response.body.error && err.response.body.error.code === 403 && /Daily Limit Exceeded/.test(err.response.body.error.message)) {
+  if (
+    err.name === 'HTTPError' &&
+    err.response.statusCode === 403 &&
+    err.response.body &&
+    err.response.body.error &&
+    err.response.body.error.code === 403 &&
+    /Daily Limit Exceeded/.test(err.response.body.error.message)
+  ) {
     return true;
   }
   return false;
 }
 
 function isBackendError(err: HTTPError) {
-  if (err.name === 'HTTPError' && err.response.statusCode === 500 && err.response.body && err.response.body.error && err.response.body.error.code === 500 && /Backend Error/.test(err.response.body.error.message)) {
+  if (
+    err.name === 'HTTPError' &&
+    err.response.statusCode === 500 &&
+    err.response.body &&
+    err.response.body.error &&
+    err.response.body.error.code === 500 &&
+    /Backend Error/.test(err.response.body.error.message)
+  ) {
     return true;
   }
   return false;
 }
 
-function iterPages(callback: (pageToken?: string) => Promise<string|undefined>) {
+function iterPages(callback: (pageToken?: string) => Promise<string | undefined>) {
   let limit = 100;
   const getPage = (pageToken?: string): Promise<void> => {
     return promiseTry(() => callback(pageToken)).then((nextPageToken?: string) => {
@@ -506,7 +553,10 @@ function iterPages(callback: (pageToken?: string) => Promise<string|undefined>) 
   return getPage();
 }
 
-function tryFixBackendError<T>(fixMaxResults: number, callback: (maxResults?: number) => Promise<T>) {
+function tryFixBackendError<T>(
+  fixMaxResults: number,
+  callback: (maxResults?: number) => Promise<T>,
+) {
   return callback().catch((err) => {
     if (isBackendError(err)) {
       debug('tryFixBackendError backendError: %o', err);

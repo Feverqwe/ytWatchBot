@@ -1,13 +1,13 @@
-import parallel from "./tools/parallel";
-import arrayByPart from "./tools/arrayByPart";
-import promiseLimit from "./tools/promiseLimit";
-import fetchRequest from "./tools/fetchRequest";
-import qs from "querystring";
-import {v4 as uuidV4} from "uuid";
-import QuickLRU from "quick-lru";
-import {appConfig} from "./appConfig";
+import parallel from './tools/parallel';
+import arrayByPart from './tools/arrayByPart';
+import promiseLimit from './tools/promiseLimit';
+import fetchRequest from './tools/fetchRequest';
+import qs from 'querystring';
+import {v4 as uuidV4} from 'uuid';
+import QuickLRU from 'quick-lru';
+import {appConfig} from './appConfig';
 import throttle from 'lodash.throttle';
-import {getDebug} from "./tools/getDebug";
+import {getDebug} from './tools/getDebug';
 
 const debug = getDebug('app:tracker');
 
@@ -17,18 +17,18 @@ class Tracker {
   tid;
   defaultParams;
   lru = new QuickLRU<string | number, string>({maxSize: 100});
-  queue: [number, {[s: string]: string|number}][] = [];
+  queue: [number, {[s: string]: string | number}][] = [];
   constructor() {
     this.tid = appConfig.gaId;
     this.defaultParams = {
       v: 1,
       tid: this.tid,
       an: 'bot',
-      aid: 'bot'
+      aid: 'bot',
     };
   }
 
-  track(chatId: number|string, params: {[s: string]: string|number}) {
+  track(chatId: number | string, params: {[s: string]: string | number}) {
     if (!this.tid) return;
     const cid = this.getUuid(chatId);
 
@@ -45,12 +45,14 @@ class Tracker {
           return fetchRequest('https://www.google-analytics.com/batch', {
             method: 'POST',
             headers: {
-              'Content-Type': 'text/html'
+              'Content-Type': 'text/html',
             },
-            body: queue.map(([time, hit]) => {
-              hit.qt = Date.now() - time;
-              return qs.stringify(hit);
-            }).join('\n'),
+            body: queue
+              .map(([time, hit]) => {
+                hit.qt = Date.now() - time;
+                return qs.stringify(hit);
+              })
+              .join('\n'),
             keepAlive: true,
           }).catch((err: any) => {
             const fourHoursAgo = new Date();
@@ -69,10 +71,10 @@ class Tracker {
     });
   };
   sendDataThrottled = throttle(this.sendData, 1000, {
-    leading: false
+    leading: false,
   });
 
-  getUuid(chatId: number|string) {
+  getUuid(chatId: number | string) {
     if (this.lru.has(chatId)) {
       return this.lru.get(chatId);
     }
@@ -85,7 +87,13 @@ class Tracker {
       vId *= -1;
     }
 
-    const idParts = vId.toString().split('').reverse().join('').match(/(\d{0,2})/g).reverse();
+    const idParts = vId
+      .toString()
+      .split('')
+      .reverse()
+      .join('')
+      .match(/(\d{0,2})/g)
+      .reverse();
 
     const random = new Array(16);
     for (let i = 0; i < 16; i++) {
@@ -94,7 +102,7 @@ class Tracker {
 
     let index = random.length;
     let part;
-    while (part = idParts.pop()) {
+    while ((part = idParts.pop())) {
       index--;
       random[index] = parseInt(`${prefix}${part}`, 10);
     }

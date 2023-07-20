@@ -1,42 +1,42 @@
-import ErrorWithCode from "./tools/errorWithCode";
-import arrayByPart from "./tools/arrayByPart";
-import serviceId from "./tools/serviceId";
-import arrayDifference from "./tools/arrayDifference";
-import Sequelize, {Op, Transaction} from "sequelize";
-import Main from "./main";
-import {ServiceChannel, ServiceInterface} from "./checker";
-import assertType from "./tools/assertType";
-import {Feed} from "./ytPubSub";
-import {appConfig} from "./appConfig";
-import {getDebug} from "./tools/getDebug";
+import ErrorWithCode from './tools/errorWithCode';
+import arrayByPart from './tools/arrayByPart';
+import serviceId from './tools/serviceId';
+import arrayDifference from './tools/arrayDifference';
+import Sequelize, {Op, Transaction} from 'sequelize';
+import Main from './main';
+import {ServiceChannel, ServiceInterface} from './checker';
+import assertType from './tools/assertType';
+import {Feed} from './ytPubSub';
+import {appConfig} from './appConfig';
+import {getDebug} from './tools/getDebug';
 
 const debug = getDebug('app:db');
 const ISOLATION_LEVELS = Transaction.ISOLATION_LEVELS;
 
 export interface NewChat {
   id: string;
-  channelId?: string|null;
+  channelId?: string | null;
   isHidePreview?: boolean;
   isMuted?: boolean;
   sendTimeoutExpiresAt?: Date;
-  parentChatId?: string|null;
+  parentChatId?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 export class ChatModel extends Sequelize.Model {
   declare id: string;
-  declare channelId: string|null;
+  declare channelId: string | null;
   declare isHidePreview: boolean;
   declare isMuted: boolean;
   declare sendTimeoutExpiresAt: Date;
-  declare parentChatId: string|null;
+  declare parentChatId: string | null;
 
   declare createdAt: Date;
   declare updatedAt: Date;
 }
 export interface ChatModelWithOptionalChannel extends ChatModel {
-  channel: ChatModel|null,
+  channel: ChatModel | null;
 }
 
 export class ChannelModel extends Sequelize.Model {
@@ -93,26 +93,26 @@ export class VideoModel extends Sequelize.Model {
   declare url: string;
   declare title: string;
   declare previews: string[];
-  declare duration: string|null;
+  declare duration: string | null;
   declare channelId: string;
   declare publishedAt: Date;
-  declare telegramPreviewFileId: string|null;
+  declare telegramPreviewFileId: string | null;
   declare mergedId: string | null;
   declare mergedChannelId: string | null;
   declare createdAt: Date;
 }
 export interface VideoModelWithChannel extends VideoModel {
-  channel: ChannelModel,
+  channel: ChannelModel;
 }
 export interface NewVideo {
   id: string;
   url: string;
   title: string;
   previews: string[];
-  duration?: string|null;
+  duration?: string | null;
   channelId: string;
   publishedAt: Date;
-  telegramPreviewFileId?: string|null;
+  telegramPreviewFileId?: string | null;
   mergedId?: string | null;
   mergedChannelId?: string | null;
 }
@@ -131,190 +131,292 @@ export interface NewChatIdVideoId {
 class Db {
   private sequelize: Sequelize.Sequelize;
   constructor(private main: Main) {
-    this.sequelize = new Sequelize.Sequelize(appConfig.db.database, appConfig.db.user, appConfig.db.password, {
-      host: appConfig.db.host,
-      port: appConfig.db.port,
-      dialect: 'mariadb',
-      omitNull: true,
-      logging: false,
-      /*dialectOptions: {
+    this.sequelize = new Sequelize.Sequelize(
+      appConfig.db.database,
+      appConfig.db.user,
+      appConfig.db.password,
+      {
+        host: appConfig.db.host,
+        port: appConfig.db.port,
+        dialect: 'mariadb',
+        omitNull: true,
+        logging: false,
+        /*dialectOptions: {
         charset: 'utf8mb4',
         collate: 'utf8mb4_general_ci'
       },*/
-      define: {
-        charset: 'utf8mb4',
+        define: {
+          charset: 'utf8mb4',
+        },
+        pool: {
+          max: 30,
+          min: 0,
+          acquire: 30000,
+          idle: 10000,
+        },
       },
-      pool: {
-        max: 30,
-        min: 0,
-        acquire: 30000,
-        idle: 10000
-      }
+    );
+
+    ChatModel.init(
+      {
+        id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
+        channelId: {type: Sequelize.STRING(191), allowNull: true},
+        isHidePreview: {type: Sequelize.BOOLEAN, defaultValue: false},
+        isMuted: {type: Sequelize.BOOLEAN, defaultValue: false},
+        sendTimeoutExpiresAt: {
+          type: Sequelize.DATE,
+          allowNull: false,
+          defaultValue: '1970-01-01 00:00:00',
+        },
+        parentChatId: {type: Sequelize.STRING(191), allowNull: true},
+      },
+      {
+        sequelize: this.sequelize,
+        modelName: 'chat',
+        tableName: 'chats',
+        timestamps: true,
+        indexes: [
+          {
+            name: 'channelId_UNIQUE',
+            unique: true,
+            fields: ['channelId'],
+          },
+          {
+            name: 'sendTimeoutExpiresAt_idx',
+            fields: ['sendTimeoutExpiresAt'],
+          },
+        ],
+      },
+    );
+    ChatModel.belongsTo(ChatModel, {
+      foreignKey: 'channelId',
+      targetKey: 'id',
+      onUpdate: 'CASCADE',
+      onDelete: 'SET NULL',
+      as: 'channel',
+    });
+    ChatModel.belongsTo(ChatModel, {
+      foreignKey: 'parentChatId',
+      targetKey: 'id',
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE',
+      as: 'parentChat',
     });
 
-    ChatModel.init({
-      id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
-      channelId: {type: Sequelize.STRING(191), allowNull: true},
-      isHidePreview: {type: Sequelize.BOOLEAN, defaultValue: false},
-      isMuted: {type: Sequelize.BOOLEAN, defaultValue: false},
-      sendTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
-      parentChatId: {type: Sequelize.STRING(191), allowNull: true},
-    }, {
-      sequelize: this.sequelize,
-      modelName: 'chat',
-      tableName: 'chats',
-      timestamps: true,
-      indexes: [{
-        name: 'channelId_UNIQUE',
-        unique: true,
-        fields: ['channelId']
-      },{
-        name: 'sendTimeoutExpiresAt_idx',
-        fields: ['sendTimeoutExpiresAt']
-      }]
-    });
-    ChatModel.belongsTo(ChatModel, {foreignKey: 'channelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'SET NULL', as: 'channel'});
-    ChatModel.belongsTo(ChatModel, {foreignKey: 'parentChatId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE', as: 'parentChat'});
+    ChannelModel.init(
+      {
+        id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
+        service: {type: Sequelize.STRING(191), allowNull: false},
+        title: {type: Sequelize.TEXT, allowNull: true},
+        url: {type: Sequelize.TEXT, allowNull: false},
+        hasChanges: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
+        lastVideoPublishedAt: {type: Sequelize.DATE, allowNull: true, defaultValue: null},
+        lastSyncAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
+        lastFullSyncAt: {
+          type: Sequelize.DATE,
+          allowNull: false,
+          defaultValue: '1970-01-01 00:00:00',
+        },
+        syncTimeoutExpiresAt: {
+          type: Sequelize.DATE,
+          allowNull: false,
+          defaultValue: '1970-01-01 00:00:00',
+        },
+        subscriptionExpiresAt: {
+          type: Sequelize.DATE,
+          allowNull: false,
+          defaultValue: '1970-01-01 00:00:00',
+        },
+        subscriptionTimeoutExpiresAt: {
+          type: Sequelize.DATE,
+          allowNull: false,
+          defaultValue: '1970-01-01 00:00:00',
+        },
+      },
+      {
+        sequelize: this.sequelize,
+        modelName: 'channel',
+        tableName: 'channels',
+        timestamps: true,
+        indexes: [
+          {
+            name: 'hasChanges_idx',
+            fields: ['hasChanges'],
+          },
+          {
+            name: 'lastVideoPublishedAt_idx',
+            fields: ['lastVideoPublishedAt'],
+          },
+          {
+            name: 'lastSyncAt_idx',
+            fields: ['lastSyncAt'],
+          },
+          {
+            name: 'syncTimeoutExpiresAt_idx',
+            fields: ['syncTimeoutExpiresAt'],
+          },
+          {
+            name: 'subscriptionExpiresAt_subscriptionTimeoutExpiresAt_idx',
+            fields: ['subscriptionExpiresAt', 'subscriptionTimeoutExpiresAt'],
+          },
+        ],
+      },
+    );
 
-    ChannelModel.init({
-      id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
-      service: {type: Sequelize.STRING(191), allowNull: false},
-      title: {type: Sequelize.TEXT, allowNull: true},
-      url: {type: Sequelize.TEXT, allowNull: false},
-      hasChanges: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
-      lastVideoPublishedAt: {type: Sequelize.DATE, allowNull: true, defaultValue: null},
-      lastSyncAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
-      lastFullSyncAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
-      syncTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
-      subscriptionExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
-      subscriptionTimeoutExpiresAt: {type: Sequelize.DATE, allowNull: false, defaultValue: '1970-01-01 00:00:00'},
-    }, {
-      sequelize: this.sequelize,
-      modelName: 'channel',
-      tableName: 'channels',
-      timestamps: true,
-      indexes: [{
-        name: 'hasChanges_idx',
-        fields: ['hasChanges']
-      }, {
-        name: 'lastVideoPublishedAt_idx',
-        fields: ['lastVideoPublishedAt']
-      }, {
-        name: 'lastSyncAt_idx',
-        fields: ['lastSyncAt']
-      }, {
-        name: 'syncTimeoutExpiresAt_idx',
-        fields: ['syncTimeoutExpiresAt']
-      }, {
-        name: 'subscriptionExpiresAt_subscriptionTimeoutExpiresAt_idx',
-        fields: ['subscriptionExpiresAt', 'subscriptionTimeoutExpiresAt']
-      }]
+    YtPubSubModel.init(
+      {
+        videoId: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
+        channelId: {type: Sequelize.STRING(191), allowNull: true, defaultValue: null},
+        publishedAt: {type: Sequelize.DATE, allowNull: true, defaultValue: null},
+        lastPushAt: {type: Sequelize.DATE, allowNull: false},
+      },
+      {
+        sequelize: this.sequelize,
+        modelName: 'ytPubSub',
+        timestamps: true,
+        updatedAt: false,
+        indexes: [
+          {
+            name: 'lastPushAt_idx',
+            fields: ['lastPushAt'],
+          },
+        ],
+      },
+    );
+
+    ChatIdChannelIdModel.init(
+      {
+        chatId: {type: Sequelize.STRING(191), allowNull: false},
+        channelId: {type: Sequelize.STRING(191), allowNull: false},
+      },
+      {
+        sequelize: this.sequelize,
+        modelName: 'chatIdChannelId',
+        tableName: 'chatIdChannelId',
+        timestamps: true,
+        updatedAt: false,
+        indexes: [
+          {
+            name: 'chatId_channelId_UNIQUE',
+            unique: true,
+            fields: ['chatId', 'channelId'],
+          },
+          {
+            name: 'chatId_idx',
+            fields: ['chatId'],
+          },
+          {
+            name: 'channelId_idx',
+            fields: ['channelId'],
+          },
+          {
+            name: 'createdAt_idx',
+            fields: ['createdAt'],
+          },
+        ],
+      },
+    );
+    ChatIdChannelIdModel.belongsTo(ChatModel, {
+      foreignKey: 'chatId',
+      targetKey: 'id',
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE',
+    });
+    ChatIdChannelIdModel.belongsTo(ChannelModel, {
+      foreignKey: 'channelId',
+      targetKey: 'id',
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE',
     });
 
-    YtPubSubModel.init({
-      videoId: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
-      channelId: {type: Sequelize.STRING(191), allowNull: true, defaultValue: null},
-      publishedAt: {type: Sequelize.DATE, allowNull: true, defaultValue: null},
-      lastPushAt: {type: Sequelize.DATE, allowNull: false},
-    }, {
-      sequelize: this.sequelize,
-      modelName: 'ytPubSub',
-      timestamps: true,
-      updatedAt: false,
-      indexes: [{
-        name: 'lastPushAt_idx',
-        fields: ['lastPushAt']
-      }]
+    VideoModel.init(
+      {
+        id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
+        url: {type: Sequelize.STRING(191), allowNull: false},
+        title: {type: Sequelize.STRING(191), allowNull: false},
+        previews: {type: Sequelize.JSON, allowNull: false},
+        duration: {type: Sequelize.STRING(191), allowNull: true},
+        channelId: {type: Sequelize.STRING(191), allowNull: false},
+        publishedAt: {type: Sequelize.DATE, allowNull: false},
+        telegramPreviewFileId: {type: Sequelize.TEXT, allowNull: true},
+        mergedId: {type: Sequelize.STRING(191), allowNull: true},
+        mergedChannelId: {type: Sequelize.STRING(191), allowNull: true},
+      },
+      {
+        sequelize: this.sequelize,
+        modelName: 'video',
+        tableName: 'videos',
+        timestamps: true,
+        updatedAt: false,
+        indexes: [
+          {
+            name: 'publishedAt_idx',
+            fields: ['publishedAt'],
+          },
+        ],
+      },
+    );
+    VideoModel.belongsTo(ChannelModel, {
+      foreignKey: 'channelId',
+      targetKey: 'id',
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE',
     });
 
-    ChatIdChannelIdModel.init( {
-      chatId: {type: Sequelize.STRING(191), allowNull: false},
-      channelId: {type: Sequelize.STRING(191), allowNull: false},
-    }, {
-      sequelize: this.sequelize,
-      modelName: 'chatIdChannelId',
-      tableName: 'chatIdChannelId',
-      timestamps: true,
-      updatedAt: false,
-      indexes: [{
-        name: 'chatId_channelId_UNIQUE',
-        unique: true,
-        fields: ['chatId', 'channelId']
-      }, {
-        name: 'chatId_idx',
-        fields: ['chatId']
-      }, {
-        name: 'channelId_idx',
-        fields: ['channelId']
-      }, {
-        name: 'createdAt_idx',
-        fields: ['createdAt']
-      }]
+    ChatIdVideoIdModel.init(
+      {
+        id: {type: Sequelize.INTEGER, allowNull: false, primaryKey: true, autoIncrement: true},
+        chatId: {type: Sequelize.STRING(191), allowNull: false},
+        videoId: {type: Sequelize.STRING(191), allowNull: false},
+      },
+      {
+        sequelize: this.sequelize,
+        modelName: 'chatIdVideoId',
+        tableName: 'chatIdVideoId',
+        timestamps: true,
+        updatedAt: false,
+        indexes: [
+          {
+            name: 'chatId_videoId_UNIQUE',
+            unique: true,
+            fields: ['chatId', 'videoId'],
+          },
+          {
+            name: 'chatId_idx',
+            fields: ['chatId'],
+          },
+        ],
+      },
+    );
+    ChatIdVideoIdModel.belongsTo(ChatModel, {
+      foreignKey: 'chatId',
+      targetKey: 'id',
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE',
     });
-    ChatIdChannelIdModel.belongsTo(ChatModel, {foreignKey: 'chatId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
-    ChatIdChannelIdModel.belongsTo(ChannelModel, {foreignKey: 'channelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
-
-    VideoModel.init({
-      id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
-      url: {type: Sequelize.STRING(191), allowNull: false},
-      title: {type: Sequelize.STRING(191), allowNull: false},
-      previews: {type: Sequelize.JSON, allowNull: false},
-      duration: {type: Sequelize.STRING(191), allowNull: true},
-      channelId: {type: Sequelize.STRING(191), allowNull: false},
-      publishedAt: {type: Sequelize.DATE, allowNull: false},
-      telegramPreviewFileId: {type: Sequelize.TEXT, allowNull: true},
-      mergedId: {type: Sequelize.STRING(191), allowNull: true},
-      mergedChannelId: {type: Sequelize.STRING(191), allowNull: true},
-    }, {
-      sequelize: this.sequelize,
-      modelName: 'video',
-      tableName: 'videos',
-      timestamps: true,
-      updatedAt: false,
-      indexes: [{
-        name: 'publishedAt_idx',
-        fields: ['publishedAt']
-      }]
+    ChatIdVideoIdModel.belongsTo(VideoModel, {
+      foreignKey: 'videoId',
+      targetKey: 'id',
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE',
     });
-    VideoModel.belongsTo(ChannelModel, {foreignKey: 'channelId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
-
-    ChatIdVideoIdModel.init({
-      id: {type: Sequelize.INTEGER, allowNull: false, primaryKey: true, autoIncrement: true},
-      chatId: {type: Sequelize.STRING(191), allowNull: false},
-      videoId: {type: Sequelize.STRING(191), allowNull: false},
-    }, {
-      sequelize: this.sequelize,
-      modelName: 'chatIdVideoId',
-      tableName: 'chatIdVideoId',
-      timestamps: true,
-      updatedAt: false,
-      indexes: [{
-        name: 'chatId_videoId_UNIQUE',
-        unique: true,
-        fields: ['chatId', 'videoId']
-      },{
-        name: 'chatId_idx',
-        fields: ['chatId']
-      }]
-    });
-    ChatIdVideoIdModel.belongsTo(ChatModel, {foreignKey: 'chatId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
-    ChatIdVideoIdModel.belongsTo(VideoModel, {foreignKey: 'videoId', targetKey: 'id', onUpdate: 'CASCADE', onDelete: 'CASCADE'});
   }
 
   init() {
-    return this.sequelize.authenticate().then(() => {
-      return this.sequelize.sync();
-    }).then(() => {
-      return this.removeChannelByIds(appConfig.channelBlackList);
-    });
+    return this.sequelize
+      .authenticate()
+      .then(() => {
+        return this.sequelize.sync();
+      })
+      .then(() => {
+        return this.removeChannelByIds(appConfig.channelBlackList);
+      });
   }
 
   ensureChat(id: string) {
     return ChatModel.findOrCreate({
       where: {id},
-      include: [
-        {model: ChatModel, as: 'channel'}
-      ]
+      include: [{model: ChatModel, as: 'channel'}],
     }).then(([model, isCreated]) => {
       assertType<ChatModelWithOptionalChannel>(model);
       return model;
@@ -322,37 +424,49 @@ class Db {
   }
 
   createChatChannel(chatId: string, channelId: string) {
-    return this.sequelize.transaction({
-      isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
-    }, async (transaction) => {
-      await ChatModel.create({
-        id: channelId,
-        parentChatId: chatId,
-      }, {
-        transaction
-      });
-      await ChatModel.upsert({
-        id: chatId,
-        channelId: channelId
-      }, {
-        transaction
-      })
-    });
+    return this.sequelize.transaction(
+      {
+        isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
+      },
+      async (transaction) => {
+        await ChatModel.create(
+          {
+            id: channelId,
+            parentChatId: chatId,
+          },
+          {
+            transaction,
+          },
+        );
+        await ChatModel.upsert(
+          {
+            id: chatId,
+            channelId: channelId,
+          },
+          {
+            transaction,
+          },
+        );
+      },
+    );
   }
 
   changeChatId(id: string, newId: string) {
-    return ChatModel.update({id: newId}, {
-      where: {id}
-    });
+    return ChatModel.update(
+      {id: newId},
+      {
+        where: {id},
+      },
+    );
   }
 
   getChatIds(offset: number, limit: number) {
     return ChatModel.findAll({
       offset,
       limit,
-      attributes: ['id']
+      attributes: ['id'],
     }).then((chats: Pick<ChatModel, 'id'>[]) => {
-      return chats.map(chat => chat.id);
+      return chats.map((chat) => chat.id);
     });
   }
 
@@ -374,20 +488,23 @@ class Db {
   setChatSendTimeoutExpiresAt(ids: string[]) {
     const date = new Date();
     date.setSeconds(date.getSeconds() + appConfig.chatSendTimeoutAfterErrorMinutes * 60);
-    return ChatModel.update({sendTimeoutExpiresAt: date}, {
-      where: {id: ids}
-    });
+    return ChatModel.update(
+      {sendTimeoutExpiresAt: date},
+      {
+        where: {id: ids},
+      },
+    );
   }
 
   deleteChatById(id: string) {
     return ChatModel.destroy({
-      where: {id}
+      where: {id},
     });
   }
 
   deleteChatsByIds(ids: string[]) {
     return ChatModel.destroy({
-      where: {id: ids}
+      where: {id: ids},
     });
   }
 
@@ -395,8 +512,8 @@ class Db {
     return ChatModel.destroy({
       where: {
         id: {[Op.notIn]: Sequelize.literal(`(SELECT DISTINCT chatId FROM chatIdChannelId)`)},
-        parentChatId: null
-      }
+        parentChatId: null,
+      },
     });
   }
 
@@ -416,59 +533,75 @@ class Db {
   }
 
   getChatIdChannelIdChatIdCount() {
-    return this.sequelize.query<{chatCount: number}>(`
+    return this.sequelize
+      .query<{chatCount: number}>(
+        `
       SELECT COUNT(DISTINCT(chatId)) as chatCount FROM chatIdChannelId
-    `, {type: Sequelize.QueryTypes.SELECT}).then((results) => {
-      const result = results[0];
-      if (!result) {
-        return 0;
-      }
-      return result.chatCount;
-    });
+    `,
+        {type: Sequelize.QueryTypes.SELECT},
+      )
+      .then((results) => {
+        const result = results[0];
+        if (!result) {
+          return 0;
+        }
+        return result.chatCount;
+      });
   }
 
   getChatIdChannelIdChannelIdCount() {
-    return this.sequelize.query<{channelCount: number}>(`
+    return this.sequelize
+      .query<{channelCount: number}>(
+        `
       SELECT COUNT(DISTINCT(channelId)) as channelCount FROM chatIdChannelId
-    `, {type: Sequelize.QueryTypes.SELECT}).then((results) => {
-      const result = results[0];
-      if (!result) {
-        return 0;
-      }
-      return result.channelCount;
-    });
+    `,
+        {type: Sequelize.QueryTypes.SELECT},
+      )
+      .then((results) => {
+        const result = results[0];
+        if (!result) {
+          return 0;
+        }
+        return result.channelCount;
+      });
   }
 
   getChatIdChannelIdTop10ByServiceId(serviceId: string) {
     const monthAgo = new Date();
     monthAgo.setMonth(monthAgo.getMonth() - 1);
     return this.sequelize.query<{
-      channelId: string, service: string, chatCount: number, title: string
-    }>(`
+      channelId: string;
+      service: string;
+      chatCount: number;
+      title: string;
+    }>(
+      `
       SELECT channelId, COUNT(chatId) as chatCount, channels.service as service, channels.title as title FROM chatIdChannelId
       INNER JOIN channels ON channelId = channels.id
-      WHERE channels.service = "${serviceId}" AND channels.lastVideoPublishedAt > "${dateToSql(monthAgo)}"
+      WHERE channels.service = "${serviceId}" AND channels.lastVideoPublishedAt > "${dateToSql(
+        monthAgo,
+      )}"
       GROUP BY channelId ORDER BY COUNT(chatId) DESC LIMIT 10
-    `, {type: Sequelize.QueryTypes.SELECT});
+    `,
+      {type: Sequelize.QueryTypes.SELECT},
+    );
   }
 
   getChannelsByChatId(chatId: string) {
     return ChatIdChannelIdModel.findAll({
-      include: [
-        {model: ChannelModel, required: true}
-      ],
+      include: [{model: ChannelModel, required: true}],
       where: {chatId},
       attributes: [],
       order: ['createdAt'],
     }).then((chatIdChannelIdList: {}[]) => {
       assertType<{channel: ChannelModel}[]>(chatIdChannelIdList);
-      return chatIdChannelIdList.map(chatIdChannelId => chatIdChannelId.channel);
+      return chatIdChannelIdList.map((chatIdChannelId) => chatIdChannelId.channel);
     });
   }
 
   getChannelsByIds(ids: string[]) {
     return ChannelModel.findAll({
-      where: {id: ids}
+      where: {id: ids},
     });
   }
 
@@ -483,7 +616,7 @@ class Db {
 
   getChannelCountByChatId(chatId: string) {
     return ChatIdChannelIdModel.count({
-      where: {chatId}
+      where: {chatId},
     });
   }
 
@@ -495,22 +628,24 @@ class Db {
 
   deleteChatIdChannelId(chatId: string, channelId: string) {
     return ChatIdChannelIdModel.destroy({
-      where: {chatId, channelId}
+      where: {chatId, channelId},
     });
   }
 
   getChannelIdsWithExpiresSubscription(limit = 50) {
     const date = new Date();
-    date.setSeconds(date.getSeconds() + appConfig.updateChannelPubSubSubscribeIfExpiresLessThenMinutes * 60);
+    date.setSeconds(
+      date.getSeconds() + appConfig.updateChannelPubSubSubscribeIfExpiresLessThenMinutes * 60,
+    );
     return ChannelModel.findAll({
       where: {
         subscriptionExpiresAt: {[Op.lt]: date},
-        subscriptionTimeoutExpiresAt: {[Op.lt]: new Date()}
+        subscriptionTimeoutExpiresAt: {[Op.lt]: new Date()},
       },
       limit: limit,
-      attributes: ['id']
+      attributes: ['id'],
     }).then((results: Pick<ChannelModel, 'id'>[]) => {
-      return results.map(item => item.id);
+      return results.map((item) => item.id);
     });
   }
 
@@ -520,10 +655,7 @@ class Db {
     return ChannelModel.findAll({
       where: {
         syncTimeoutExpiresAt: {[Op.lt]: new Date()},
-        [Op.or]: [
-          {hasChanges: true},
-          {lastSyncAt: {[Op.lt]: date}}
-        ],
+        [Op.or]: [{hasChanges: true}, {lastSyncAt: {[Op.lt]: date}}],
       },
       order: Sequelize.literal(`lastVideoPublishedAt IS NULL, lastSyncAt`),
       limit: limit,
@@ -534,35 +666,45 @@ class Db {
     return ChannelModel.findAll({
       where: {service},
       attributes: ['id'],
-      offset, limit,
+      offset,
+      limit,
     }).then((channels: Pick<ChannelModel, 'id'>[]) => {
-      return channels.map(channel => channel.id);
+      return channels.map((channel) => channel.id);
     });
   }
 
   setChannelsSyncTimeoutExpiresAtAndUncheckChanges(ids: string[]) {
     const date = new Date();
     date.setSeconds(date.getSeconds() + appConfig.channelSyncTimeoutMinutes * 60);
-    return ChannelModel.update({
-      syncTimeoutExpiresAt: date,
-      hasChanges: false
-    }, {
-      where: {id: ids}
-    });
+    return ChannelModel.update(
+      {
+        syncTimeoutExpiresAt: date,
+        hasChanges: false,
+      },
+      {
+        where: {id: ids},
+      },
+    );
   }
 
   setChannelsSubscriptionExpiresAt(ids: string[], expiresAt: Date) {
-    return ChannelModel.update({subscriptionExpiresAt: expiresAt}, {
-      where: {id: ids}
-    });
+    return ChannelModel.update(
+      {subscriptionExpiresAt: expiresAt},
+      {
+        where: {id: ids},
+      },
+    );
   }
 
   setChannelsSubscriptionTimeoutExpiresAt(ids: string[]) {
     const date = new Date();
     date.setSeconds(date.getSeconds() + appConfig.channelPubSubSubscribeTimeoutMinutes * 60);
-    return ChannelModel.update({subscriptionTimeoutExpiresAt: date}, {
-      where: {id: ids}
-    });
+    return ChannelModel.update(
+      {subscriptionTimeoutExpiresAt: date},
+      {
+        where: {id: ids},
+      },
+    );
   }
 
   async removeChannelByIds(ids: string[]) {
@@ -573,44 +715,50 @@ class Db {
   cleanChannels() {
     return ChannelModel.destroy({
       where: {
-        id: {[Op.notIn]: Sequelize.literal(`(SELECT DISTINCT channelId FROM chatIdChannelId)`)}
-      }
+        id: {[Op.notIn]: Sequelize.literal(`(SELECT DISTINCT channelId FROM chatIdChannelId)`)},
+      },
     });
   }
 
   putYtPubSub(feeds: Feed[], channelsChanges: NewChannel[], channelIds: string[]) {
-    return this.sequelize.transaction({
-      isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
-    }, async (transaction) => {
-      await Promise.all([
-        /*bulk(feeds, (feeds) => {
+    return this.sequelize.transaction(
+      {
+        isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
+      },
+      async (transaction) => {
+        await Promise.all([
+          /*bulk(feeds, (feeds) => {
           return YtPubSubModel.bulkCreate(feeds, {
             updateOnDuplicate: ['channelId', 'publishedAt', 'lastPushAt'],
             transaction
           });
         }),*/
-        bulk(channelsChanges, (channelsChanges) => {
-          return ChannelModel.bulkCreate(channelsChanges as any, {
-            updateOnDuplicate: ['lastVideoPublishedAt'],
-            transaction,
-          });
-        }),
-        ChannelModel.update({
-          hasChanges: true
-        }, {
-          transaction,
-          where: {id: channelIds}
-        })
-      ]);
-    });
+          bulk(channelsChanges, (channelsChanges) => {
+            return ChannelModel.bulkCreate(channelsChanges as any, {
+              updateOnDuplicate: ['lastVideoPublishedAt'],
+              transaction,
+            });
+          }),
+          ChannelModel.update(
+            {
+              hasChanges: true,
+            },
+            {
+              transaction,
+              where: {id: channelIds},
+            },
+          ),
+        ]);
+      },
+    );
   }
 
   getExistsYtPubSubVideoIds(ids: string[]) {
     return YtPubSubModel.findAll({
       where: {videoId: ids},
-      attributes: ['videoId']
+      attributes: ['videoId'],
     }).then((items: Pick<YtPubSubModel, 'videoId'>[]) => {
-      return items.map(item => item.videoId);
+      return items.map((item) => item.videoId);
     });
   }
 
@@ -619,17 +767,17 @@ class Db {
     date.setDate(date.getDate() - appConfig.cleanPubSubFeedIfPushOlderThanDays);
     return YtPubSubModel.destroy({
       where: {
-        lastPushAt: {[Op.lt]: date}
-      }
+        lastPushAt: {[Op.lt]: date},
+      },
     });
   }
 
   getExistsVideoIds(ids: string[]) {
     return VideoModel.findAll({
       where: {id: ids},
-      attributes: ['id']
+      attributes: ['id'],
     }).then((videos: Pick<VideoModel, 'id'>[]) => {
-      return videos.map(video => video.id);
+      return videos.map((video) => video.id);
     });
   }
 
@@ -642,13 +790,17 @@ class Db {
   getChatIdChannelIdByChannelIds(channelIds: string[]) {
     return ChatIdChannelIdModel.findAll({
       where: {channelId: channelIds},
-      include: [{
-        model: ChatModel,
-        attributes: ['id', 'channelId', 'isMuted'],
-        required: true
-      }]
+      include: [
+        {
+          model: ChatModel,
+          attributes: ['id', 'channelId', 'isMuted'],
+          required: true,
+        },
+      ],
     }).then((results) => {
-      assertType<(ChatIdChannelIdModel & {chat: Pick<ChatModel, 'id' | 'channelId' | 'isMuted'>})[]>(results);
+      assertType<
+        (ChatIdChannelIdModel & {chat: Pick<ChatModel, 'id' | 'channelId' | 'isMuted'>})[]
+      >(results);
       return results;
     });
   }
@@ -665,76 +817,97 @@ class Db {
     ]);
   }
 
-  putVideos(channelsChanges: NewChannel[], videos: NewVideo[], chatIdVideoIdChanges: NewChatIdVideoId[]) {
+  putVideos(
+    channelsChanges: NewChannel[],
+    videos: NewVideo[],
+    chatIdVideoIdChanges: NewChatIdVideoId[],
+  ) {
     let retry = 3;
 
     const doTry = (): Promise<void> => {
-      return this.sequelize.transaction({
-        isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
-      }, async (transaction) => {
-        await Promise.all([
-          bulk(channelsChanges, (channelsChanges) => {
-            return ChannelModel.bulkCreate(channelsChanges as any, {
-              updateOnDuplicate: ['lastSyncAt', 'lastFullSyncAt', 'lastVideoPublishedAt', 'title'],
-              transaction
-            });
-          }),
-          bulk(videos, (videos) => {
-            return VideoModel.bulkCreate(videos as any, {
-              transaction
-            });
-          }),
-        ]);
+      return this.sequelize
+        .transaction(
+          {
+            isolationLevel: ISOLATION_LEVELS.REPEATABLE_READ,
+          },
+          async (transaction) => {
+            await Promise.all([
+              bulk(channelsChanges, (channelsChanges) => {
+                return ChannelModel.bulkCreate(channelsChanges as any, {
+                  updateOnDuplicate: [
+                    'lastSyncAt',
+                    'lastFullSyncAt',
+                    'lastVideoPublishedAt',
+                    'title',
+                  ],
+                  transaction,
+                });
+              }),
+              bulk(videos, (videos) => {
+                return VideoModel.bulkCreate(videos as any, {
+                  transaction,
+                });
+              }),
+            ]);
 
-        await bulk(chatIdVideoIdChanges, (chatIdVideoIdChanges) => {
-          return ChatIdVideoIdModel.bulkCreate(chatIdVideoIdChanges as any, {
-            transaction
-          });
+            await bulk(chatIdVideoIdChanges, (chatIdVideoIdChanges) => {
+              return ChatIdVideoIdModel.bulkCreate(chatIdVideoIdChanges as any, {
+                transaction,
+              });
+            });
+          },
+        )
+        .catch((err) => {
+          if (/Deadlock found when trying to get lock/.test(err.message) && --retry > 0) {
+            return new Promise((r) => setTimeout(r, 250)).then(() => doTry());
+          }
+          throw err;
         });
-      }).catch((err) => {
-        if (/Deadlock found when trying to get lock/.test(err.message) && --retry > 0) {
-          return new Promise(r => setTimeout(r, 250)).then(() => doTry());
-        }
-        throw err;
-      });
     };
 
     return doTry();
   }
 
   getDistinctChatIdVideoIdChatIds() {
-    return this.sequelize.query<{chatId: string}>(`
+    return this.sequelize
+      .query<{chatId: string}>(
+        `
       SELECT DISTINCT chatId FROM chatIdVideoId
       INNER JOIN chats ON chatIdVideoId.chatId = chats.id
       WHERE chats.sendTimeoutExpiresAt < "${dateToSql(new Date())}"
-    `,  { type: Sequelize.QueryTypes.SELECT}).then((results) => {
-      return results.map(result => result.chatId);
-    });
+    `,
+        {type: Sequelize.QueryTypes.SELECT},
+      )
+      .then((results) => {
+        return results.map((result) => result.chatId);
+      });
   }
 
   getVideoIdsByChatId(chatId: string, limit = 10) {
     return ChatIdVideoIdModel.findAll({
       where: {chatId},
-      include: [{
-        model: VideoModel,
-        attributes: ['publishedAt'],
-        required: true,
-      }],
+      include: [
+        {
+          model: VideoModel,
+          attributes: ['publishedAt'],
+          required: true,
+        },
+      ],
       order: [Sequelize.literal('video.publishedAt')],
       attributes: ['videoId'],
       limit: limit,
     }).then((results: Pick<ChatIdVideoIdModel, 'videoId'>[]) => {
-      assertType<(Pick<ChatIdVideoIdModel, 'videoId'> & {video: Pick<VideoModel, 'publishedAt'>})[]>(results);
-      return results.map(chatIdVideoId => chatIdVideoId.videoId);
+      assertType<
+        (Pick<ChatIdVideoIdModel, 'videoId'> & {video: Pick<VideoModel, 'publishedAt'>})[]
+      >(results);
+      return results.map((chatIdVideoId) => chatIdVideoId.videoId);
     });
   }
 
   getVideoWithChannelById(id: string) {
     return VideoModel.findOne({
       where: {id},
-      include: [
-        {model: ChannelModel, required: true}
-      ]
+      include: [{model: ChannelModel, required: true}],
     }).then((video) => {
       if (!video) {
         throw new ErrorWithCode('Video is not found', 'VIDEO_IS_NOT_FOUND');
@@ -746,21 +919,25 @@ class Db {
 
   deleteChatIdVideoId(chatId: string, videoId: string) {
     return ChatIdVideoIdModel.destroy({
-      where: {chatId, videoId}
+      where: {chatId, videoId},
     });
   }
 }
 
-function bulk<T, F>(results: T[], callback: (results: T[]) => F):Promise<F[]> {
+function bulk<T, F>(results: T[], callback: (results: T[]) => F): Promise<F[]> {
   const resultsParts = arrayByPart(results, 100);
-  return Promise.all(resultsParts.map(results => callback(results)));
+  return Promise.all(resultsParts.map((results) => callback(results)));
 }
 
 function dateToSql(date: Date) {
   const [YYYY, MM, DD, HH, mm, ss] = [
-    date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate(),
-    date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds()
-  ].map(v => ((v < 10) ? '0' : '') + v);
+    date.getUTCFullYear(),
+    date.getUTCMonth() + 1,
+    date.getUTCDate(),
+    date.getUTCHours(),
+    date.getUTCMinutes(),
+    date.getUTCSeconds(),
+  ].map((v) => (v < 10 ? '0' : '') + v);
   return `${YYYY}-${MM}-${DD} ${HH}:${mm}:${ss}`;
 }
 

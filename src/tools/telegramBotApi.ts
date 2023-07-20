@@ -1,11 +1,11 @@
-import fetchRequest, {FetchRequestOptions} from "./fetchRequest";
-import qs from "node:querystring";
-import FormData from "form-data";
-import {Stream} from "node:stream";
-import * as Buffer from "node:buffer";
-import RateLimit2 from "./rateLimit2";
-import TelegramBot from "node-telegram-bot-api";
-import {getDebug} from "./getDebug";
+import fetchRequest, {FetchRequestOptions} from './fetchRequest';
+import qs from 'node:querystring';
+import FormData from 'form-data';
+import {Stream} from 'node:stream';
+import * as Buffer from 'node:buffer';
+import RateLimit2 from './rateLimit2';
+import TelegramBot from 'node-telegram-bot-api';
+import {getDebug} from './getDebug';
 
 Object.assign(process.env, {
   NTBA_FIX_319: true,
@@ -13,14 +13,18 @@ Object.assign(process.env, {
 });
 
 interface TGError {
-  new (message: string, resp: unknown): Error & { response: unknown }
+  new (message: string, resp: unknown): Error & {response: unknown};
 }
 
-const {FatalError, ParseError, TelegramError} = (TelegramBot as unknown as {
-  errors: {
-    FatalError: typeof Error, ParseError: TGError, TelegramError: TGError
+const {FatalError, ParseError, TelegramError} = (
+  TelegramBot as unknown as {
+    errors: {
+      FatalError: typeof Error;
+      ParseError: TGError;
+      TelegramError: TGError;
+    };
   }
-}).errors;
+).errors;
 
 const debug = getDebug('app:replaceBotRequest');
 
@@ -35,21 +39,24 @@ const debug = getDebug('app:replaceBotRequest');
 })((Module as any)._resolveFilename);*/
 
 interface RequestOptions {
-  qs?: Record<string, any>,
-  form?: string | Record<string, any>,
-  formData: Record<string, {
-    value: Stream | Buffer,
-    options: {
-      filename: string,
-      contentType: string,
-    },
-  }>,
+  qs?: Record<string, any>;
+  form?: string | Record<string, any>;
+  formData: Record<
+    string,
+    {
+      value: Stream | Buffer;
+      options: {
+        filename: string;
+        contentType: string;
+      };
+    }
+  >;
 }
 
 interface Bot {
-  token?: string,
-  _request: (path: string, options: RequestOptions) => Promise<unknown>,
-  options: any,
+  token?: string;
+  _request: (path: string, options: RequestOptions) => Promise<unknown>;
+  options: any;
 
   _fixReplyMarkup(obj: any): void;
 
@@ -96,7 +103,7 @@ function telegramBotApi(botProto: Bot) {
       fetchOptions.headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
       };
-      if (typeof reqOptions.form === "string") {
+      if (typeof reqOptions.form === 'string') {
         fetchOptions.body = reqOptions.form;
       } else {
         fetchOptions.body = qs.stringify(reqOptions.form);
@@ -111,50 +118,51 @@ function telegramBotApi(botProto: Bot) {
       fetchOptions.body = fd;
     }
 
-    return fetchRequest<string>(url, fetchOptions).then((resp) => {
-      let data;
-      try {
-        data = resp.body = JSON.parse(resp.body);
-      } catch (err) {
-        const error = new ParseError(`Error parsing response: ${resp.body}`, resp);
-        hideResponse(error);
-        throw error;
-      }
+    return fetchRequest<string>(url, fetchOptions)
+      .then((resp) => {
+        let data;
+        try {
+          data = resp.body = JSON.parse(resp.body);
+        } catch (err) {
+          const error = new ParseError(`Error parsing response: ${resp.body}`, resp);
+          hideResponse(error);
+          throw error;
+        }
 
-      // debug('response %j', data);
+        // debug('response %j', data);
 
-      if (data.ok) {
-        return data.result;
-      }
+        if (data.ok) {
+          return data.result;
+        }
 
-      const err = new TelegramError(`${data.error_code} ${data.description}`, resp);
-      hideResponse(err);
-      throw err;
-    }).catch(error => {
-      // TODO: why can't we do `error instanceof errors.BaseError`?
-      if (error.response) throw error;
-      throw new FatalError(error);
-    });
+        const err = new TelegramError(`${data.error_code} ${data.description}`, resp);
+        hideResponse(err);
+        throw err;
+      })
+      .catch((error) => {
+        if (error.response) throw error;
+        throw new FatalError(error);
+      });
   };
 }
 
-function hideResponse(err: Error & { response: any }) {
+function hideResponse(err: Error & {response: any}) {
   const response = err.response;
   delete err.response;
   Object.defineProperty(err, 'response', {
     enumerable: false,
-    value: response
+    value: response,
   });
 }
 
 telegramBotApi(TelegramBot.prototype as unknown as Bot);
 
-export type TelegramBotWrapped = TelegramBot & { sendPhotoQuote: TelegramBot['sendPhoto'] };
+export type TelegramBotWrapped = TelegramBot & {sendPhotoQuote: TelegramBot['sendPhoto']};
 
 export const getTelegramBot = (token: string) => {
   const bot = new TelegramBot(token, {
     polling: {
-      autoStart: false
+      autoStart: false,
     },
   });
 
