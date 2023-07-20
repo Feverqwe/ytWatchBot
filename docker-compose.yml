@@ -2,9 +2,12 @@
   "version": "2",
   "services": {
     "bot": {
+      "env_file": [
+        ".env"
+      ],
       "build": ".",
       "volumes": [
-          "/var/log/ytWatchBot:/opt/log"
+        "/var/log/ytWatchBot:/opt/log"
       ],
       "restart": "always",
       "network_mode": "host"

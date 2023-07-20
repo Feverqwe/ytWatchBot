@@ -7,14 +7,14 @@ COPY ./package.json .
 COPY ./package-lock.json .
 RUN chown -R nobody:nogroup ./ && \
     mkdir /.npm && chown nobody:nogroup /.npm && \
-    mkdir -p /opt/log && chown nobody:nogroup /opt/log && \
-    ln -sf /dev/stdout /opt/log/stdout.log && \
-    ln -sf /dev/stderr /opt/log/stderr.log
+    mkdir ./log && chown nobody:nogroup ./log && \
+    ln -sf /dev/stdout ./log/stdout.log && \
+    ln -sf /dev/stderr ./log/stderr.log
 USER nobody:nobody
-RUN npm ci --omit dev
+RUN npm ci --omit dev --fund false
 
 FROM base as build
-RUN npm ci
+RUN npm i --fund false
 ADD ./src ./src
 COPY ./tsconfig.json .
 RUN npm run build
