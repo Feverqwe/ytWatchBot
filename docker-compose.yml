@@ -4,7 +4,7 @@
     "bot": {
       "build": ".",
       "volumes": [
-          "./log:/opt/log"
+          "/var/log/ytWatchBot:/opt/log"
       ],
       "restart": "always",
       "network_mode": "host"

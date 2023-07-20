@@ -5,9 +5,11 @@ WORKDIR /opt
 FROM node as base
 COPY ./package.json .
 COPY ./package-lock.json .
-RUN chown -R nobody:nobody ./ && \
-    mkdir /.npm && \
-    chown -R nobody:nobody /.npm
+RUN chown -R nobody:nogroup ./ && \
+    mkdir /.npm && chown nobody:nogroup /.npm && \
+    mkdir -p /opt/log && chown nobody:nogroup /opt/log && \
+    ln -sf /dev/stdout /opt/log/stdout.log && \
+    ln -sf /dev/stderr /opt/log/stderr.log
 USER nobody:nobody
 RUN npm ci --omit dev
 
@@ -19,11 +21,10 @@ RUN npm run build
 
 FROM base as release
 COPY --from=build /opt/dist ./dist
-COPY ./.env .
 
 ENV NODE_ENV=production
 ENV DEBUG=app:*
 
-EXPOSE 1337
+EXPOSE 80
 
 CMD node ./dist/main.js 1>> ./log/stdout.log 2>> ./log/stderr.log
