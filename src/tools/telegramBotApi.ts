@@ -1,8 +1,8 @@
 import fetchRequest, {FetchRequestOptions} from "./fetchRequest";
-import qs from "querystring";
+import qs from "node:querystring";
 import FormData from "form-data";
-import {Stream} from "stream";
-import * as Buffer from "buffer";
+import {Stream} from "node:stream";
+import * as Buffer from "node:buffer";
 import RateLimit2 from "./rateLimit2";
 import TelegramBot from "node-telegram-bot-api";
 import {getDebug} from "./getDebug";

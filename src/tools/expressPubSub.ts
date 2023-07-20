@@ -1,8 +1,8 @@
 import express, {Express} from "express";
 import fetchRequest from "./fetchRequest";
-import {EventEmitter} from "events";
-import crypto from "crypto";
-import qs from "querystring";
+import {EventEmitter} from "node:events";
+import crypto from "node:crypto";
+import qs from "node:querystring";
 import RateLimit2 from "./rateLimit2";
 import {getDebug} from "./getDebug";
 

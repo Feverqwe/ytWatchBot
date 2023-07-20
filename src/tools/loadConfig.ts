@@ -1,4 +1,4 @@
-import fs from "fs";
+import fs from "node:fs";
 
 const loadConfig = <T extends Record<string, unknown>>(configPath: string, defaultConfig: T): T => {
   Object.keys(defaultConfig).forEach(key => delete defaultConfig[key]);
