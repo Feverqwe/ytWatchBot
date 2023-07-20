@@ -15,7 +15,7 @@ const {
   DB_USER = '',
   DB_PASSWORD = '',
   TG_ADMIN_CHAT_ID = '',
-  CHANNEL_BLACKLIST = ''
+  CHANNEL_BLACKLIST = '',
 } = process.env;
 
 export const appConfig = {
@@ -44,15 +44,19 @@ export const appConfig = {
     path: YOUTUBE_PUBSUB_PATH,
     secret: YOUTUBE_PUBSUB_SECRET,
     callbackUrl: YOUTUBE_PUBSUB_CALLBACK_URL,
-    leaseSeconds: 86400
+    leaseSeconds: 86400,
   },
   db: {
     host: DB_HOST,
     port: Number(DB_PORT),
     database: DB_DATABASE,
     user: DB_USER,
-    password: DB_PASSWORD
+    password: DB_PASSWORD,
   },
-  adminIds: TG_ADMIN_CHAT_ID.split(',').map(v => Number(v.trim())).filter(Boolean),
-  channelBlackList: CHANNEL_BLACKLIST.split(',').map(v => v.trim()).filter(Boolean),
+  adminIds: TG_ADMIN_CHAT_ID.split(',')
+    .map((v) => Number(v.trim()))
+    .filter(Boolean),
+  channelBlackList: CHANNEL_BLACKLIST.split(',')
+    .map((v) => v.trim())
+    .filter(Boolean),
 };

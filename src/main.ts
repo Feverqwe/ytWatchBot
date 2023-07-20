@@ -1,14 +1,14 @@
-import Db from "./db";
-import Youtube from "./services/youtube";
-import Sender from "./sender";
-import Chat from "./chat";
-import Checker, {ServiceInterface} from "./checker";
-import YtPubSub from "./ytPubSub";
-import Events from "events";
-import {appConfig} from "./appConfig";
-import {getTelegramBot, TelegramBotWrapped} from "./tools/telegramBotApi";
-import TelegramBot from "node-telegram-bot-api";
-import {getDebug} from "./tools/getDebug";
+import Db from './db';
+import Youtube from './services/youtube';
+import Sender from './sender';
+import Chat from './chat';
+import Checker, {ServiceInterface} from './checker';
+import YtPubSub from './ytPubSub';
+import Events from 'events';
+import {appConfig} from './appConfig';
+import {getTelegramBot, TelegramBotWrapped} from './tools/telegramBotApi';
+import TelegramBot from 'node-telegram-bot-api';
+import {getDebug} from './tools/getDebug';
 
 const debug = getDebug('app:Main');
 
@@ -19,7 +19,7 @@ process.on('unhandledRejection', (err: Error & {code?: string}, _promise) => {
   }
 });
 
-class Main extends Events  {
+class Main extends Events {
   db: Db;
   youtube: Youtube;
   services: ServiceInterface[];
@@ -72,11 +72,14 @@ class Main extends Events  {
 }
 
 const main = new Main();
-main.init().then(() => {
-  debug('ready');
-}, (err) => {
-  debug('init error', err);
-  process.exit(1);
-});
+main.init().then(
+  () => {
+    debug('ready');
+  },
+  (err) => {
+    debug('init error', err);
+    process.exit(1);
+  },
+);
 
 export default Main;

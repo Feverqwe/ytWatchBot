@@ -4,7 +4,7 @@ const serviceId = {
   },
   unwrap(sid: string): string {
     return JSON.parse(sid.substring(3));
-  }
+  },
 };
 
 export default serviceId;

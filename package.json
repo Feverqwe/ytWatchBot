@@ -6,7 +6,9 @@
     "build": "npm run clean && tsc",
     "watch": "tsc -w & cross-env DEBUG=app:* nodemon ./dist/main.js",
     "start": "cross-env DEBUG=app:* node ./dist/main.js",
-    "typescript:check": "tsc --noEmit"
+    "typescript:check": "tsc --noEmit",
+    "prettier": "npx prettier --check ./src",
+    "prettier:fix": "npx prettier --write ./src"
   },
   "dependencies": {
     "@types/xmldoc": "^1.1.6",
@@ -43,6 +45,7 @@
     "del-cli": "^5.0.0",
     "jest": "^29.6.1",
     "nodemon": "^3.0.1",
+    "prettier": "^3.0.0",
     "ts-jest": "^29.1.1",
     "typescript": "^5.1.6"
   }

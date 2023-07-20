@@ -1,9 +1,12 @@
-import {RateLimiter} from "limiter";
+import {RateLimiter} from 'limiter';
 
 class RateLimit2 {
   private limiter: RateLimiter;
 
-  constructor(private limit: number, private interval = 1000) {
+  constructor(
+    private limit: number,
+    private interval = 1000,
+  ) {
     this.limiter = new RateLimiter({
       tokensPerInterval: limit,
       interval,

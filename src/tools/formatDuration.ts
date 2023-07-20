@@ -8,23 +8,21 @@ const formatDuration = (duration: string) => {
   const minutes = Math.floor(seconds / 60);
   seconds -= minutes * 60;
 
-  const parts = [
-    hours,
-    minutes,
-    seconds
-  ];
+  const parts = [hours, minutes, seconds];
 
   if (parts[0] === 0) {
     parts.shift();
   }
 
-  return parts.map((count, index) => {
-    let result = String(count);
-    if (index > 0 && count < 10) {
-      result = '0' + result;
-    }
-    return result;
-  }).join(':');
+  return parts
+    .map((count, index) => {
+      let result = String(count);
+      if (index > 0 && count < 10) {
+        result = '0' + result;
+      }
+      return result;
+    })
+    .join(':');
 };
 
 export default formatDuration;

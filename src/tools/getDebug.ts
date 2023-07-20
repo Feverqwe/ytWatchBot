@@ -1,3 +1,3 @@
-import getDebug from "debug";
+import getDebug from 'debug';
 
 export {getDebug};

@@ -1,11 +1,12 @@
 enum LocaleCode {
-  En = 'en'
+  En = 'en',
 }
 
 const en = {
   help: 'Hi! I will notify you about new videos on Youtube channels!',
   emptyServiceList: `You don't have channels in watchlist, yet.`,
-  enterChannelName: 'Enter the channel URL or name (also support video URL, username, channel id; example: {example}):',
+  enterChannelName:
+    'Enter the channel URL or name (also support video URL, username, channel id; example: {example}):',
   channelExists: 'This channel has been added!',
   channelAdded: 'Success! The channel {channelName} has been added!',
   telegramChannelEnter: 'Enter the channel name (example: @telegram):',
@@ -21,10 +22,7 @@ const en = {
   users: 'Users: {count}',
   channels: 'Channels: {count}',
   preview: 'preview',
-  groupNote: [
-    '',
-    'Note for groups: Use \'Reply\' to answer.'
-  ].join('\n'),
+  groupNote: ['', "Note for groups: Use 'Reply' to answer."].join('\n'),
   about: 'Source code: https://bit.ly/ytWatchBot\nHosting https://m.do.co/c/f6ae2a246c7d',
 };
 
