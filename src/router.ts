@@ -1,6 +1,7 @@
 import ErrorWithCode from "./tools/errorWithCode";
 import Main from "./main";
 import qs from "querystring";
+import TelegramBot from "node-telegram-bot-api";
 
 const debug = require('debug')('app:router');
 
@@ -30,31 +31,31 @@ interface WaitResponseDetails extends RouterRouteDetails {
 interface RouterRouteDetails {
   event?: ['message', 'callback_query'][number],
   type?: string,
-  fromId?: number | null,
+  fromId?: number,
   chatId?: number,
 }
 
 export interface RouterTextReq extends RouterMessageReq {
-  message: TMessage & {text: string};
-  fromId: number | null;
+  message: TelegramBot.Message & {text: string};
+  fromId: number | undefined;
 }
 
 export interface RouterMessageReq extends RouterReqWithAnyMessage {
-  message: TMessage;
+  message: TelegramBot.Message;
   callback_query: undefined;
   params: {[s: string]: string};
 }
 
 export interface RouterCallbackQueryReq extends RouterReqWithAnyMessage {
   message: undefined;
-  callback_query: TCallbackQuery & {data: string};
+  callback_query: TelegramBot.CallbackQuery & {data: string};
   fromId: number;
 }
 
 export interface RouterReqWithAnyMessage extends RouterReqCallback {
   messageId: number;
   chatId: number;
-  chatType: string;
+  chatType: TelegramBot.ChatType;
 }
 
 interface RouterReqCallback extends RouterReq {
@@ -112,7 +113,7 @@ class Router extends RouterImpl {
     return this._botNameRe;
   }
 
-  handle = (event: 'message' | 'callback_query', data: TMessage|TCallbackQuery) => {
+  handle = (event: 'message' | 'callback_query', data: TelegramBot.Message|TelegramBot.CallbackQuery) => {
     const commands = getCommands(event, data, this.botNameRe);
     if (!commands.length) {
       commands.push('');
@@ -217,13 +218,13 @@ class RouterRoute {
   re: RegExp|null;
   dispatch: RouterMethodCallback;
   event?: ['message', 'callback_query'][number];
-  type?: keyof (TMessage | TCallbackQuery);
-  fromId?: number | null;
+  type?: keyof (TelegramBot.Message | TelegramBot.CallbackQuery);
+  fromId?: number;
   chatId?: number;
   constructor(details: RouterRouteDetails, re: RegExp | null, callback: RouterMethodCallback) {
     this.re = re;
     this.event = details.event;
-    this.type = details.type as (keyof (TMessage | TCallbackQuery) | undefined);
+    this.type = details.type as (keyof (TelegramBot.Message | TelegramBot.CallbackQuery) | undefined);
     this.fromId = details.fromId;
     this.chatId = details.chatId;
     this.dispatch = (req, res, next) => {
@@ -274,18 +275,18 @@ export class RouterReq {
   commands = [] as string[];
   command = '';
   params: {[s: string]: string} | null = null;
-  message?: TMessage;
-  callback_query?: TCallbackQuery;
+  message?: TelegramBot.Message;
+  callback_query?: TelegramBot.CallbackQuery;
   private _cache = {} as {[s: string]: {value?: any}};
 
-  constructor(public event: 'message' | 'callback_query', data: TMessage|TCallbackQuery) {
+  constructor(public event: 'message' | 'callback_query', data: TelegramBot.Message|TelegramBot.CallbackQuery) {
     switch (event) {
       case 'message': {
-        this.message = data as TMessage;
+        this.message = data as TelegramBot.Message;
         break;
       }
       case 'callback_query': {
-        this.callback_query = data as TCallbackQuery;
+        this.callback_query = data as TelegramBot.CallbackQuery;
         break;
       }
       default: {
@@ -294,11 +295,11 @@ export class RouterReq {
     }
   }
 
-  get fromId(): number | null {
+  get fromId(): number | undefined {
     return this._useCache('fromId', () => {
-      let from = null;
+      let from;
       if (this.message) {
-        from = this.message.from || null;
+        from = this.message.from;
       } else
       if (this.callback_query) {
         from = this.callback_query.from;
@@ -307,21 +308,21 @@ export class RouterReq {
     });
   }
 
-  get chatId(): number | null {
+  get chatId(): number | undefined {
     return this._useCache('chatId', () => {
       const message = this._findMessage();
       return message && message.chat.id;
     });
   }
 
-  get chatType(): string | null {
+  get chatType(): string | undefined {
     return this._useCache('chatType', () => {
       const message = this._findMessage();
       return message && message.chat.type;
     });
   }
 
-  get messageId(): number | null {
+  get messageId(): number | undefined {
     return this._useCache('messageId', () => {
       const message = this._findMessage();
       return message && message.message_id;
@@ -352,9 +353,9 @@ export class RouterReq {
 
   get entities() {
     return this._useCache('entities', () => {
-      const entities: Record<string, {type: string, value: string, url?: string, user?: TUser}[]> = {};
+      const entities: Record<string, {type: string, value: string, url?: string, user?: TelegramBot.User}[]> = {};
 
-      if (this.message && this.message.entities) {
+      if (this.message?.entities) {
         const text = this.message.text || '';
         this.message.entities.forEach((entity) => {
           let array = entities[entity.type];
@@ -375,14 +376,16 @@ export class RouterReq {
   }
 
   private _findMessage() {
-    let message = null;
+    let message;
     if (this.message) {
       message = this.message;
     } else
     if (this.callback_query) {
       message = this.callback_query.message;
+    } else {
+      throw new Error('Unsupported case');
     }
-    return message || null;
+    return message;
   }
 
   private _useCache<T>(key: string, fn: () => T):T {
@@ -415,18 +418,18 @@ function prepareArgs(callbacks: RouterMethodArgs<any, any>) {
   }
 }
 
-function getCommands(event: string, data: TMessage|TCallbackQuery, botNameRe: RegExp) {
+function getCommands(event: string, data: TelegramBot.Message|TelegramBot.CallbackQuery, botNameRe: RegExp) {
   const commands: string[] = [];
   switch (event) {
     case 'message': {
-      const message = data as TMessage;
-      if (message.text && message.entities) {
+      const message = data;
+      if ('text' in message && 'entities' in message && message.text && message.entities) {
         const text = message.text;
         const entities = message.entities.slice(0).reverse();
         let end = text.length;
         entities.forEach((entity) => {
           if (entity.type === 'bot_command') {
-            let botName = null;
+            let botName;
             let command = text.substring(entity.offset, entity.offset + entity.length);
             const m = /([^@]+)(?:@(.+))?/.exec(command);
             if (m) {
@@ -448,7 +451,7 @@ function getCommands(event: string, data: TMessage|TCallbackQuery, botNameRe: Re
       break;
     }
     case 'callback_query': {
-      const callbackQuery = data as TCallbackQuery;
+      const callbackQuery = data as TelegramBot.CallbackQuery;
       if (typeof callbackQuery.data === "string") {
         commands.push(callbackQuery.data);
       }
@@ -456,147 +459,6 @@ function getCommands(event: string, data: TMessage|TCallbackQuery, botNameRe: Re
     }
   }
   return commands;
-}
-
-export interface TUser {
-  id: number,
-  is_bot: boolean,
-  first_name: string,
-  last_name?: string,
-  username?: string,
-  language_code?: string
-}
-
-export interface TChat {
-  id: number,
-  type: string,
-  title?: string,
-  username?: string,
-  first_name?: string,
-  last_name?: string,
-  all_members_are_administrators?: true,
-  photo?: TChatPhoto,
-  description?: string,
-  invite_link?: string,
-  pinned_message?: TMessage,
-  sticker_set_name?: string,
-  can_set_sticker_set?: boolean
-}
-
-export interface TMessage {
-  message_id: number,
-  from?: TUser // empty for messages sent to channels
-  date: number,
-  chat: TChat,
-  forward_from?: TUser,
-  forward_from_chat?: TChat,
-  forward_from_message_id?: number,
-  forward_signature?: string,
-  forward_sender_name?: string,
-  forward_date?: number,
-  reply_to_message?: TMessage,
-  edit_date?: number,
-  media_group_id?: string,
-  author_signature?: string,
-  text?: string,
-  entities?: TMessageEntity[],
-  caption_entities?: TMessageEntity[],
-  audio?: any,
-  document?: any,
-  animation?: any,
-  game?: any,
-  photo?: TPhotoSize[],
-  sticker?: any,
-  video?: any,
-  voice?: any,
-  video_note?: any,
-  caption?: string,
-  contact?: any,
-  location?: any,
-  venue?: any,
-  poll?: any,
-  new_chat_members?: TUser[],
-  left_chat_member?: TUser,
-  new_chat_title?: string,
-  new_chat_photo?: TPhotoSize[],
-  delete_chat_photo?: true,
-  group_chat_created?: true,
-  supergroup_chat_created?: true,
-  channel_chat_created?: true,
-  migrate_to_chat_id?: number,
-  migrate_from_chat_id?: number,
-  pinned_message?: TMessage,
-  invoice?: any,
-  successful_payment?: any,
-  connected_website?: string,
-  passport_data?: any,
-  reply_markup?: TInlineKeyboardMarkup,
-}
-
-export interface TMessageEntity {
-  type: string,
-  offset: number,
-  length: number,
-  url?: string,
-  user?: TUser
-}
-
-export interface TPhotoSize {
-  file_id: string,
-  width: number,
-  height: number,
-  file_size?: number
-}
-
-export interface TInlineKeyboardMarkup {
-  inline_keyboard: TInlineKeyboardButton[][]
-}
-
-export interface TInlineKeyboardButton {
-  text: string,
-  url?: string,
-  login_url?: any,
-  callback_data?: string,
-  switch_inline_query?: string,
-  switch_inline_query_current_chat?: string,
-  callback_game?: any,
-  pay?: boolean,
-}
-
-export interface TCallbackQuery {
-  id: string,
-  from: TUser,
-  message?: TMessage,
-  inline_message_id?: string,
-  chat_instance: string,
-  data?: string,
-  game_short_name?: string
-}
-
-export interface TChatPhoto {
-  small_file_id: string,
-  big_file_id: string
-}
-
-export interface TChatMember {
-  user: TUser,
-  status: string,
-  until_date?: number,
-  can_be_edited?: boolean,
-  can_post_messages?: boolean,
-  can_edit_messages?: boolean,
-  can_delete_messages?: boolean,
-  can_restrict_members?: boolean,
-  can_promote_members?: boolean,
-  can_change_info?: boolean,
-  can_invite_users?: boolean,
-  can_pin_messages?: boolean,
-  is_member?: boolean,
-  can_send_messages?: boolean,
-  can_send_media_messages?: boolean,
-  can_send_polls?: boolean,
-  can_send_other_messages?: boolean,
-  can_add_web_page_previews?: boolean,
 }
 
 export default Router;

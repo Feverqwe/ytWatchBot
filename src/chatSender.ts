@@ -4,9 +4,9 @@ import promiseTry from "./tools/promiseTry";
 import inlineInspect from "./tools/inlineInspect";
 import fetchRequest from "./tools/fetchRequest";
 import Main from "./main";
-import {TMessage} from "./router";
 import {ChatModel, VideoModelWithChannel} from "./db";
 import {tracker} from "./tracker";
+import TelegramBot from "node-telegram-bot-api";
 import ReadableStream = NodeJS.ReadableStream;
 
 const debug = require('debug')('app:ChatSender');
@@ -97,10 +97,10 @@ class ChatSender {
     }).then(() => {});
   }
 
-  sendVideoAsText(video: VideoModelWithChannel, isFallback = false): Promise<{message: TMessage}> {
+  sendVideoAsText(video: VideoModelWithChannel, isFallback = false): Promise<{message: TelegramBot.Message}> {
     return this.main.bot.sendMessage(this.chat.id, getDescription(video), {
       parse_mode: 'HTML'
-    }).then((message: TMessage) => {
+    }).then((message: TelegramBot.Message) => {
       let type = null;
       if (isFallback) {
         type = 'send message as fallback';
@@ -118,11 +118,11 @@ class ChatSender {
     });
   }
 
-  sendVideoAsPhoto(video: VideoModelWithChannel) {
+  sendVideoAsPhoto(video: VideoModelWithChannel): Promise<{message: TelegramBot.Message}> {
     if (video.telegramPreviewFileId) {
       return this.main.bot.sendPhotoQuote(this.chat.id, video.telegramPreviewFileId, {
         caption: getCaption(video)
-      }).then((message: TMessage) => {
+      }).then((message: TelegramBot.Message) => {
         tracker.track(this.chat.id, {
           ec: 'bot',
           ea: 'sendPhoto',
@@ -184,7 +184,7 @@ class ChatSender {
     const previews = !Array.isArray(video.previews) ? JSON.parse(video.previews) : video.previews;
     return getValidPreviewUrl(previews).then(({url, contentType}) => {
       const caption = getCaption(video);
-      return this.main.bot.sendPhoto(this.chat.id, url, {caption}).then((message: TMessage) => {
+      return this.main.bot.sendPhoto(this.chat.id, url, {caption}).then((message: TelegramBot.Message) => {
         this.main.sender.log.write(`[send photo as url] ${this.chat.id} ${video.channelId} ${video.id}`);
         tracker.track(this.chat.id, {
           ec: 'bot',
@@ -206,7 +206,7 @@ class ChatSender {
           }
           return fetchRequest<ReadableStream>(url, {responseType: 'stream', keepAlive: true}).then((response) => {
             return this.main.bot.sendPhoto(this.chat.id, response.body, {caption}, {contentType, filename: '-'});
-          }).then((message: TMessage) => {
+          }).then((message: TelegramBot.Message) => {
             this.main.sender.log.write(`[send photo as file] ${this.chat.id} ${video.channelId} ${video.id}`);
             tracker.track(this.chat.id, {
               ec: 'bot',
@@ -259,7 +259,7 @@ const sendUrlErrors = [
   /FILE_REFERENCE_.+/,
 ];
 
-function getPhotoFileIdFromMessage(message: TMessage): string|null {
+function getPhotoFileIdFromMessage(message: TelegramBot.Message): string|null {
   let fileId = null;
   message.photo!.slice(0).sort((a, b) => {
     return a.file_size! > b.file_size! ? -1 : 1;
