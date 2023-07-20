@@ -6,15 +6,16 @@ import {everyMinutes} from "./tools/everyTime";
 import ExpressPubSub from "./tools/expressPubSub";
 import promiseLimit from "./tools/promiseLimit";
 import express from "express";
-import qs from "querystring";
+import qs from "node:querystring";
 import Main from "./main";
-import {IncomingHttpHeaders, Server} from "http";
+import {IncomingHttpHeaders, Server} from "node:http";
 import {NewChannel} from "./db";
 import {appConfig} from "./appConfig";
+import throttle from 'lodash.throttle';
+import {getDebug} from "./tools/getDebug";
+import {XmlDocument, XmlElement} from "xmldoc";
 
-const debug = require('debug')('app:YtPubSub');
-const {XmlDocument} = require("xmldoc");
-const throttle = require('lodash.throttle');
+const debug = getDebug('app:YtPubSub');
 
 const oneLimit = promiseLimit(1);
 const checkOneLimit = promiseLimit(1);
@@ -282,22 +283,15 @@ function getTopicUrl(channelId: string) {
   });
 }
 
-interface XmlElement {
-  name: string,
-  val: string,
-  children?: XmlElement[]
-}
-
-function getChildNode(root: XmlElement, name: string): XmlElement | null {
-  let el = null;
+function getChildNode(root: XmlElement | XmlDocument, name: string): XmlElement | null {
   if (root.children) {
     for (let i = 0, node; node = root.children[i]; i++) {
-      if (node.name === name) {
+      if ('name' in node && node.name === name) {
         return node;
       }
     }
   }
-  return el;
+  return null;
 }
 
 export default YtPubSub;

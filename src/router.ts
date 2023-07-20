@@ -2,8 +2,9 @@ import ErrorWithCode from "./tools/errorWithCode";
 import Main from "./main";
 import qs from "querystring";
 import TelegramBot from "node-telegram-bot-api";
+import {getDebug} from "./tools/getDebug";
 
-const debug = require('debug')('app:router');
+const debug = getDebug('app:router');
 
 type MessageTypesArr = typeof messageTypes;
 type MessageTypes = MessageTypesArr[number];

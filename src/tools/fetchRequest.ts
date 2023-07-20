@@ -1,12 +1,13 @@
 import promiseTry from "./promiseTry";
-import http from "http";
-import https from "https";
-import qs from "querystring";
+import http from "node:http";
+import https from "node:https";
+import qs from "node:querystring";
 import FormData from "form-data";
 
 import fetch, {Headers, Response} from "node-fetch";
+import {getDebug} from "./getDebug";
 
-const debug = require('debug')('app:fetchRequest');
+const debug = getDebug('app:fetchRequest');
 
 export interface FetchRequestOptions {
   method?: 'GET' | 'HEAD' | 'POST';

@@ -8,8 +8,9 @@ import {ChatModel, VideoModelWithChannel} from "./db";
 import {tracker} from "./tracker";
 import TelegramBot from "node-telegram-bot-api";
 import ReadableStream = NodeJS.ReadableStream;
+import {getDebug} from "./tools/getDebug";
 
-const debug = require('debug')('app:ChatSender');
+const debug = getDebug('app:ChatSender');
 
 const videoWeakMap = new WeakMap();
 

@@ -10,8 +10,9 @@ import {FilterFn, RawChannel, RawVideo, ServiceInterface} from "../checker";
 import Main from "../main";
 import ytCostCounter from "../tools/ytCostCounter";
 import {appConfig} from "../appConfig";
+import {getDebug} from "../tools/getDebug";
 
-const debug = require('debug')('app:Youtube');
+const debug = getDebug('app:Youtube');
 
 const costCounter = ytCostCounter(150000);
 

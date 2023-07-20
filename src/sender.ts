@@ -8,9 +8,10 @@ import promiseLimit from "./tools/promiseLimit";
 import Main from "./main";
 import {Error} from "sequelize";
 import {appConfig} from "./appConfig";
+import throttle from 'lodash.throttle';
+import {getDebug} from "./tools/getDebug";
 
-const debug = require('debug')('app:Sender');
-const throttle = require('lodash.throttle');
+const debug = getDebug('app:Sender');
 
 const oneLimit = promiseLimit(1);
 

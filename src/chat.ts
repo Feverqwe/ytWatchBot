@@ -20,9 +20,10 @@ import {appConfig} from "./appConfig";
 import {tracker} from "./tracker";
 import {locale} from "./locale";
 import TelegramBot, {ParseMode} from "node-telegram-bot-api";
+import {getDebug} from "./tools/getDebug";
+import jsonStringifyPretty from 'json-stringify-pretty-compact';
 
-const debug = require('debug')('app:Chat');
-const jsonStringifyPretty = require("json-stringify-pretty-compact");
+const debug = getDebug('app:Chat');
 
 interface WithChat {
   chat: ChatModelWithOptionalChannel;

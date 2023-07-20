@@ -8,8 +8,9 @@ import Events from "events";
 import {appConfig} from "./appConfig";
 import {getTelegramBot, TelegramBotWrapped} from "./tools/telegramBotApi";
 import TelegramBot from "node-telegram-bot-api";
+import {getDebug} from "./tools/getDebug";
 
-const debug = require('debug')('app:Main');
+const debug = getDebug('app:Main');
 
 process.on('unhandledRejection', (err: Error & {code?: string}, _promise) => {
   debug('unhandledRejection %o', err);
