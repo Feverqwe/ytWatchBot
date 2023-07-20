@@ -12,7 +12,15 @@ Object.assign(process.env, {
   NTBA_FIX_350: true,
 });
 
-const {BaseError, FatalError, ParseError, TelegramError} = require('node-telegram-bot-api/src/errors');
+interface TGError {
+  new (message: string, resp: unknown): Error & { response: unknown }
+}
+
+const {FatalError, ParseError, TelegramError} = (TelegramBot as unknown as {
+  errors: {
+    FatalError: typeof Error, ParseError: TGError, TelegramError: TGError
+  }
+}).errors;
 
 const debug = getDebug('app:replaceBotRequest');
 
