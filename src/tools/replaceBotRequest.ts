@@ -3,13 +3,12 @@ import qs from "querystring";
 import FormData from "form-data";
 import {Stream} from "stream";
 import * as Buffer from "buffer";
-import {Module} from "module";
 
 const {BaseError, FatalError, ParseError, TelegramError} = require('node-telegram-bot-api/src/errors');
 
 const debug = require('debug')('app:replaceBotRequest');
 
-(Module as any)._resolveFilename = ((origFn) => {
+/*(Module as any)._resolveFilename = ((origFn) => {
   return (...args: any[]) => {
     const path: string = args[0];
     if (['request', 'request-promise'].includes(path)) {
@@ -17,7 +16,7 @@ const debug = require('debug')('app:replaceBotRequest');
     }
     return origFn.apply(Module, args);
   };
-})((Module as any)._resolveFilename);
+})((Module as any)._resolveFilename);*/
 
 interface RequestOptions {
   qs?: Record<string, any>,
@@ -36,6 +35,7 @@ interface Bot {
   _request: (path: string, options: RequestOptions) => Promise<unknown>,
   options: any,
   _fixReplyMarkup(obj: any): void;
+  _fixEntitiesField(obj: any): void;
   _buildURL: (path: string) => string;
 }
 
@@ -53,6 +53,7 @@ function replaceBotRequest(botProto: Bot) {
 
     if (reqOptions.form) {
       self._fixReplyMarkup(reqOptions.form);
+      self._fixEntitiesField(reqOptions.form);
     }
     if (reqOptions.qs) {
       self._fixReplyMarkup(reqOptions.qs);

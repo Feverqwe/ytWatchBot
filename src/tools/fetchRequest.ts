@@ -2,17 +2,16 @@ import promiseTry from "./promiseTry";
 import http from "http";
 import https from "https";
 import qs from "querystring";
-import AbortController from "abort-controller";
 import FormData from "form-data";
 
-const fetch = require('node-fetch');
+import fetch, {Headers, Response} from "node-fetch";
 
 const debug = require('debug')('app:fetchRequest');
 
 export interface FetchRequestOptions {
   method?: 'GET' | 'HEAD' | 'POST';
   responseType?: 'text' | 'json' | 'buffer' | 'stream',
-  headers?: Record<string, string | string[] | undefined>,
+  headers?: Record<string, string>,
   searchParams?: Record<string, any>,
   timeout?: number,
   keepAlive?: boolean,

@@ -1,17 +1,14 @@
-import loadConfig from "./tools/loadConfig";
-import Locale from "./locale";
 import Db from "./db";
 import Youtube from "./services/youtube";
-import Tracker from "./tracker";
 import Sender from "./sender";
 import Chat from "./chat";
 import Checker, {ServiceInterface} from "./checker";
 import YtPubSub from "./ytPubSub";
 import Events from "events";
-import path from "path";
 import RateLimit2 from "./tools/rateLimit2";
 import replaceBotRequest from "./tools/replaceBotRequest";
 import {TUser} from "./router";
+import {appConfig} from "./appConfig";
 
 Object.assign(process.env, {
   NTBA_FIX_319: true,
@@ -22,62 +19,18 @@ const TelegramBot = require('node-telegram-bot-api');
 
 const debug = require('debug')('app:Main');
 
-process.on('unhandledRejection', (err: Error & {code?: string}, promise) => {
+process.on('unhandledRejection', (err: Error & {code?: string}, _promise) => {
   debug('unhandledRejection %o', err);
   if (err.code === 'EFATAL') {
     process.exit(1);
   }
 });
 
-const config = {
-  token: '',
-  gaId: '',
-  ytToken: '',
-  emitCheckChannelsEveryMinutes: 5,
-  checkChannelIfLastSyncLessThenHours: 4,
-  fullCheckChannelActivityForDays: 7,
-  doFullCheckChannelActivityEveryHours: 4,
-  channelSyncTimeoutMinutes: 5,
-  emitSendMessagesEveryMinutes: 5,
-  emitCheckExistsChatsEveryHours: 24,
-  chatSendTimeoutAfterErrorMinutes: 1,
-  emitCleanChatsAndVideosEveryHours: 1,
-  cleanVideosIfPublishedOlderThanDays: 14,
-  emitUpdateChannelPubSubSubscribeEveryMinutes: 5,
-  updateChannelPubSubSubscribeIfExpiresLessThenMinutes: 10,
-  channelPubSubSubscribeTimeoutMinutes: 5,
-  emitCleanPubSubFeedEveryHours: 1,
-  cleanPubSubFeedIfPushOlderThanDays: 14,
-  defaultChannelName: 'NationalGeographic',
-  push: {
-    host: 'localhost',
-    port: 80,
-    path: '/',
-    secret: '',
-    callbackUrl: '',
-    leaseSeconds: 86400
-  },
-  db: {
-    host: 'localhost',
-    port: 3306,
-    database: 'ytWatchBot',
-    user: '',
-    password: ''
-  },
-  adminIds: [] as number[],
-  channelBlackList: [] as string[],
-};
-
-loadConfig(path.join(__dirname, '..', 'config.json'), config);
-
-class Main extends Events {
-  config = config;
-  locale: Locale;
+class Main extends Events  {
   db: Db;
   youtube: Youtube;
   services: ServiceInterface[];
   serviceIdService: Map<string, ServiceInterface>;
-  tracker: Tracker;
   sender: Sender;
   checker: Checker;
   bot: typeof TelegramBot;
@@ -88,7 +41,6 @@ class Main extends Events {
   constructor() {
     super();
 
-    this.locale = new Locale();
     this.db = new Db(this);
 
     this.youtube = new Youtube(this);
@@ -98,7 +50,6 @@ class Main extends Events {
       return map;
     }, new Map());
 
-    this.tracker = new Tracker(this);
     this.sender = new Sender(this);
     this.checker = new Checker(this);
     this.ytPubSub = new YtPubSub(this);
@@ -125,7 +76,7 @@ class Main extends Events {
   initBot() {
     replaceBotRequest(TelegramBot.prototype);
 
-    const bot = new TelegramBot(this.config.token, {
+    const bot = new TelegramBot(appConfig.token, {
       polling: {
         autoStart: false
       },

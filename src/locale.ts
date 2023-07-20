@@ -1,12 +1,8 @@
-class Locale {
-  getMessage(messageName: string) {
-    return languages.en[messageName];
-  }
+enum LocaleCode {
+  En = 'en'
 }
 
-const languages:{[s: string]: {[s: string]: string}} = {};
-
-languages.en = {
+const en = {
   help: 'Hi! I will notify you about new videos on Youtube channels!',
   emptyServiceList: `You don't have channels in watchlist, yet.`,
   enterChannelName: 'Enter the channel URL or name (also support video URL, username, channel id; example: {example}):',
@@ -28,7 +24,22 @@ languages.en = {
   groupNote: [
     '',
     'Note for groups: Use \'Reply\' to answer.'
-  ].join('\n')
+  ].join('\n'),
+  about: 'Source code: https://bit.ly/ytWatchBot\nHosting https://m.do.co/c/f6ae2a246c7d',
 };
+
+const languages = {
+  [LocaleCode.En]: en,
+};
+
+class Locale {
+  getMessage(messageName: keyof typeof en) {
+    return languages[LocaleCode.En][messageName];
+  }
+}
+
+const locale = new Locale();
+
+export {locale};
 
 export default Locale;

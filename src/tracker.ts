@@ -1,11 +1,11 @@
 import parallel from "./tools/parallel";
 import arrayByPart from "./tools/arrayByPart";
-import Main from "./main";
 import promiseLimit from "./tools/promiseLimit";
 import fetchRequest from "./tools/fetchRequest";
 import qs from "querystring";
 import {v4 as uuidV4} from "uuid";
 import QuickLRU from "quick-lru";
+import {appConfig} from "./appConfig";
 
 const debug = require('debug')('app:tracker');
 const throttle = require('lodash.throttle');
@@ -13,16 +13,19 @@ const throttle = require('lodash.throttle');
 const oneLimit = promiseLimit(1);
 
 class Tracker {
-  tid = this.main.config.gaId;
+  tid;
+  defaultParams;
   lru = new QuickLRU<string | number, string>({maxSize: 100});
-  defaultParams = {
-    v: 1,
-    tid: this.tid,
-    an: 'bot',
-    aid: 'bot'
-  };
   queue: [number, {[s: string]: string|number}][] = [];
-  constructor(private main: Main) {}
+  constructor() {
+    this.tid = appConfig.gaId;
+    this.defaultParams = {
+      v: 1,
+      tid: this.tid,
+      an: 'bot',
+      aid: 'bot'
+    };
+  }
 
   track(chatId: number|string, params: {[s: string]: string|number}) {
     if (!this.tid) return;
@@ -102,5 +105,9 @@ class Tracker {
     return result;
   }
 }
+
+const tracker = new Tracker();
+
+export {tracker};
 
 export default Tracker;

@@ -13,15 +13,16 @@ import htmlSanitize from "./tools/htmlSanitize";
 import ErrorWithCode from "./tools/errorWithCode";
 import pageBtnList from "./tools/pageBtnList";
 import splitTextByPages from "./tools/splitTextByPages";
-import resolvePath from "./tools/resolvePath";
 import LogFile from "./logFile";
 import ensureMap from "./tools/ensureMap";
 import promiseTry from "./tools/promiseTry";
 import TimeCache from "./tools/timeCache";
-import fs from "fs";
 import Main from "./main";
 import assertType from "./tools/assertType";
 import {ChannelModel, ChatModel, ChatModelWithOptionalChannel, NewChat} from "./db";
+import {appConfig} from "./appConfig";
+import {tracker} from "./tracker";
+import {locale} from "./locale";
 
 const debug = require('debug')('app:Chat');
 const jsonStringifyPretty = require("json-stringify-pretty-compact");
@@ -37,8 +38,9 @@ interface WithChannels {
 class Chat {
   public log = new LogFile('chat');
   private chatIdAdminIdsCache = new TimeCache({maxSize: 100, ttl: 5 * 60 * 1000});
-  private router = new Router(this.main);
+  private router: Router;
   constructor(private main: Main) {
+    this.router = new Router(this.main);
     this.main.bot.on('message', (message: TMessage) => {
       this.router.handle('message', message);
     });
@@ -108,7 +110,7 @@ class Chat {
     this.router.textOrCallbackQuery(/(.+)/, (req, res, next) => {
       next();
       if (req.message) {
-        this.main.tracker.track(req.chatId, {
+        tracker.track(req.chatId, {
           ec: 'command',
           ea: req.command,
           el: req.message.text,
@@ -126,7 +128,7 @@ class Chat {
           text: data,
           from: req.callback_query.from
         });
-        this.main.tracker.track(msg.chat.id, {
+        tracker.track(msg.chat.id, {
           ec: 'command',
           ea: command,
           el: msg.text,
@@ -144,7 +146,7 @@ class Chat {
 
   menu() {
     const sendMenu = (chatId: number, page: number) => {
-      const help = this.main.locale.getMessage('help');
+      const help = locale.getMessage('help');
       return this.main.bot.sendMessage(chatId, help, {
         disable_web_page_preview: true,
         reply_markup: JSON.stringify({
@@ -189,8 +191,8 @@ class Chat {
       ]).then(([chatCount, channelCount, serviceTopChannels]) => {
         const lines = [];
 
-        lines.push(this.main.locale.getMessage('users').replace('{count}', '' + chatCount));
-        lines.push(this.main.locale.getMessage('channels').replace('{count}', '' + channelCount));
+        lines.push(locale.getMessage('users').replace('{count}', '' + chatCount));
+        lines.push(locale.getMessage('channels').replace('{count}', '' + channelCount));
 
         const name = service.name;
         lines.push('');
@@ -207,28 +209,8 @@ class Chat {
       });
     });
 
-    let liveTime = '';
     this.router.textOrCallbackQuery(/\/about/, (req, res) => {
-      if (!liveTime) {
-        try {
-          liveTime = JSON.parse(fs.readFileSync('./liveTime.json', 'utf8')).message;
-        } catch (err) {
-          debug('Read liveTime.json error! %o', err);
-          liveTime = '';
-        }
-      }
-
-      const message = liveTime.replace(/\$remainFrom\(([^)]+)\)/, (str, date) => {
-        const m = /(\d{4}).(\d{2}).(\d{2})/.exec(date);
-        if (m) {
-          const endTime = (new Date(Number(m[1]), Number(m[2]), Number(m[3]))).getTime();
-          const month =Math.trunc((endTime - Date.now()) / 1000 / 60 / 60 / 24 / 30 * 10) / 10;
-          return `${month} months`;
-        }
-        return str;
-      });
-
-      return this.main.bot.sendMessage(req.chatId, message).catch((err: any) => {
+      return this.main.bot.sendMessage(req.chatId, locale.getMessage('about')).catch((err: any) => {
         debug('%j error %o', req.command, err);
       });
     });
@@ -265,7 +247,7 @@ class Chat {
       if (req.channels.length) {
         next();
       } else {
-        this.main.bot.sendMessage(req.chatId, this.main.locale.getMessage('emptyServiceList')).catch((err: any) => {
+        this.main.bot.sendMessage(req.chatId, locale.getMessage('emptyServiceList')).catch((err: any) => {
           debug('withChannels sendMessage error: %o', err);
         });
       }
@@ -274,7 +256,7 @@ class Chat {
     this.router.callback_query(/\/cancel\/(?<command>[^\s]+)/, (req, res) => {
       const command = req.params.command;
 
-      const cancelText = this.main.locale.getMessage('commandCanceled').replace('{command}', command);
+      const cancelText = locale.getMessage('commandCanceled').replace('{command}', command);
       return this.main.bot.editMessageText(cancelText, {
         chat_id: req.chatId,
         message_id: req.messageId
@@ -295,11 +277,11 @@ class Chat {
           return {query: query.trim()};
         }
 
-        const messageText = this.main.locale.getMessage('enterChannelName').replace('{example}', this.main.config.defaultChannelName);
-        const cancelText = this.main.locale.getMessage('commandCanceled').replace('{command}', 'add');
+        const messageText = locale.getMessage('enterChannelName').replace('{example}', appConfig.defaultChannelName);
+        const cancelText = locale.getMessage('commandCanceled').replace('{command}', 'add');
         return requestData(req, messageText, cancelText).then(({req, msg}) => {
           requestedData = req.message.text;
-          this.main.tracker.track(req.chatId, {
+          tracker.track(req.chatId, {
             ec: 'command',
             ea: '/add',
             el: req.message.text,
@@ -323,10 +305,10 @@ class Chat {
         }).then(({channel, created}) => {
           let message = null;
           if (!created) {
-            message = this.main.locale.getMessage('channelExists');
+            message = locale.getMessage('channelExists');
           } else {
             const {title, url} = channel;
-            message = this.main.locale.getMessage('channelAdded')
+            message = locale.getMessage('channelAdded')
               .replace('{channelName}', htmlSanitize('a', title, url))
               .replace('{serviceName}', htmlSanitize('', service.name));
           }
@@ -345,7 +327,7 @@ class Chat {
             'CHANNEL_BY_ID_IS_NOT_FOUND',
           ].includes(err.code)) {
             isResolved = true;
-            message = this.main.locale.getMessage('channelIsNotFound').replace('{channelName}', query);
+            message = locale.getMessage('channelIsNotFound').replace('{channelName}', query);
           } else
           if (['VIDEOS_IS_NOT_FOUND', 'CHANNELS_LIMIT', 'CHANNEL_IN_BLACK_LIST'].includes(err.code)) {
             isResolved = true;
@@ -372,7 +354,7 @@ class Chat {
     this.router.callback_query(/\/clear\/confirmed/, (req, res) => {
       return this.main.db.deleteChatById('' + req.chatId).then(() => {
         this.log.write(`[deleted] ${req.chatId}, cause: /clear`);
-        return this.main.bot.editMessageText(this.main.locale.getMessage('cleared'), {
+        return this.main.bot.editMessageText(locale.getMessage('cleared'), {
           chat_id: req.chatId,
           message_id: req.messageId
         });
@@ -382,7 +364,7 @@ class Chat {
     });
 
     this.router.textOrCallbackQuery(/\/clear/, (req, res) => {
-      return this.main.bot.sendMessage(req.chatId, this.main.locale.getMessage('clearSure'), {
+      return this.main.bot.sendMessage(req.chatId, locale.getMessage('clearSure'), {
         reply_markup: JSON.stringify({
           inline_keyboard: [[{
             text: 'Yes',
@@ -405,7 +387,7 @@ class Chat {
           return {channel, deleted: !!count};
         });
       }).then(({channel, deleted}) => {
-        return this.main.bot.editMessageText(this.main.locale.getMessage('channelDeleted').replace('{channelName}', channel.title), {
+        return this.main.bot.editMessageText(locale.getMessage('channelDeleted').replace('{channelName}', channel.title), {
           chat_id: req.chatId,
           message_id: req.messageId
         });
@@ -414,7 +396,7 @@ class Chat {
         let message = null;
         if (err.code === 'CHANNEL_IS_NOT_FOUND') {
           isResolved = true;
-          message = this.main.locale.getMessage('channelDontExist');
+          message = locale.getMessage('channelDontExist');
         } else {
           message = 'Unexpected error';
         }
@@ -460,7 +442,7 @@ class Chat {
             }
           });
         } else {
-          return this.main.bot.sendMessage(req.chatId, this.main.locale.getMessage('selectDelChannel'), {
+          return this.main.bot.sendMessage(req.chatId, locale.getMessage('selectDelChannel'), {
             reply_markup: JSON.stringify({
               inline_keyboard: page
             })
@@ -507,11 +489,11 @@ class Chat {
           return {channelId: channelId.trim()};
         }
 
-        const messageText = this.main.locale.getMessage('telegramChannelEnter');
-        const cancelText = this.main.locale.getMessage('commandCanceled').replace('{command}', '\/setChannel');
+        const messageText = locale.getMessage('telegramChannelEnter');
+        const cancelText = locale.getMessage('commandCanceled').replace('{command}', '\/setChannel');
         return requestData(req, messageText, cancelText).then(({req, msg}) => {
           requestedData = req.message.text;
-          this.main.tracker.track(req.chatId, {
+          tracker.track(req.chatId, {
             ec: 'command',
             ea: '/setChannel',
             el: req.message.text,
@@ -545,7 +527,7 @@ class Chat {
             });
           });
         }).then((channelId) => {
-          const message = this.main.locale.getMessage('telegramChannelSet').replace('{channelName}', channelId);
+          const message = locale.getMessage('telegramChannelSet').replace('{channelName}', channelId);
           return editOrSendNewMessage(req.chatId, messageId, message).then(() => {
             if (req.callback_query) {
               return this.main.bot.editMessageReplyMarkup(JSON.stringify({
@@ -746,7 +728,7 @@ class Chat {
       const options: {[s: string]: any} = {};
       let msgText = messageText;
       if (chatId < 0) {
-        msgText += this.main.locale.getMessage('groupNote');
+        msgText += locale.getMessage('groupNote');
         if (req.callback_query) {
           msgText = '@' + req.callback_query.from.username + ' ' + messageText;
         } else {
@@ -801,7 +783,7 @@ class Chat {
 
   admin() {
     const isAdmin = <T extends RouterReqWithAnyMessage>(req: T, res: RouterRes, next: () => void) => {
-      const adminIds = this.main.config.adminIds || [];
+      const adminIds = appConfig.adminIds;
       if (adminIds.includes(req.chatId)) {
         next();
       } else {
