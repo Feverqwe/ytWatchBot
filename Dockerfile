@@ -1,5 +1,4 @@
 FROM node:18-alpine as node
-ENV NO_UPDATE_NOTIFIER true
 WORKDIR /opt
 
 FROM node as base
