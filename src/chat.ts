@@ -192,7 +192,7 @@ class Chat {
       } catch (error) {
         try {
           const err = error as Error;
-          if (/message to edit not found/.test(err.message)) {
+          if (errHandler[ErrEnum.MessageToEditNotFound](err)) {
             await sendMenu(locale, req.chatId, page);
           } else {
             throw err;
