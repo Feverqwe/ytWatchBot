@@ -61,20 +61,24 @@ class Checker {
   updateTimer: (() => void) | null = null;
   startUpdateInterval() {
     this.updateTimer && this.updateTimer();
-    this.updateTimer = everyMinutes(appConfig.emitCheckChannelsEveryMinutes, () => {
-      this.check().catch((err) => {
+    this.updateTimer = everyMinutes(appConfig.emitCheckChannelsEveryMinutes, async () => {
+      try {
+        await this.check();
+      } catch (err) {
         debug('check error', err);
-      });
+      }
     });
   }
 
   cleanTimer: (() => void) | null = null;
   startCleanInterval() {
     this.cleanTimer && this.cleanTimer();
-    this.cleanTimer = everyMinutes(appConfig.emitCleanChatsAndVideosEveryHours * 60, () => {
-      this.clean().catch((err) => {
+    this.cleanTimer = everyMinutes(appConfig.emitCleanChatsAndVideosEveryHours * 60, async () => {
+      try {
+        await this.clean();
+      } catch (err) {
         debug('clean error', err);
-      });
+      }
     });
   }
 

@@ -4,7 +4,6 @@ import arrayByPart from '../tools/arrayByPart';
 import parallel from '../tools/parallel';
 import formatDuration from '../tools/formatDuration';
 import ensureMap from '../tools/ensureMap';
-import promiseTry from '../tools/promiseTry';
 import fetchRequest, {HTTPError} from '../tools/fetchRequest';
 import {FilterFn, RawChannel, RawVideo, ServiceInterface} from '../checker';
 import Main from '../main';
@@ -540,15 +539,14 @@ function isBackendError(err: HTTPError) {
 
 function iterPages(callback: (pageToken?: string) => Promise<string | undefined>) {
   let limit = 100;
-  const getPage = (pageToken?: string): Promise<void> => {
-    return promiseTry(() => callback(pageToken)).then((nextPageToken?: string) => {
-      if (nextPageToken) {
-        if (--limit < 0) {
-          throw new ErrorWithCode(`Page limit reached`, 'PAGE_LIMIT_REACHED');
-        }
-        return getPage(nextPageToken);
+  const getPage = async (pageToken?: string): Promise<void> => {
+    const nextPageToken = await callback(pageToken);
+    if (nextPageToken) {
+      if (--limit < 0) {
+        throw new ErrorWithCode(`Page limit reached`, 'PAGE_LIMIT_REACHED');
       }
-    });
+      return getPage(nextPageToken);
+    }
   };
   return getPage();
 }
