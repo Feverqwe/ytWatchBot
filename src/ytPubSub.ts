@@ -5,15 +5,15 @@ import serviceId from './tools/serviceId';
 import {everyMinutes} from './tools/everyTime';
 import ExpressPubSub from './tools/expressPubSub';
 import promiseLimit from './tools/promiseLimit';
-import express from 'express';
 import qs from 'node:querystring';
 import Main from './main';
-import {IncomingHttpHeaders, Server} from 'node:http';
+import {IncomingHttpHeaders} from 'node:http';
 import {NewChannel} from './db';
 import {appConfig} from './appConfig';
 import throttle from 'lodash.throttle';
 import {getDebug} from './tools/getDebug';
 import {XmlDocument, XmlElement} from 'xmldoc';
+import {Express} from 'express';
 
 const debug = getDebug('app:YtPubSub');
 
@@ -22,26 +22,17 @@ const checkOneLimit = promiseLimit(1);
 
 class YtPubSub {
   private hubUrl = 'https://pubsubhubbub.appspot.com/subscribe';
-  private host;
-  private port;
-  private expressPubSub;
-  // private log = new LogFile('ytPubSub');
-  private server: Server | undefined;
-  private app = express();
+  private expressPubSub = new ExpressPubSub({
+    path: appConfig.push.path,
+    secret: appConfig.push.secret,
+    callbackUrl: appConfig.push.callbackUrl,
+    leaseSeconds: appConfig.push.leaseSeconds,
+  });
 
-  constructor(private main: Main) {
-    this.host = appConfig.push.host || 'localhost';
-    this.port = appConfig.push.port;
-    this.expressPubSub = new ExpressPubSub({
-      path: appConfig.push.path,
-      secret: appConfig.push.secret,
-      callbackUrl: appConfig.push.callbackUrl,
-      leaseSeconds: appConfig.push.leaseSeconds,
-    });
-  }
+  constructor(private main: Main) {}
 
-  init() {
-    this.expressPubSub.bind(this.app);
+  init(expressApp: Express) {
+    this.expressPubSub.bind(expressApp);
     this.expressPubSub.on('denied', (data: any) => {
       debug('Denied %o', data);
     });
@@ -49,12 +40,8 @@ class YtPubSub {
       this.handleFeed(data);
     });
 
-    return new Promise<void>((resolve) => {
-      this.server = this.app.listen(this.port, this.host, resolve);
-    }).then(() => {
-      this.startUpdateInterval();
-      this.startCleanInterval();
-    });
+    this.startUpdateInterval();
+    this.startCleanInterval();
   }
 
   updateTimer: (() => void) | null = null;

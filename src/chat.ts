@@ -32,7 +32,7 @@ class Chat {
   private chatIdAdminIdsCache = new TimeCache<number, number[]>({maxSize: 100, ttl: 5 * 60 * 1000});
   private router: Router;
   constructor(private main: Main) {
-    this.router = new Router(this.main);
+    this.router = new Router();
     this.main.bot.on('message', (message) => {
       this.router.handle('message', message);
     });
@@ -44,6 +44,17 @@ class Chat {
     this.menu();
     this.user();
     this.admin();
+  }
+
+  async init() {
+    const {bot} = this.main;
+
+    const user = await bot.getMe();
+    if (!user.username) throw new Error('Bot name is empty');
+
+    this.router.init(bot, user.username);
+
+    await bot.startPolling();
   }
 
   base() {
@@ -1002,9 +1013,9 @@ class Chat {
       {name: 'Check channels', method: this.main.checker.check},
       {name: 'Sender check', method: this.main.sender.check},
       {name: 'Active sender threads', method: this.main.sender.getActiveThreads},
-      {name: 'Update pubsub', method: this.main.ytPubSub.updateSubscribes},
+      {name: 'Update pubsub', method: this.main.webServer.ytPubSub.updateSubscribes},
       {name: 'Clean chats & channels & videos', method: this.main.checker.clean},
-      {name: 'Clean pubsub', method: this.main.ytPubSub.clean},
+      {name: 'Clean pubsub', method: this.main.webServer.ytPubSub.clean},
     ];
 
     this.router.callback_query(/\/admin\/(?<commandIndex>.+)/, isAdmin, (req, res) => {
