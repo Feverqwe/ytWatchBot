@@ -660,7 +660,7 @@ class Chat {
             } else {
               message = locale.m('alert_unexpected-error');
             }
-            await editOrSendNewMessage(req.chatId, req.messageId, message);
+            await editOrSendNewMessage(req.chatId, messageId, message);
             if (!isResolved) {
               throw err;
             }
