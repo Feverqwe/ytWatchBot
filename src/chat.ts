@@ -940,7 +940,8 @@ class Chat {
           errHandler[ErrEnum.MessageCantBeEdited](err) ||
           errHandler[ErrEnum.MessageToEditNotFound](err)
         ) {
-          await this.main.bot.sendMessage(chatId, text, form).then(({message_id}) => message_id);
+          const msg = await this.main.bot.sendMessage(chatId, text, form);
+          return msg.message_id;
         }
         throw err;
       }
