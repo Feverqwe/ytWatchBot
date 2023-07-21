@@ -7,8 +7,8 @@ import Main from './main';
 import {ChatModel, VideoModelWithChannel} from './db';
 import {tracker} from './tracker';
 import TelegramBot from 'node-telegram-bot-api';
-import ReadableStream = NodeJS.ReadableStream;
 import {getDebug} from './tools/getDebug';
+import ReadableStream = NodeJS.ReadableStream;
 
 const debug = getDebug('app:ChatSender');
 
