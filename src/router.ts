@@ -1,8 +1,9 @@
 import ErrorWithCode from './tools/errorWithCode';
 import Main from './main';
-import qs from 'querystring';
+import qs from 'node:querystring';
 import TelegramBot from 'node-telegram-bot-api';
 import {getDebug} from './tools/getDebug';
+import Locale from './locale';
 
 const debug = getDebug('app:router');
 
@@ -347,16 +348,24 @@ export class RouterReq {
     }
   }
 
-  get fromId(): number | undefined {
-    return this._useCache('fromId', () => {
+  get from() {
+    return this._useCache('from', () => {
       let from;
       if (this.message) {
         from = this.message.from;
       } else if (this.callback_query) {
         from = this.callback_query.from;
       }
-      return from && from.id;
+      return from;
     });
+  }
+
+  get languageCode() {
+    return this.from?.language_code;
+  }
+
+  get fromId(): number | undefined {
+    return this.from?.id;
   }
 
   get chatId(): number | undefined {
@@ -452,11 +461,13 @@ export class RouterReq {
 }
 
 export class RouterRes {
+  public locale: Locale;
   bot: any;
   req: RouterReq;
   constructor(bot: any, req: RouterReq) {
     this.bot = bot;
     this.req = req;
+    this.locale = new Locale(req.languageCode || '');
   }
 }
 
