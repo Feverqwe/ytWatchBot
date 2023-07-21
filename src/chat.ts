@@ -1,10 +1,4 @@
-import Router, {
-  RouterCallbackQueryReq,
-  RouterReq,
-  RouterReqWithAnyMessage,
-  RouterRes,
-  RouterTextReq,
-} from './router';
+import Router, {RouterCallbackQueryReq, RouterReq, RouterReqWithAnyMessage, RouterRes, RouterTextReq} from './router';
 import htmlSanitize from './tools/htmlSanitize';
 import ErrorWithCode from './tools/errorWithCode';
 import pageBtnList from './tools/pageBtnList';
@@ -22,7 +16,6 @@ import TelegramBot, {ParseMode} from 'node-telegram-bot-api';
 import {getDebug} from './tools/getDebug';
 import jsonStringifyPretty from 'json-stringify-pretty-compact';
 import Locale from './locale';
-import locale from './locale';
 
 const debug = getDebug('app:Chat');
 
