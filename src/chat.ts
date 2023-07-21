@@ -927,26 +927,32 @@ class Chat {
       messageId: number | undefined,
       text: string,
       form?: object,
-    ): Promise<boolean | TelegramBot.Message> => {
-      return promiseTry(() => {
+    ): Promise<number> => {
+      return promiseTry(async () => {
         if (!messageId) {
           throw new ErrorWithCode('messageId is empty', 'MESSAGE_ID_IS_EMPTY');
         }
 
-        return this.main.bot.editMessageText(
+        const result = await this.main.bot.editMessageText(
           text,
           Object.assign({}, form, {
             chat_id: chatId,
             message_id: messageId,
           }),
         );
+
+        if (typeof result === 'object') {
+          return result.message_id;
+        }
+
+        return messageId;
       }).catch((err) => {
         if (
           err.code === 'MESSAGE_ID_IS_EMPTY' ||
           /message can't be edited/.test(err.message) ||
           /message to edit not found/.test(err.message)
         ) {
-          return this.main.bot.sendMessage(chatId, text, form);
+          return this.main.bot.sendMessage(chatId, text, form).then(({message_id}) => message_id);
         }
         throw err;
       });
