@@ -24,8 +24,7 @@ class WebServer {
     });
   }
 
-  initApi() {
-  }
+  initApi() {}
 }
 
 export default WebServer;

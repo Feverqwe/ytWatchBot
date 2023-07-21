@@ -51,10 +51,7 @@ class Main extends Events {
 
   async init() {
     await this.db.init();
-    await Promise.all([
-      this.webServer.init(),
-      this.chat.init(),
-    ]);
+    await Promise.all([this.webServer.init(), this.chat.init()]);
     this.checker.init();
     this.sender.init();
   }

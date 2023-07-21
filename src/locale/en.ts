@@ -24,7 +24,7 @@ const en = {
   'alert_unexpected-error': 'Unexpected error',
   'alert_chat-not-found': 'Telegram chat is not found!',
   'alert_bot-is-not-channel-member': 'Bot is not a member of the channel!',
-  'context_options': 'Options:',
+  context_options: 'Options:',
   'alert_access-denied': 'Access denied for you ({chat})',
   action_options: 'Options',
   'title_admin-menu': 'Admin menu',
