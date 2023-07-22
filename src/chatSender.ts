@@ -1,6 +1,5 @@
 import htmlSanitize from './tools/htmlSanitize';
 import ErrorWithCode from './tools/errorWithCode';
-import promiseTry from './tools/promiseTry';
 import inlineInspect from './tools/inlineInspect';
 import fetchRequest from './tools/fetchRequest';
 import Main from './main';
@@ -10,8 +9,23 @@ import TelegramBot from 'node-telegram-bot-api';
 import {getDebug} from './tools/getDebug';
 import ReadableStream = NodeJS.ReadableStream;
 import {ErrEnum, errHandler} from './tools/passTgEx';
+import promiseTry from './tools/promiseTry';
 
 const debug = getDebug('app:ChatSender');
+
+interface TelegramError extends Error {
+  code: string;
+  response: {
+    statusCode: number;
+    body: {
+      error_code: string;
+      description: string;
+      parameters: {
+        migrate_to_chat_id: number;
+      };
+    };
+  };
+}
 
 const videoWeakMap = new WeakMap();
 
@@ -39,144 +53,142 @@ class ChatSender {
       this.videoIds = await this.getVideoIds();
     }
 
-    if (!this.videoIds.length) {
+    const videoId = this.videoIds.shift();
+    if (!videoId) {
       return true;
     }
 
-    return this.main.sender
-      .provideVideo(this.videoIds.shift()!, (video) => {
-        return promiseTry(() => {
+    try {
+      await this.main.sender.provideVideo(videoId, async (video) => {
+        try {
           if (this.chat.isHidePreview || !video.previews.length) {
-            return this.sendVideoAsText(video);
+            await this.sendVideoAsText(video);
           } else {
-            return this.sendVideoAsPhoto(video);
+            await this.sendVideoAsPhoto(video);
           }
-        })
-          .then((sendMessage) => {
-            return this.main.db.deleteChatIdVideoId(this.chat.id, video.id);
-          })
-          .catch((err) => {
-            if (err.code === 'ETELEGRAM') {
-              const body = err.response.body;
 
-              const isBlocked = isBlockedError(err);
-              const isSkipMessage = isSkipMessageError(err);
-              if (isSkipMessage) {
-                debug('skip message %s error: %o', this.chat.id, err);
-                return this.main.db.deleteChatIdVideoId(this.chat.id, video.id);
-              } else if (isBlocked) {
-                return this.main.db.deleteChatById(this.chat.id).then(() => {
-                  this.main.chat.log.write(
-                    `[deleted] ${this.chat.id}, cause: (${body.error_code}) ${JSON.stringify(
-                      body.description,
-                    )}`,
-                  );
-                  throw new ErrorWithCode(`Chat ${this.chat.id} is deleted`, 'CHAT_IS_DELETED');
-                });
-              } else if (body.parameters && body.parameters.migrate_to_chat_id) {
-                const newChatId = body.parameters.migrate_to_chat_id;
-                return this.main.db.changeChatId(this.chat.id, '' + newChatId).then(
-                  () => {
-                    this.main.chat.log.write(`[migrate] ${this.chat.id} > ${newChatId}`);
-                    throw new ErrorWithCode(
-                      `Chat ${this.chat.id} is migrated to ${newChatId}`,
-                      'CHAT_IS_MIGRATED',
-                    );
-                  },
-                  async (err: Error & any) => {
-                    if (/would lead to a duplicate entry in table/.test(err.message)) {
-                      await this.main.db.deleteChatById(this.chat.id);
-                      this.main.chat.log.write(
-                        `[deleted] ${this.chat.id}, cause: ${inlineInspect(err)}`,
-                      );
-                      throw new ErrorWithCode(`Chat ${this.chat.id} is deleted`, 'CHAT_IS_DELETED');
-                    }
-                    throw err;
-                  },
-                );
-              } else if (errHandler[ErrEnum.NotEnoughRightsSendPhotos](err)) {
-                this.chat.isHidePreview = true;
+          await this.main.db.deleteChatIdVideoId(this.chat.id, video.id);
+        } catch (error) {
+          const err = error as TelegramError;
+          if (err.code === 'ETELEGRAM') {
+            const body = err.response.body;
 
-                return this.chat.save().then(() => {
+            const isBlocked = isBlockedError(err);
+            const isSkipMessage = isSkipMessageError(err);
+            if (isSkipMessage) {
+              debug('skip message %s error: %o', this.chat.id, err);
+              return await this.main.db.deleteChatIdVideoId(this.chat.id, video.id);
+            } else if (isBlocked) {
+              await this.main.db.deleteChatById(this.chat.id);
+              this.main.chat.log.write(
+                `[deleted] ${this.chat.id}, cause: (${body.error_code}) ${JSON.stringify(
+                  body.description,
+                )}`,
+              );
+              throw new ErrorWithCode(`Chat ${this.chat.id} is deleted`, 'CHAT_IS_DELETED');
+            } else if (body.parameters?.migrate_to_chat_id) {
+              const newChatId = body.parameters.migrate_to_chat_id;
+              await this.main.db.changeChatId(this.chat.id, '' + newChatId).then(
+                () => {
+                  this.main.chat.log.write(`[migrate] ${this.chat.id} > ${newChatId}`);
                   throw new ErrorWithCode(
-                    `Chat ${this.chat.id} is deny photos`,
-                    'CHAT_IS_DENY_PHOTOS',
+                    `Chat ${this.chat.id} is migrated to ${newChatId}`,
+                    'CHAT_IS_MIGRATED',
                   );
-                });
-              }
-            }
+                },
+                async (error) => {
+                  const err = error as ErrorWithCode;
+                  if (/would lead to a duplicate entry in table/.test(err.message)) {
+                    await this.main.db.deleteChatById(this.chat.id);
+                    this.main.chat.log.write(
+                      `[deleted] ${this.chat.id}, cause: ${inlineInspect(err)}`,
+                    );
+                    throw new ErrorWithCode(`Chat ${this.chat.id} is deleted`, 'CHAT_IS_DELETED');
+                  }
+                  throw err;
+                },
+              );
+            } else if (errHandler[ErrEnum.NotEnoughRightsSendPhotos](err)) {
+              this.chat.isHidePreview = true;
 
-            throw err;
-          });
-      })
-      .catch((err) => {
-        if (err.code === 'VIDEO_IS_NOT_FOUND') {
-          // pass
-        } else {
+              await this.chat.save();
+              throw new ErrorWithCode(`Chat ${this.chat.id} is deny photos`, 'CHAT_IS_DENY_PHOTOS');
+            }
+          }
+
           throw err;
         }
-      })
-      .then(() => {});
+      });
+    } catch (error) {
+      const err = error as ErrorWithCode;
+      if (err.code === 'VIDEO_IS_NOT_FOUND') {
+        // pass
+      } else {
+        throw err;
+      }
+    }
   }
 
-  sendVideoAsText(
-    video: VideoModelWithChannel,
-    isFallback = false,
-  ): Promise<{message: TelegramBot.Message}> {
-    return this.main.bot
-      .sendMessage(this.chat.id, getDescription(video), {
-        parse_mode: 'HTML',
-      })
-      .then((message: TelegramBot.Message) => {
-        let type = null;
-        if (isFallback) {
-          type = 'send message as fallback';
-        } else {
-          type = 'send message';
-        }
+  async sendVideoAsText(video: VideoModelWithChannel, isFallback = false) {
+    const message = await this.main.bot.sendMessage(this.chat.id, getDescription(video), {
+      parse_mode: 'HTML',
+    });
+
+    let type;
+    if (isFallback) {
+      type = 'send message as fallback';
+    } else {
+      type = 'send message';
+    }
+
+    tracker.track(this.chat.id, {
+      ec: 'bot',
+      ea: 'sendMsg',
+      el: video.channelId,
+      t: 'event',
+    });
+
+    this.main.sender.log.write(`[${type}] ${this.chat.id} ${video.channelId} ${video.id}`);
+
+    return {message};
+  }
+
+  async sendVideoAsPhoto(video: VideoModelWithChannel): Promise<{message: TelegramBot.Message}> {
+    if (video.telegramPreviewFileId) {
+      try {
+        const message = await this.main.bot.sendPhotoQuote(
+          this.chat.id,
+          video.telegramPreviewFileId,
+          {
+            caption: getCaption(video),
+          },
+        );
+
         tracker.track(this.chat.id, {
           ec: 'bot',
-          ea: 'sendMsg',
+          ea: 'sendPhoto',
           el: video.channelId,
           t: 'event',
         });
-        this.main.sender.log.write(`[${type}] ${this.chat.id} ${video.channelId} ${video.id}`);
-        return {message};
-      });
-  }
 
-  sendVideoAsPhoto(video: VideoModelWithChannel): Promise<{message: TelegramBot.Message}> {
-    if (video.telegramPreviewFileId) {
-      return this.main.bot
-        .sendPhotoQuote(this.chat.id, video.telegramPreviewFileId, {
-          caption: getCaption(video),
-        })
-        .then(
-          (message: TelegramBot.Message) => {
-            tracker.track(this.chat.id, {
-              ec: 'bot',
-              ea: 'sendPhoto',
-              el: video.channelId,
-              t: 'event',
-            });
-            this.main.sender.log.write(
-              `[send photo as id] ${this.chat.id} ${video.channelId} ${video.id}`,
-            );
-            return {message};
-          },
-          (err: Error & any) => {
-            if (err.code === 'ETELEGRAM') {
-              const body = err.response.body;
-
-              if (/FILE_REFERENCE_.+/.test(body.description)) {
-                video.telegramPreviewFileId = null;
-
-                return this.sendVideoAsPhoto(video);
-              }
-            }
-            throw err;
-          },
+        this.main.sender.log.write(
+          `[send photo as id] ${this.chat.id} ${video.channelId} ${video.id}`,
         );
+
+        return {message};
+      } catch (error) {
+        const err = error as TelegramError;
+        if (err.code === 'ETELEGRAM') {
+          const body = err.response.body;
+
+          if (/FILE_REFERENCE_.+/.test(body.description)) {
+            video.telegramPreviewFileId = null;
+
+            return this.sendVideoAsPhoto(video);
+          }
+        }
+        throw err;
+      }
     } else {
       return this.requestAndSendPhoto(video);
     }
@@ -217,72 +229,81 @@ class ChatSender {
     return promise;
   }
 
-  ensureTelegramPreviewFileId(video: VideoModelWithChannel) {
+  async ensureTelegramPreviewFileId(video: VideoModelWithChannel) {
     const previews = !Array.isArray(video.previews) ? JSON.parse(video.previews) : video.previews;
-    return getValidPreviewUrl(previews)
-      .then(({url, contentType}) => {
-        const caption = getCaption(video);
-        return this.main.bot
-          .sendPhoto(this.chat.id, url, {caption})
-          .then((message: TelegramBot.Message) => {
-            this.main.sender.log.write(
-              `[send photo as url] ${this.chat.id} ${video.channelId} ${video.id}`,
-            );
-            tracker.track(this.chat.id, {
-              ec: 'bot',
-              ea: 'sendPhoto',
-              el: video.channelId,
-              t: 'event',
-            });
-            return message;
-          })
-          .catch((err: Error & any) => {
-            let isSendUrlError = sendUrlErrors.some((re) => re.test(err.message));
-            if (!isSendUrlError) {
-              isSendUrlError = err.response && err.response.statusCode === 504;
-            }
 
-            if (isSendUrlError) {
-              if (!contentType) {
-                debug('Content-type is empty, set default content-type %s', url);
-                contentType = 'image/jpeg';
-              }
-              return fetchRequest<ReadableStream>(url, {responseType: 'stream', keepAlive: true})
-                .then((response) => {
-                  return this.main.bot.sendPhoto(
-                    this.chat.id,
-                    response.body,
-                    {caption},
-                    {contentType, filename: '-'},
-                  );
-                })
-                .then((message: TelegramBot.Message) => {
-                  this.main.sender.log.write(
-                    `[send photo as file] ${this.chat.id} ${video.channelId} ${video.id}`,
-                  );
-                  tracker.track(this.chat.id, {
-                    ec: 'bot',
-                    ea: 'sendPhoto',
-                    el: video.channelId,
-                    t: 'event',
-                  });
-                  return message;
-                });
-            }
+    const {url, contentType: contentTypeLocal} = await getValidPreviewUrl(previews);
+    let contentType = contentTypeLocal;
+    const caption = getCaption(video);
 
-            throw err;
-          });
-      })
-      .then((message) => {
-        const fileId = getPhotoFileIdFromMessage(message);
-        if (!fileId) {
-          throw new ErrorWithCode('File id if not found', 'FILE_ID_IS_NOT_FOUND');
-        }
-        video.telegramPreviewFileId = fileId;
-        return video.save().then(() => {
-          return {message};
+    const message = await promiseTry(async () => {
+      try {
+        const message = await this.main.bot.sendPhoto(this.chat.id, url, {caption});
+
+        this.main.sender.log.write(
+          `[send photo as url] ${this.chat.id} ${video.channelId} ${video.id}`,
+        );
+
+        tracker.track(this.chat.id, {
+          ec: 'bot',
+          ea: 'sendPhoto',
+          el: video.channelId,
+          t: 'event',
         });
-      });
+
+        return message;
+      } catch (error) {
+        const err = error as TelegramError;
+
+        let isSendUrlError = sendUrlErrors.some((re) => re.test(err.message));
+        if (!isSendUrlError) {
+          isSendUrlError = err.response && err.response.statusCode === 504;
+        }
+
+        if (isSendUrlError) {
+          if (!contentType) {
+            debug('Content-type is empty, set default content-type %s', url);
+            contentType = 'image/jpeg';
+          }
+
+          const response = await fetchRequest<ReadableStream>(url, {
+            responseType: 'stream',
+            keepAlive: true,
+          });
+
+          const message = await this.main.bot.sendPhoto(
+            this.chat.id,
+            response.body,
+            {caption},
+            {contentType, filename: '-'},
+          );
+
+          this.main.sender.log.write(
+            `[send photo as file] ${this.chat.id} ${video.channelId} ${video.id}`,
+          );
+
+          tracker.track(this.chat.id, {
+            ec: 'bot',
+            ea: 'sendPhoto',
+            el: video.channelId,
+            t: 'event',
+          });
+
+          return message;
+        }
+
+        throw err;
+      }
+    });
+
+    const fileId = getPhotoFileIdFromMessage(message);
+    if (!fileId) {
+      throw new ErrorWithCode('File id if not found', 'FILE_ID_IS_NOT_FOUND');
+    }
+    video.telegramPreviewFileId = fileId;
+    await video.save();
+
+    return {message};
   }
 }
 
@@ -311,8 +332,8 @@ const sendUrlErrors = [
 
 function getPhotoFileIdFromMessage(message: TelegramBot.Message): string | null {
   let fileId = null;
-  message
-    .photo!.slice(0)
+  message.photo
+    ?.slice(0)
     .sort((a, b) => {
       return a.file_size! > b.file_size! ? -1 : 1;
     })
@@ -324,15 +345,13 @@ async function getValidPreviewUrl(urls: string[]) {
   let lastError = null;
   for (let i = 0, len = urls.length; i < len; i++) {
     try {
-      return await fetchRequest(urls[i], {
+      const {url, headers} = await fetchRequest(urls[i], {
         method: 'HEAD',
         timeout: 5 * 1000,
         keepAlive: true,
-      }).then((response) => {
-        const url = response.url;
-        const contentType = response.headers['content-type'] as string;
-        return {url, contentType};
       });
+      const contentType = headers['content-type'] as string;
+      return {url, contentType};
     } catch (err) {
       lastError = err;
     }

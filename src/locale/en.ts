@@ -49,7 +49,7 @@ const en = {
   'alert_incorrect-telegram-channel-name': 'Incorrect channel name',
   'alert_channel-in_blacklist': 'Channel in black list',
   'alert_channel-limit-exceeded': 'Channels limit exceeded',
-  'alert_videos-not-found': 'Can\'t find any videos',
+  'alert_videos-not-found': "Can't find any videos",
   'context_group-note': `Note for groups: Use 'Reply' to answer.`,
 };
 
