@@ -381,7 +381,15 @@ class Chat {
             ['VIDEOS_IS_NOT_FOUND', 'CHANNELS_LIMIT', 'CHANNEL_IN_BLACK_LIST'].includes(err.code)
           ) {
             isResolved = true;
-            message = err.message;
+            if (err.code === 'CHANNEL_IN_BLACK_LIST') {
+              message = locale.m('alert_channel-in_blacklist');
+            } else if (err.code === 'CHANNELS_LIMIT') {
+              message = locale.m('alert_channel-limit-exceeded');
+            } else if (err.code === 'VIDEOS_IS_NOT_FOUND') {
+              message = locale.m('alert_videos-not-found');
+            } else {
+              message = err.message;
+            }
           } else {
             message = locale.m('alert_unexpected-error');
           }
@@ -632,7 +640,15 @@ class Chat {
               )
             ) {
               isResolved = true;
-              message = err.message;
+              if (err.code === 'INCORRECT_CHANNEL_NAME') {
+                message = locale.m('alert_incorrect-telegram-channel-name');
+              } else if (err.code === 'CHANNEL_ALREADY_USED') {
+                message = locale.m('alert_telegram-channel-exists');
+              } else if (err.code === 'INCORRECT_CHAT_TYPE') {
+                message = locale.m('alert_telegram-chat-is-not-supported');
+              } else {
+                message = err.message;
+              }
             } else if (errHandler[ErrEnum.ChatNotFound](err)) {
               isResolved = true;
               message = locale.m('alert_chat-not-found');
@@ -877,7 +893,7 @@ class Chat {
       const options: {[s: string]: any} = {};
       let msgText = messageText;
       if (chatId < 0) {
-        msgText += locale.m('groupNote');
+        msgText += '\n' + locale.m('context_group-note');
         if (req.callback_query) {
           msgText = '@' + req.callback_query.from.username + ' ' + messageText;
         } else {
