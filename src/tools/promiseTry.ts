@@ -3,3 +3,5 @@ const promiseTry = async <T>(callback: () => PromiseLike<T> | T) => {
 };
 
 export default promiseTry;
+
+export const pTry = promiseTry;
