@@ -857,7 +857,7 @@ class Chat {
       }
 
       const cancelText = locale.m('commandCanceled', {command: req.command});
-      const {req: rdReq, msg: rdMsg} = await requestData(req, locale, messageText, cancelText);
+      const {req: rdReq, msg: rdMsg} = await requestData(locale, req, messageText, cancelText);
       tracker.track(rdReq.chatId, {
         ec: 'command',
         ea: req.command,
@@ -868,8 +868,8 @@ class Chat {
     };
 
     const requestData = async (
-      req: RouterTextReq | RouterCallbackQueryReq,
       locale: Locale,
+      req: RouterTextReq | RouterCallbackQueryReq,
       messageText: string,
       cancelText: string,
     ) => {
