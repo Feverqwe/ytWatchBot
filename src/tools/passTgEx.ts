@@ -4,6 +4,7 @@ export enum ErrEnum {
   BotIsNotAMemberOfThe = 'botIsNotAMemberOfThe',
   MessageCantBeEdited = 'messageCantBeEdited',
   MessageToEditNotFound = 'messageToEditNotFound',
+  NotEnoughRightsSendPhotos = 'notEnoughRightsSendPhotos',
 }
 
 export const errHandler = {
@@ -21,6 +22,9 @@ export const errHandler = {
   },
   [ErrEnum.MessageToEditNotFound]: (err: Error & {code?: string}) => {
     return err.code === 'ETELEGRAM' && /message to edit not found/.test(err.message);
+  },
+  [ErrEnum.NotEnoughRightsSendPhotos]: (err: Error & {code?: string}) => {
+    return err.code === 'ETELEGRAM' && /not enough rights to send photos/.test(err.message);
   },
 };
 

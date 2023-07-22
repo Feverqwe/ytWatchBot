@@ -9,6 +9,7 @@ import {tracker} from './tracker';
 import TelegramBot from 'node-telegram-bot-api';
 import {getDebug} from './tools/getDebug';
 import ReadableStream = NodeJS.ReadableStream;
+import {ErrEnum, errHandler} from './tools/passTgEx';
 
 const debug = getDebug('app:ChatSender');
 
@@ -93,7 +94,7 @@ class ChatSender {
                     throw err;
                   },
                 );
-              } else if (/not enough rights to send photos/.test(body.description)) {
+              } else if (errHandler[ErrEnum.NotEnoughRightsSendPhotos](err)) {
                 this.chat.isHidePreview = true;
 
                 return this.chat.save().then(() => {
@@ -190,10 +191,7 @@ class ChatSender {
       });
       videoWeakMap.set(video, promise);
       promise = promise.catch((err: Error & any) => {
-        if (
-          err.code === 'ETELEGRAM' &&
-          /not enough rights to send photos/.test(err.response.body.description)
-        ) {
+        if (errHandler[ErrEnum.NotEnoughRightsSendPhotos](err)) {
           throw err;
         }
         return this.sendVideoAsText(video, true).then((result) => {
