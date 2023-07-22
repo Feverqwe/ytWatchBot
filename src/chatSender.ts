@@ -88,25 +88,24 @@ class ChatSender {
               throw new ErrorWithCode(`Chat ${this.chat.id} is deleted`, 'CHAT_IS_DELETED');
             } else if (body.parameters?.migrate_to_chat_id) {
               const newChatId = body.parameters.migrate_to_chat_id;
-              await this.main.db.changeChatId(this.chat.id, '' + newChatId).then(
-                () => {
-                  this.main.chat.log.write(`[migrate] ${this.chat.id} > ${newChatId}`);
-                  throw new ErrorWithCode(
-                    `Chat ${this.chat.id} is migrated to ${newChatId}`,
-                    'CHAT_IS_MIGRATED',
+              try {
+                await this.main.db.changeChatId(this.chat.id, '' + newChatId);
+              } catch (error) {
+                const err = error as ErrorWithCode;
+                if (/would lead to a duplicate entry in table/.test(err.message)) {
+                  await this.main.db.deleteChatById(this.chat.id);
+                  this.main.chat.log.write(
+                    `[deleted] ${this.chat.id}, cause: ${inlineInspect(err)}`,
                   );
-                },
-                async (error) => {
-                  const err = error as ErrorWithCode;
-                  if (/would lead to a duplicate entry in table/.test(err.message)) {
-                    await this.main.db.deleteChatById(this.chat.id);
-                    this.main.chat.log.write(
-                      `[deleted] ${this.chat.id}, cause: ${inlineInspect(err)}`,
-                    );
-                    throw new ErrorWithCode(`Chat ${this.chat.id} is deleted`, 'CHAT_IS_DELETED');
-                  }
-                  throw err;
-                },
+                  throw new ErrorWithCode(`Chat ${this.chat.id} is deleted`, 'CHAT_IS_DELETED');
+                }
+                throw err;
+              }
+
+              this.main.chat.log.write(`[migrate] ${this.chat.id} > ${newChatId}`);
+              throw new ErrorWithCode(
+                `Chat ${this.chat.id} is migrated to ${newChatId}`,
+                'CHAT_IS_MIGRATED',
               );
             } else if (errHandler[ErrEnum.NotEnoughRightsSendPhotos](err)) {
               this.chat.isHidePreview = true;
