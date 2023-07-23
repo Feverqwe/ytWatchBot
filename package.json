@@ -1,5 +1,5 @@
 {
-  "name": "application-name",
+  "name": "yt-watch-bot",
   "version": "0.0.1",
   "scripts": {
     "clean": "del-cli ./dist",
