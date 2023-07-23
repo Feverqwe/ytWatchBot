@@ -18,13 +18,12 @@ const en = {
   users: 'Users: {count}',
   channels: 'Channels: {count}',
   preview: 'preview',
-  groupNote: ['', "Note for groups: Use 'Reply' to answer."].join('\n'),
   about: 'Source code: https://bit.ly/ytWatchBot\nHosting https://m.do.co/c/f6ae2a246c7d',
   'alert_unknown-error': 'Oops something went wrong...',
   'alert_unexpected-error': 'Unexpected error',
   'alert_chat-not-found': 'Telegram chat is not found!',
   'alert_bot-is-not-channel-member': 'Bot is not a member of the channel!',
-  'context_options': 'Options:',
+  context_options: 'Options:',
   'alert_access-denied': 'Access denied for you ({chat})',
   action_options: 'Options',
   'title_admin-menu': 'Admin menu',
@@ -45,6 +44,13 @@ const en = {
   'action_unmute-chat': 'Unmute this chat',
   'action_show-preview-for-channel': 'Show preview for channel',
   'action_hide-preview-for-channel': 'Hide preview for channel',
+  'alert_telegram-chat-is-not-supported': 'This chat type is not supported',
+  'alert_telegram-channel-exists': 'Channel already used',
+  'alert_incorrect-telegram-channel-name': 'Incorrect channel name',
+  'alert_channel-in_blacklist': 'Channel in black list',
+  'alert_channel-limit-exceeded': 'Channels limit exceeded',
+  'alert_videos-not-found': "Can't find any videos",
+  'context_group-note': `Note for groups: Use 'Reply' to answer.`,
 };
 
 export default en;

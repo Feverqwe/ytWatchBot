@@ -3,12 +3,11 @@ import Youtube from './services/youtube';
 import Sender from './sender';
 import Chat from './chat';
 import Checker, {ServiceInterface} from './checker';
-import YtPubSub from './ytPubSub';
 import Events from 'events';
 import {appConfig} from './appConfig';
 import {getTelegramBot, TelegramBotWrapped} from './tools/telegramBotApi';
-import TelegramBot from 'node-telegram-bot-api';
 import {getDebug} from './tools/getDebug';
+import WebServer from './webServer';
 
 const debug = getDebug('app:Main');
 
@@ -28,8 +27,7 @@ class Main extends Events {
   checker: Checker;
   bot: TelegramBotWrapped;
   chat: Chat;
-  botName!: string;
-  ytPubSub: YtPubSub;
+  webServer: WebServer;
 
   constructor() {
     super();
@@ -45,7 +43,7 @@ class Main extends Events {
 
     this.sender = new Sender(this);
     this.checker = new Checker(this);
-    this.ytPubSub = new YtPubSub(this);
+    this.webServer = new WebServer(this);
 
     this.bot = getTelegramBot(appConfig.token);
     this.chat = new Chat(this);
@@ -53,15 +51,7 @@ class Main extends Events {
 
   async init() {
     await this.db.init();
-    await Promise.all([
-      this.ytPubSub.init(),
-      this.bot.getMe().then((user: TelegramBot.User) => {
-        if (!user.username) throw new Error('Bot name is empty');
-
-        this.botName = user.username;
-        return this.bot.startPolling();
-      }),
-    ]);
+    await Promise.all([this.webServer.init(), this.chat.init()]);
     this.checker.init();
     this.sender.init();
   }

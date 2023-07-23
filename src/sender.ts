@@ -6,10 +6,10 @@ import {everyMinutes} from './tools/everyTime';
 import getInProgress from './tools/getInProgress';
 import promiseLimit from './tools/promiseLimit';
 import Main from './main';
-import {Error} from 'sequelize';
 import {appConfig} from './appConfig';
 import throttle from 'lodash.throttle';
 import {getDebug} from './tools/getDebug';
+import {TelegramError} from './types';
 
 const debug = getDebug('app:Sender');
 
@@ -45,37 +45,38 @@ class Sender {
   }
 
   check = () => {
-    return oneLimit(() => {
-      return this.main.db.getDistinctChatIdVideoIdChatIds().then((chatIds) => {
-        const newChatIds = chatIds.filter((chatId) => !this.chatIdChatSender.has(chatId));
-        return this.main.db.getChatsByIds(newChatIds).then((chats) => {
-          chats.forEach((chat) => {
-            const existsThread = this.chatIdChatSender.get(chat.id);
-            if (existsThread) {
-              if (existsThread.lastActivityAt < Date.now() - 5 * 60 * 1000) {
-                existsThread.lockCount++;
-                if (existsThread.lockCount > 3) {
-                  existsThread.aborted = true;
-                  this.chatIdChatSender.delete(chat.id);
-                  debug('Drop locked thread', existsThread.chat.id);
-                } else {
-                  debug('Thread lock', existsThread.chat.id);
-                  return;
-                }
-              } else {
-                return;
-              }
+    return oneLimit(async () => {
+      const chatIds = await this.main.db.getDistinctChatIdVideoIdChatIds();
+
+      const newChatIds = chatIds.filter((chatId) => !this.chatIdChatSender.has(chatId));
+
+      const chats = await this.main.db.getChatsByIds(newChatIds);
+
+      chats.forEach((chat) => {
+        const existsThread = this.chatIdChatSender.get(chat.id);
+        if (existsThread) {
+          if (existsThread.lastActivityAt < Date.now() - 5 * 60 * 1000) {
+            existsThread.lockCount++;
+            if (existsThread.lockCount > 3) {
+              existsThread.aborted = true;
+              this.chatIdChatSender.delete(chat.id);
+              debug('Drop locked thread', existsThread.chat.id);
+            } else {
+              debug('Thread lock', existsThread.chat.id);
+              return;
             }
-            const chatSender = new ChatSender(this.main, chat);
-            this.chatIdChatSender.set(chat.id, chatSender);
-            this.suspended.push(chatSender);
-          });
-
-          this.fillThreads();
-
-          return {addedCount: chats.length};
-        });
+          } else {
+            return;
+          }
+        }
+        const chatSender = new ChatSender(this.main, chat);
+        this.chatIdChatSender.set(chat.id, chatSender);
+        this.suspended.push(chatSender);
       });
+
+      this.fillThreads();
+
+      return {addedCount: chats.length};
     });
   };
   checkThrottled = throttle(this.check, 1000, {
@@ -104,34 +105,39 @@ class Sender {
     }
   }
 
-  runThread() {
+  async runThread() {
     const {threadLimit, chatIdChatSender, suspended, threads} = this;
 
     if (!suspended.length && !threads.length) return;
     if (!suspended.length || threads.length === threadLimit) return;
 
-    const chatSender = suspended.shift()!;
+    const chatSender = suspended.shift();
+    if (!chatSender) return;
+
     threads.push(chatSender);
 
-    return chatSender
-      .next()
-      .catch(async (err: Error & any) => {
+    const isDone = await (async () => {
+      try {
+        return await chatSender.next();
+      } catch (err) {
         debug('chatSender %s stopped, cause: %o', chatSender.chat.id, err);
         await this.main.db.setChatSendTimeoutExpiresAt([chatSender.chat.id]);
         return true;
-      })
-      .then((isDone) => {
-        const pos = threads.indexOf(chatSender);
-        if (pos !== -1) {
-          threads.splice(pos, 1);
-        }
-        if (isDone) {
-          chatIdChatSender.delete(chatSender.chat.id);
-        } else {
-          suspended.push(chatSender);
-        }
-        this.fillThreads();
-      });
+      }
+    })();
+
+    const pos = threads.indexOf(chatSender);
+    if (pos !== -1) {
+      threads.splice(pos, 1);
+    }
+
+    if (isDone) {
+      chatIdChatSender.delete(chatSender.chat.id);
+    } else {
+      suspended.push(chatSender);
+    }
+
+    this.fillThreads();
   }
 
   provideVideo = getProvider((id: string) => {
@@ -155,9 +161,13 @@ class Sender {
 
         const blockedChatIds: string[] = [];
 
-        await parallel(10, chatIds, (chatId) => {
+        await parallel(10, chatIds, async (chatId) => {
           result.chatCount++;
-          return this.main.bot.sendChatAction(chatId, 'typing').catch((err: Error & any) => {
+
+          try {
+            await this.main.bot.sendChatAction(chatId, 'typing');
+          } catch (error) {
+            const err = error as TelegramError;
             const isBlocked = isBlockedError(err);
             if (isBlocked) {
               blockedChatIds.push(chatId);
@@ -171,7 +181,7 @@ class Sender {
               debug('cleanChats sendChatAction typing to %s error, cause: %o', chatId, err);
               result.errorCount++;
             }
-          });
+          }
         });
 
         await this.main.db.deleteChatsByIds(blockedChatIds);

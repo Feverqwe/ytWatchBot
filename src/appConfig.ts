@@ -38,9 +38,11 @@ export const appConfig = {
   emitCleanPubSubFeedEveryHours: 1,
   cleanPubSubFeedIfPushOlderThanDays: 14,
   defaultChannelName: 'NationalGeographic',
-  push: {
+  webServer: {
     host: YOUTUBE_PUBSUB_HOST,
     port: Number(YOUTUBE_PUBSUB_PORT),
+  },
+  push: {
     path: YOUTUBE_PUBSUB_PATH,
     secret: YOUTUBE_PUBSUB_SECRET,
     callbackUrl: YOUTUBE_PUBSUB_CALLBACK_URL,
