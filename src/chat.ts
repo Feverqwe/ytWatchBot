@@ -255,16 +255,16 @@ class Chat {
       if (!chatId) return;
 
       try {
-        const chat = await this.main.db.ensureChat('' + chatId);
-        Object.assign(req, {chat});
-        next();
-      } catch (err) {
-        debug('ensureChat error! %o', err);
         try {
-          await this.main.bot.sendMessage(chatId, locale.m('alert_unknown-error'));
+          const chat = await this.main.db.ensureChat('' + chatId);
+          Object.assign(req, {chat});
+          next();
         } catch (err) {
-          debug('provideChat sendMessage error: %o', err);
+          debug('ensureChat error! %o', err);
+          await this.main.bot.sendMessage(chatId, locale.m('alert_unknown-error'));
         }
+      } catch (err) {
+        debug('provideChat error: %o', err);
       }
     };
 
@@ -278,16 +278,16 @@ class Chat {
       if (!chatId) return;
 
       try {
-        const channels = await this.main.db.getChannelsByChatId('' + chatId);
-        Object.assign(req, {channels});
-        next();
-      } catch (err) {
-        debug('getChannelsByChatId error! %o', err);
         try {
-          await this.main.bot.sendMessage(chatId, locale.m('alert_unknown-error'));
+          const channels = await this.main.db.getChannelsByChatId('' + chatId);
+          Object.assign(req, {channels});
+          next();
         } catch (err) {
-          debug('provideChannels sendMessage error: %o', err);
+          debug('getChannelsByChatId error! %o', err);
+          await this.main.bot.sendMessage(chatId, locale.m('alert_unknown-error'));
         }
+      } catch (err) {
+        debug('provideChannels error: %o', err);
       }
     };
 
@@ -346,9 +346,7 @@ class Chat {
         });
         requestedData = query;
 
-        let channel: ChannelModel;
-        let created: boolean;
-        try {
+        await (async () => {
           const count = await this.main.db.getChannelCountByChatId('' + req.chatId);
           if (count >= 100) {
             throw new ErrorWithCode('Channels limit exceeded', 'CHANNELS_LIMIT');
@@ -356,67 +354,71 @@ class Chat {
 
           const rawChannel = await service.findChannel(query);
 
-          channel = await this.main.db.ensureChannel(service, rawChannel);
-          created = await this.main.db.putChatIdChannelId('' + req.chatId, channel.id);
-        } catch (error) {
-          const err = error as ErrorWithCode;
-          let isResolved = false;
-          let message;
-          if (
-            [
-              'INCORRECT_CHANNEL_ID',
-              'CHANNEL_BY_VIDEO_ID_IS_NOT_FOUND',
-              'INCORRECT_USERNAME',
-              'CHANNEL_BY_USER_IS_NOT_FOUND',
-              'QUERY_IS_EMPTY',
-              'CHANNEL_BY_QUERY_IS_NOT_FOUND',
-              'CHANNEL_BY_ID_IS_NOT_FOUND',
-            ].includes(err.code)
-          ) {
-            isResolved = true;
-            message = locale.m('channelIsNotFound', {
-              channelName: query,
-            });
-          } else if (
-            ['VIDEOS_IS_NOT_FOUND', 'CHANNELS_LIMIT', 'CHANNEL_IN_BLACK_LIST'].includes(err.code)
-          ) {
-            isResolved = true;
-            if (err.code === 'CHANNEL_IN_BLACK_LIST') {
-              message = locale.m('alert_channel-in_blacklist');
-            } else if (err.code === 'CHANNELS_LIMIT') {
-              message = locale.m('alert_channel-limit-exceeded');
-            } else if (err.code === 'VIDEOS_IS_NOT_FOUND') {
-              message = locale.m('alert_videos-not-found');
+          const channel = await this.main.db.ensureChannel(service, rawChannel);
+          const created = await this.main.db.putChatIdChannelId('' + req.chatId, channel.id);
+
+          return {channel, created};
+        })().then(
+          async ({channel, created}) => {
+            let message;
+            if (!created) {
+              message = locale.m('channelExists');
             } else {
-              message = err.message;
+              const {title, url} = channel;
+              message = locale.m('channelAdded', {
+                channelName: htmlSanitize('a', title, url),
+                serviceName: htmlSanitize('', service.name),
+              });
             }
-          } else {
-            message = locale.m('alert_unexpected-error');
-          }
-          await editOrSendNewMessage(req.chatId, messageId, message, {
-            disable_web_page_preview: true,
-          });
-          if (!isResolved) {
-            throw err;
-          }
-          return;
-        }
 
-        let message;
-        if (!created) {
-          message = locale.m('channelExists');
-        } else {
-          const {title, url} = channel;
-          message = locale.m('channelAdded', {
-            channelName: htmlSanitize('a', title, url),
-            serviceName: htmlSanitize('', service.name),
-          });
-        }
-
-        await editOrSendNewMessage(req.chatId, messageId, message, {
-          disable_web_page_preview: true,
-          parse_mode: 'HTML',
-        });
+            await editOrSendNewMessage(req.chatId, messageId, message, {
+              disable_web_page_preview: true,
+              parse_mode: 'HTML',
+            });
+          },
+          async (error) => {
+            const err = error as ErrorWithCode;
+            let isResolved = false;
+            let message;
+            if (
+              [
+                'INCORRECT_CHANNEL_ID',
+                'CHANNEL_BY_VIDEO_ID_IS_NOT_FOUND',
+                'INCORRECT_USERNAME',
+                'CHANNEL_BY_USER_IS_NOT_FOUND',
+                'QUERY_IS_EMPTY',
+                'CHANNEL_BY_QUERY_IS_NOT_FOUND',
+                'CHANNEL_BY_ID_IS_NOT_FOUND',
+              ].includes(err.code)
+            ) {
+              isResolved = true;
+              message = locale.m('channelIsNotFound', {
+                channelName: query,
+              });
+            } else if (
+              ['VIDEOS_IS_NOT_FOUND', 'CHANNELS_LIMIT', 'CHANNEL_IN_BLACK_LIST'].includes(err.code)
+            ) {
+              isResolved = true;
+              if (err.code === 'CHANNEL_IN_BLACK_LIST') {
+                message = locale.m('alert_channel-in_blacklist');
+              } else if (err.code === 'CHANNELS_LIMIT') {
+                message = locale.m('alert_channel-limit-exceeded');
+              } else if (err.code === 'VIDEOS_IS_NOT_FOUND') {
+                message = locale.m('alert_videos-not-found');
+              } else {
+                message = err.message;
+              }
+            } else {
+              message = locale.m('alert_unexpected-error');
+            }
+            await editOrSendNewMessage(req.chatId, messageId, message, {
+              disable_web_page_preview: true,
+            });
+            if (!isResolved) {
+              throw err;
+            }
+          },
+        );
       } catch (error) {
         const err = error as ErrorWithCode;
         if (['RESPONSE_COMMAND', 'RESPONSE_TIMEOUT'].includes(err.code)) {
@@ -473,37 +475,39 @@ class Chat {
       const channelId = req.params.channelId;
 
       try {
-        let channel: ChannelModel;
-        try {
-          channel = await this.main.db.getChannelById(channelId);
+        await (async () => {
+          const channel = await this.main.db.getChannelById(channelId);
           await this.main.db.deleteChatIdChannelId('' + req.chatId, channelId);
-        } catch (error) {
-          const err = error as ErrorWithCode;
-          let isResolved = false;
-          let message;
-          if (err.code === 'CHANNEL_IS_NOT_FOUND') {
-            isResolved = true;
-            message = locale.m('channelDontExist');
-          } else {
-            message = locale.m('alert_unexpected-error');
-          }
-          await this.main.bot.editMessageText(message, {
-            chat_id: req.chatId,
-            message_id: req.messageId,
-          });
-          if (!isResolved) {
-            throw err;
-          }
-          return;
-        }
-
-        await this.main.bot.editMessageText(
-          locale.m('channelDeleted', {
-            channelName: channel.title,
-          }),
-          {
-            chat_id: req.chatId,
-            message_id: req.messageId,
+          return channel;
+        })().then(
+          async (channel) => {
+            await this.main.bot.editMessageText(
+              locale.m('channelDeleted', {
+                channelName: channel.title,
+              }),
+              {
+                chat_id: req.chatId,
+                message_id: req.messageId,
+              },
+            );
+          },
+          async (error) => {
+            const err = error as ErrorWithCode;
+            let isResolved = false;
+            let message;
+            if (err.code === 'CHANNEL_IS_NOT_FOUND') {
+              isResolved = true;
+              message = locale.m('channelDontExist');
+            } else {
+              message = locale.m('alert_unexpected-error');
+            }
+            await this.main.bot.editMessageText(message, {
+              chat_id: req.chatId,
+              message_id: req.messageId,
+            });
+            if (!isResolved) {
+              throw err;
+            }
           },
         );
       } catch (err) {
@@ -602,9 +606,7 @@ class Chat {
           });
           requestedData = rawChannelId;
 
-          let channelId: string;
-
-          try {
+          await (async () => {
             if (!/^@\w+$/.test(rawChannelId)) {
               throw new ErrorWithCode('Incorrect channel name', 'INCORRECT_CHANNEL_NAME');
             }
@@ -628,63 +630,66 @@ class Chat {
               throw new ErrorWithCode('This chat type is not supported', 'INCORRECT_CHAT_TYPE');
             }
 
-            channelId = '@' + chat.username;
+            const channelId = '@' + chat.username;
             await this.main.db.createChatChannel('' + req.chatId, channelId);
-          } catch (error) {
-            const err = error as ErrorWithCode;
-            let isResolved = false;
-            let message;
-            if (
-              ['INCORRECT_CHANNEL_NAME', 'CHANNEL_ALREADY_USED', 'INCORRECT_CHAT_TYPE'].includes(
-                err.code,
-              )
-            ) {
-              isResolved = true;
-              if (err.code === 'INCORRECT_CHANNEL_NAME') {
-                message = locale.m('alert_incorrect-telegram-channel-name');
-              } else if (err.code === 'CHANNEL_ALREADY_USED') {
-                message = locale.m('alert_telegram-channel-exists');
-              } else if (err.code === 'INCORRECT_CHAT_TYPE') {
-                message = locale.m('alert_telegram-chat-is-not-supported');
-              } else {
-                message = err.message;
+            return channelId;
+          })().then(
+            async (channelId) => {
+              const message = locale.m('telegramChannelSet', {
+                channelName: channelId,
+              });
+              await editOrSendNewMessage(req.chatId, messageId, message);
+
+              if (req.callback_query) {
+                await passEx(
+                  () =>
+                    this.main.bot.editMessageReplyMarkup(
+                      {
+                        inline_keyboard: getOptions(locale, req.chat),
+                      },
+                      {
+                        chat_id: req.chatId,
+                        message_id: req.messageId,
+                      },
+                    ),
+                  [ErrEnum.MessageNotModified],
+                );
               }
-            } else if (errHandler[ErrEnum.ChatNotFound](err)) {
-              isResolved = true;
-              message = locale.m('alert_chat-not-found');
-            } else if (errHandler[ErrEnum.BotIsNotAMemberOfThe](err)) {
-              isResolved = true;
-              message = locale.m('alert_bot-is-not-channel-member');
-            } else {
-              message = locale.m('alert_unexpected-error');
-            }
-            await editOrSendNewMessage(req.chatId, messageId, message);
-            if (!isResolved) {
-              throw err;
-            }
-            return;
-          }
-
-          const message = locale.m('telegramChannelSet', {
-            channelName: channelId,
-          });
-          await editOrSendNewMessage(req.chatId, messageId, message);
-
-          if (req.callback_query) {
-            await passEx(
-              () =>
-                this.main.bot.editMessageReplyMarkup(
-                  {
-                    inline_keyboard: getOptions(locale, req.chat),
-                  },
-                  {
-                    chat_id: req.chatId,
-                    message_id: req.messageId,
-                  },
-                ),
-              [ErrEnum.MessageNotModified],
-            );
-          }
+            },
+            async (error) => {
+              const err = error as ErrorWithCode;
+              let isResolved = false;
+              let message;
+              if (
+                ['INCORRECT_CHANNEL_NAME', 'CHANNEL_ALREADY_USED', 'INCORRECT_CHAT_TYPE'].includes(
+                  err.code,
+                )
+              ) {
+                isResolved = true;
+                if (err.code === 'INCORRECT_CHANNEL_NAME') {
+                  message = locale.m('alert_incorrect-telegram-channel-name');
+                } else if (err.code === 'CHANNEL_ALREADY_USED') {
+                  message = locale.m('alert_telegram-channel-exists');
+                } else if (err.code === 'INCORRECT_CHAT_TYPE') {
+                  message = locale.m('alert_telegram-chat-is-not-supported');
+                } else {
+                  message = err.message;
+                }
+              } else if (errHandler[ErrEnum.ChatNotFound](err)) {
+                isResolved = true;
+                message = locale.m('alert_chat-not-found');
+              } else if (errHandler[ErrEnum.BotIsNotAMemberOfThe](err)) {
+                isResolved = true;
+                message = locale.m('alert_bot-is-not-channel-member');
+              } else {
+                message = locale.m('alert_unexpected-error');
+              }
+              await editOrSendNewMessage(req.chatId, messageId, message);
+              if (!isResolved) {
+                throw err;
+              }
+            },
+          );
         } catch (error) {
           const err = error as ErrorWithCode;
           if (['RESPONSE_COMMAND', 'RESPONSE_TIMEOUT'].includes(err.code)) {
@@ -1009,35 +1014,36 @@ class Chat {
       const command = commands[commandIndex];
 
       try {
-        let resultStr: string;
-
-        try {
+        await (async () => {
           if (!command) {
             throw new ErrorWithCode('Method is not found', 'METHOD_IS_NOT_FOUND');
           }
           const result = await command.method();
 
-          resultStr = jsonStringifyPretty(
+          return jsonStringifyPretty(
             {result},
             {
               indent: 2,
             },
           );
-        } catch (err) {
-          await this.main.bot.sendMessage(
-            req.chatId,
-            locale.m('alert_command-error', {
-              command: command.name,
-            }),
-          );
-          throw err;
-        }
-
-        await this.main.bot.sendMessage(
-          req.chatId,
-          `${locale.m('alert_command-complete', {
-            command: command.name,
-          })}\n${resultStr}`,
+        })().then(
+          async (resultStr) => {
+            await this.main.bot.sendMessage(
+              req.chatId,
+              `${locale.m('alert_command-complete', {
+                command: command.name,
+              })}\n${resultStr}`,
+            );
+          },
+          async (err) => {
+            await this.main.bot.sendMessage(
+              req.chatId,
+              locale.m('alert_command-error', {
+                command: command.name,
+              }),
+            );
+            throw err;
+          },
         );
       } catch (err) {
         debug('%j error %o', req.command, err);
