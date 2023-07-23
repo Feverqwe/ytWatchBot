@@ -402,25 +402,19 @@ class Db {
     });
   }
 
-  init() {
-    return this.sequelize
-      .authenticate()
-      .then(() => {
-        return this.sequelize.sync();
-      })
-      .then(() => {
-        return this.removeChannelByIds(appConfig.channelBlackList);
-      });
+  async init() {
+    await this.sequelize.authenticate();
+    await this.sequelize.sync();
+    await this.removeChannelByIds(appConfig.channelBlackList);
   }
 
-  ensureChat(id: string) {
-    return ChatModel.findOrCreate({
+  async ensureChat(id: string) {
+    const [model, isCreated] = await ChatModel.findOrCreate({
       where: {id},
       include: [{model: ChatModel, as: 'channel'}],
-    }).then(([model, isCreated]) => {
-      assertType<ChatModelWithOptionalChannel>(model);
-      return model;
     });
+    assertType<ChatModelWithOptionalChannel>(model);
+    return model;
   }
 
   createChatChannel(chatId: string, channelId: string) {
@@ -460,23 +454,21 @@ class Db {
     );
   }
 
-  getChatIds(offset: number, limit: number) {
-    return ChatModel.findAll({
+  async getChatIds(offset: number, limit: number) {
+    const chats: Pick<ChatModel, 'id'>[] = await ChatModel.findAll({
       offset,
       limit,
       attributes: ['id'],
-    }).then((chats: Pick<ChatModel, 'id'>[]) => {
-      return chats.map((chat) => chat.id);
     });
+    return chats.map((chat) => chat.id);
   }
 
-  getChatById(id: string) {
-    return ChatModel.findByPk(id).then((chat) => {
-      if (!chat) {
-        throw new ErrorWithCode('Chat is not found', 'CHAT_IS_NOT_FOUND');
-      }
-      return chat;
-    });
+  async getChatById(id: string) {
+    const chat = await ChatModel.findByPk(id);
+    if (!chat) {
+      throw new ErrorWithCode('Chat is not found', 'CHAT_IS_NOT_FOUND');
+    }
+    return chat;
   }
 
   getChatsByIds(ids: string[]) {
@@ -524,46 +516,39 @@ class Db {
       throw new ErrorWithCode('Channel in black list', 'CHANNEL_IN_BLACK_LIST');
     }
 
-    return ChannelModel.findOrCreate({
+    const [channel, isCreated] = await ChannelModel.findOrCreate({
       where: {id},
       defaults: Object.assign({}, rawChannel, {id, service: service.id}) as any,
-    }).then(([channel, isCreated]) => {
-      return channel;
     });
+    return channel;
   }
 
-  getChatIdChannelIdChatIdCount() {
-    return this.sequelize
-      .query<{chatCount: number}>(
-        `
+  async getChatIdChannelIdChatIdCount() {
+    const results = await this.sequelize.query<{chatCount: number}>(
+      `
       SELECT COUNT(DISTINCT(chatId)) as chatCount FROM chatIdChannelId
     `,
-        {type: Sequelize.QueryTypes.SELECT},
-      )
-      .then((results) => {
-        const result = results[0];
-        if (!result) {
-          return 0;
-        }
-        return result.chatCount;
-      });
+      {type: Sequelize.QueryTypes.SELECT},
+    );
+    const result = results[0];
+    if (!result) {
+      return 0;
+    }
+    return result.chatCount;
   }
 
-  getChatIdChannelIdChannelIdCount() {
-    return this.sequelize
-      .query<{channelCount: number}>(
-        `
+  async getChatIdChannelIdChannelIdCount() {
+    const results = await this.sequelize.query<{channelCount: number}>(
+      `
       SELECT COUNT(DISTINCT(channelId)) as channelCount FROM chatIdChannelId
     `,
-        {type: Sequelize.QueryTypes.SELECT},
-      )
-      .then((results) => {
-        const result = results[0];
-        if (!result) {
-          return 0;
-        }
-        return result.channelCount;
-      });
+      {type: Sequelize.QueryTypes.SELECT},
+    );
+    const result = results[0];
+    if (!result) {
+      return 0;
+    }
+    return result.channelCount;
   }
 
   getChatIdChannelIdTop10ByServiceId(serviceId: string) {
@@ -587,16 +572,15 @@ class Db {
     );
   }
 
-  getChannelsByChatId(chatId: string) {
-    return ChatIdChannelIdModel.findAll({
+  async getChannelsByChatId(chatId: string) {
+    const chatIdChannelIdList: unknown[] = await ChatIdChannelIdModel.findAll({
       include: [{model: ChannelModel, required: true}],
       where: {chatId},
       attributes: [],
       order: ['createdAt'],
-    }).then((chatIdChannelIdList: {}[]) => {
-      assertType<{channel: ChannelModel}[]>(chatIdChannelIdList);
-      return chatIdChannelIdList.map((chatIdChannelId) => chatIdChannelId.channel);
     });
+    assertType<{channel: ChannelModel}[]>(chatIdChannelIdList);
+    return chatIdChannelIdList.map((chatIdChannelId) => chatIdChannelId.channel);
   }
 
   getChannelsByIds(ids: string[]) {
@@ -605,13 +589,12 @@ class Db {
     });
   }
 
-  getChannelById(id: string) {
-    return ChannelModel.findByPk(id).then((channel) => {
-      if (!channel) {
-        throw new ErrorWithCode('Channel is not found', 'CHANNEL_IS_NOT_FOUND');
-      }
-      return channel;
-    });
+  async getChannelById(id: string) {
+    const channel = await ChannelModel.findByPk(id);
+    if (!channel) {
+      throw new ErrorWithCode('Channel is not found', 'CHANNEL_IS_NOT_FOUND');
+    }
+    return channel;
   }
 
   getChannelCountByChatId(chatId: string) {
@@ -620,10 +603,9 @@ class Db {
     });
   }
 
-  putChatIdChannelId(chatId: string, channelId: string) {
-    return ChatIdChannelIdModel.upsert({chatId, channelId}).then(([model, isCreated]) => {
-      return isCreated as boolean; // cause mariadb
-    });
+  async putChatIdChannelId(chatId: string, channelId: string) {
+    const [model, isCreated] = await ChatIdChannelIdModel.upsert({chatId, channelId});
+    return Boolean(isCreated);
   }
 
   deleteChatIdChannelId(chatId: string, channelId: string) {
@@ -632,21 +614,20 @@ class Db {
     });
   }
 
-  getChannelIdsWithExpiresSubscription(limit = 50) {
+  async getChannelIdsWithExpiresSubscription(limit = 50) {
     const date = new Date();
     date.setSeconds(
       date.getSeconds() + appConfig.updateChannelPubSubSubscribeIfExpiresLessThenMinutes * 60,
     );
-    return ChannelModel.findAll({
+    const results: Pick<ChannelModel, 'id'>[] = await ChannelModel.findAll({
       where: {
         subscriptionExpiresAt: {[Op.lt]: date},
         subscriptionTimeoutExpiresAt: {[Op.lt]: new Date()},
       },
       limit: limit,
       attributes: ['id'],
-    }).then((results: Pick<ChannelModel, 'id'>[]) => {
-      return results.map((item) => item.id);
     });
+    return results.map((item) => item.id);
   }
 
   getChannelsForSync(limit: number) {
@@ -662,15 +643,14 @@ class Db {
     });
   }
 
-  getChannelIdsByServiceId(service: string, offset: number, limit: number) {
-    return ChannelModel.findAll({
+  async getChannelIdsByServiceId(service: string, offset: number, limit: number) {
+    const channels: Pick<ChannelModel, 'id'>[] = await ChannelModel.findAll({
       where: {service},
       attributes: ['id'],
       offset,
       limit,
-    }).then((channels: Pick<ChannelModel, 'id'>[]) => {
-      return channels.map((channel) => channel.id);
     });
+    return channels.map((channel) => channel.id);
   }
 
   setChannelsSyncTimeoutExpiresAtAndUncheckChanges(ids: string[]) {
@@ -753,13 +733,12 @@ class Db {
     );
   }
 
-  getExistsYtPubSubVideoIds(ids: string[]) {
-    return YtPubSubModel.findAll({
+  async getExistsYtPubSubVideoIds(ids: string[]) {
+    const items: Pick<YtPubSubModel, 'videoId'>[] = await YtPubSubModel.findAll({
       where: {videoId: ids},
       attributes: ['videoId'],
-    }).then((items: Pick<YtPubSubModel, 'videoId'>[]) => {
-      return items.map((item) => item.videoId);
     });
+    return items.map((item) => item.videoId);
   }
 
   cleanYtPubSub() {
@@ -772,23 +751,21 @@ class Db {
     });
   }
 
-  getExistsVideoIds(ids: string[]) {
-    return VideoModel.findAll({
+  async getExistsVideoIds(ids: string[]) {
+    const videos: Pick<VideoModel, 'id'>[] = await VideoModel.findAll({
       where: {id: ids},
       attributes: ['id'],
-    }).then((videos: Pick<VideoModel, 'id'>[]) => {
-      return videos.map((video) => video.id);
     });
+    return videos.map((video) => video.id);
   }
 
-  getNoExistsVideoIds(ids: string[]) {
-    return this.getExistsVideoIds(ids).then((results) => {
-      return arrayDifference(ids, results);
-    });
+  async getNoExistsVideoIds(ids: string[]) {
+    const results = await this.getExistsVideoIds(ids);
+    return arrayDifference(ids, results);
   }
 
-  getChatIdChannelIdByChannelIds(channelIds: string[]) {
-    return ChatIdChannelIdModel.findAll({
+  async getChatIdChannelIdByChannelIds(channelIds: string[]) {
+    const results = await ChatIdChannelIdModel.findAll({
       where: {channelId: channelIds},
       include: [
         {
@@ -797,12 +774,11 @@ class Db {
           required: true,
         },
       ],
-    }).then((results) => {
-      assertType<
-        (ChatIdChannelIdModel & {chat: Pick<ChatModel, 'id' | 'channelId' | 'isMuted'>})[]
-      >(results);
-      return results;
     });
+    assertType<(ChatIdChannelIdModel & {chat: Pick<ChatModel, 'id' | 'channelId' | 'isMuted'>})[]>(
+      results,
+    );
+    return results;
   }
 
   cleanVideos() {
@@ -868,23 +844,20 @@ class Db {
     return doTry();
   }
 
-  getDistinctChatIdVideoIdChatIds() {
-    return this.sequelize
-      .query<{chatId: string}>(
-        `
+  async getDistinctChatIdVideoIdChatIds() {
+    const results = await this.sequelize.query<{chatId: string}>(
+      `
       SELECT DISTINCT chatId FROM chatIdVideoId
       INNER JOIN chats ON chatIdVideoId.chatId = chats.id
       WHERE chats.sendTimeoutExpiresAt < "${dateToSql(new Date())}"
     `,
-        {type: Sequelize.QueryTypes.SELECT},
-      )
-      .then((results) => {
-        return results.map((result) => result.chatId);
-      });
+      {type: Sequelize.QueryTypes.SELECT},
+    );
+    return results.map((result) => result.chatId);
   }
 
-  getVideoIdsByChatId(chatId: string, limit = 10) {
-    return ChatIdVideoIdModel.findAll({
+  async getVideoIdsByChatId(chatId: string, limit = 10) {
+    const results: Pick<ChatIdVideoIdModel, 'videoId'>[] = await ChatIdVideoIdModel.findAll({
       where: {chatId},
       include: [
         {
@@ -896,25 +869,23 @@ class Db {
       order: [Sequelize.literal('video.publishedAt')],
       attributes: ['videoId'],
       limit: limit,
-    }).then((results: Pick<ChatIdVideoIdModel, 'videoId'>[]) => {
-      assertType<
-        (Pick<ChatIdVideoIdModel, 'videoId'> & {video: Pick<VideoModel, 'publishedAt'>})[]
-      >(results);
-      return results.map((chatIdVideoId) => chatIdVideoId.videoId);
     });
+    assertType<(Pick<ChatIdVideoIdModel, 'videoId'> & {video: Pick<VideoModel, 'publishedAt'>})[]>(
+      results,
+    );
+    return results.map((chatIdVideoId) => chatIdVideoId.videoId);
   }
 
-  getVideoWithChannelById(id: string) {
-    return VideoModel.findOne({
+  async getVideoWithChannelById(id: string) {
+    const video = await VideoModel.findOne({
       where: {id},
       include: [{model: ChannelModel, required: true}],
-    }).then((video) => {
-      if (!video) {
-        throw new ErrorWithCode('Video is not found', 'VIDEO_IS_NOT_FOUND');
-      }
-      assertType<VideoModelWithChannel>(video);
-      return video;
     });
+    if (!video) {
+      throw new ErrorWithCode('Video is not found', 'VIDEO_IS_NOT_FOUND');
+    }
+    assertType<VideoModelWithChannel>(video);
+    return video;
   }
 
   deleteChatIdVideoId(chatId: string, videoId: string) {
