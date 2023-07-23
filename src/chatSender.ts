@@ -7,25 +7,12 @@ import {ChatModel, VideoModelWithChannel} from './db';
 import {tracker} from './tracker';
 import TelegramBot from 'node-telegram-bot-api';
 import {getDebug} from './tools/getDebug';
-import ReadableStream = NodeJS.ReadableStream;
 import {ErrEnum, errHandler} from './tools/passTgEx';
 import promiseTry from './tools/promiseTry';
+import {TelegramError} from './types';
+import ReadableStream = NodeJS.ReadableStream;
 
 const debug = getDebug('app:ChatSender');
-
-interface TelegramError extends Error {
-  code: string;
-  response: {
-    statusCode: number;
-    body: {
-      error_code: string;
-      description: string;
-      parameters: {
-        migrate_to_chat_id: number;
-      };
-    };
-  };
-}
 
 const videoWeakMap = new WeakMap();
 

@@ -21,7 +21,7 @@ import {ParseMode} from 'node-telegram-bot-api';
 import {getDebug} from './tools/getDebug';
 import jsonStringifyPretty from 'json-stringify-pretty-compact';
 import Locale from './locale';
-import {errHandler, ErrEnum, passEx} from './tools/passTgEx';
+import {ErrEnum, errHandler, passEx} from './tools/passTgEx';
 
 const debug = getDebug('app:Chat');
 
