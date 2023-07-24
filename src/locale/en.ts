@@ -2,8 +2,8 @@ const en = {
   help: 'Hi! I will notify you about new videos on Youtube channels!',
   emptyServiceList: `You don't have channels in watchlist, yet.`,
   enterChannelName:
-    'Enter the channel video URL (also support channel URL, username, channel id; example: {example}):',
-  channelExists: 'This channel has been added!',
+    'Enter video URL (also support channel URL, username, channel id; example: {example}):',
+  channelExists: 'This channel has already been added before.',
   channelAdded: 'Success! The channel {channelName} has been added!',
   telegramChannelEnter: 'Enter the channel name (example: @telegram):',
   telegramChannelSet: 'Success! The channel {channelName} has been assigned!',
