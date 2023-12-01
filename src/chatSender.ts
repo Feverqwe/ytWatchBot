@@ -11,6 +11,7 @@ import {ErrEnum, errHandler} from './tools/passTgEx';
 import promiseTry from './tools/promiseTry';
 import {TelegramError} from './types';
 import ReadableStream = NodeJS.ReadableStream;
+import {Stream} from 'stream';
 
 const debug = getDebug('app:ChatSender');
 
@@ -259,7 +260,7 @@ class ChatSender {
 
           const message = await this.main.bot.sendPhoto(
             this.chat.id,
-            response.body,
+            response.body as unknown as Stream,
             {caption},
             {contentType, filename: '-'},
           );
