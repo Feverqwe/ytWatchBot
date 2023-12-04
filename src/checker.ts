@@ -227,9 +227,8 @@ class Checker {
             channelVideoIds.push(video.id);
           });
 
-          const chatIdChannelIdList = await this.main.db.getChatIdChannelIdByChannelIds(
-            checkedChannelIds,
-          );
+          const chatIdChannelIdList =
+            await this.main.db.getChatIdChannelIdByChannelIds(checkedChannelIds);
           const channelIdChats = new Map<string, {chatId: string; createdAt: Date}[]>();
           chatIdChannelIdList.forEach((chatIdChannelId) => {
             const chats = ensureMap(channelIdChats, chatIdChannelId.channelId, []);

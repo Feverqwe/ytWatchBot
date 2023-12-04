@@ -400,6 +400,10 @@ class Db {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE',
     });
+    ChatModel.hasMany(ChatIdVideoIdModel, {
+      sourceKey: 'id',
+      foreignKey: 'chatId',
+    });
   }
 
   async init() {
@@ -524,52 +528,49 @@ class Db {
   }
 
   async getChatIdChannelIdChatIdCount() {
-    const results = await this.sequelize.query<{chatCount: number}>(
-      `
-      SELECT COUNT(DISTINCT(chatId)) as chatCount FROM chatIdChannelId
-    `,
-      {type: Sequelize.QueryTypes.SELECT},
-    );
-    const result = results[0];
-    if (!result) {
-      return 0;
-    }
-    return result.chatCount;
+    const count = await ChatIdChannelIdModel.count({
+      col: 'chatId',
+      distinct: true,
+    });
+    return count;
   }
 
   async getChatIdChannelIdChannelIdCount() {
-    const results = await this.sequelize.query<{channelCount: number}>(
-      `
-      SELECT COUNT(DISTINCT(channelId)) as channelCount FROM chatIdChannelId
-    `,
-      {type: Sequelize.QueryTypes.SELECT},
-    );
-    const result = results[0];
-    if (!result) {
-      return 0;
-    }
-    return result.channelCount;
+    const count = await ChatIdChannelIdModel.count({
+      col: 'channelId',
+      distinct: true,
+    });
+    return count;
   }
 
-  getChatIdChannelIdTop10ByServiceId(serviceId: string) {
+  async getChatIdChannelIdTop10ByServiceId(serviceId: string) {
     const monthAgo = new Date();
     monthAgo.setMonth(monthAgo.getMonth() - 1);
-    return this.sequelize.query<{
-      channelId: string;
-      service: string;
-      chatCount: number;
-      title: string;
-    }>(
-      `
-      SELECT channelId, COUNT(chatId) as chatCount, channels.service as service, channels.title as title FROM chatIdChannelId
-      INNER JOIN channels ON channelId = channels.id
-      WHERE channels.service = "${serviceId}" AND channels.lastVideoPublishedAt > "${dateToSql(
-        monthAgo,
-      )}"
-      GROUP BY channelId ORDER BY COUNT(chatId) DESC LIMIT 10
-    `,
-      {type: Sequelize.QueryTypes.SELECT},
-    );
+
+    const results = await ChatIdChannelIdModel.findAll({
+      include: [
+        {
+          model: ChannelModel,
+          required: true,
+          attributes: ['title', 'service'],
+          where: [
+            {
+              service: serviceId,
+              lastVideoPublishedAt: {[Op.gt]: monthAgo},
+            },
+          ],
+        },
+      ],
+      attributes: ['channelId', [Sequelize.fn('COUNT', Sequelize.col('chatId')), 'chatCount']],
+      group: 'channelId',
+      order: [['chatCount', 'DESC']],
+      limit: 10,
+    });
+
+    return results.map((value) => {
+      const {channel, ...other} = value.get({plain: true});
+      return {...other, ...channel};
+    });
   }
 
   async getChannelsByChatId(chatId: string) {
@@ -845,15 +846,21 @@ class Db {
   }
 
   async getDistinctChatIdVideoIdChatIds() {
-    const results = await this.sequelize.query<{chatId: string}>(
-      `
-      SELECT DISTINCT chatId FROM chatIdVideoId
-      INNER JOIN chats ON chatIdVideoId.chatId = chats.id
-      WHERE chats.sendTimeoutExpiresAt < "${dateToSql(new Date())}"
-    `,
-      {type: Sequelize.QueryTypes.SELECT},
-    );
-    return results.map((result) => result.chatId);
+    const now = new Date();
+    const chats = await ChatModel.findAll({
+      include: [
+        {
+          model: ChatIdVideoIdModel,
+          required: true,
+          attributes: [],
+        },
+      ],
+      where: {
+        sendTimeoutExpiresAt: {[Op.lt]: now},
+      },
+      attributes: ['id'],
+    });
+    return chats.map(({id}) => id);
   }
 
   async getVideoIdsByChatId(chatId: string, limit = 10) {
