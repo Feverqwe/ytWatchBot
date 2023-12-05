@@ -18,7 +18,7 @@ const en = {
   users: 'Users: {count}',
   channels: 'Channels: {count}',
   preview: 'preview',
-  about: 'Source code: https://bit.ly/ytWatchBot\nHosting https://m.do.co/c/f6ae2a246c7d',
+  about: 'Source code: https://bit.ly/ytWatchBot',
   'alert_unknown-error': 'Oops something went wrong...',
   'alert_unexpected-error': 'Unexpected error',
   'alert_chat-not-found': 'Telegram chat is not found!',
