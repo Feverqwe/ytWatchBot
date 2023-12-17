@@ -40,7 +40,7 @@ const SearchItemsIdStruct = s.object({
   items: s.array(
     s.object({
       id: s.object({
-        channelId: s.string(),
+        channelId: s.optional(s.string()),
       }),
     }),
   ),
@@ -306,11 +306,19 @@ class Youtube implements ServiceInterface {
     });
 
     const searchItemsId = s.mask(body, SearchItemsIdStruct);
-    if (!searchItemsId.items.length) {
+    let channelId: string | undefined;
+    searchItemsId.items.some((item) => {
+      if (item.id.channelId) {
+        channelId = item.id.channelId;
+        return true;
+      }
+      return false;
+    });
+    if (!channelId) {
       throw new ErrorWithCode('Channel by query is not found', 'CHANNEL_BY_QUERY_IS_NOT_FOUND');
     }
 
-    return searchItemsId.items[0].id.channelId;
+    return channelId;
   }
 
   async requestChannelIdByUserUrl(url: string) {
