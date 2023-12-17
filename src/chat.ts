@@ -721,6 +721,10 @@ class Chat {
               changes.isMuted = value === 'true';
               break;
             }
+            case 'isSkipShortVideos': {
+              changes.isSkipShortVideos = value === 'true';
+              break;
+            }
             default: {
               throw new Error('Unknown option filed');
             }
@@ -1137,6 +1141,22 @@ function getOptions(locale: Locale, chat: ChatModel | ChatModelWithOptionalChann
       {
         text: locale.m('action_hide-preview'),
         callback_data: '/options/isHidePreview/true',
+      },
+    ]);
+  }
+
+  if (chat.isSkipShortVideos) {
+    btnList.push([
+      {
+        text: locale.m('action_desable-skip-short-videos'),
+        callback_data: '/options/isSkipShortVideos/false',
+      },
+    ]);
+  } else {
+    btnList.push([
+      {
+        text: locale.m('action_enable-skip-short-videos'),
+        callback_data: '/options/isSkipShortVideos/true',
       },
     ]);
   }

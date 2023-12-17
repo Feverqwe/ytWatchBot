@@ -229,19 +229,21 @@ class Checker {
 
           const chatIdChannelIdList =
             await this.main.db.getChatIdChannelIdByChannelIds(checkedChannelIds);
-          const channelIdChats = new Map<string, {chatId: string; createdAt: Date}[]>();
+          const channelIdChats = new Map<string, {chatId: string; createdAt: Date, isSkipShortVideos: boolean}[]>();
           chatIdChannelIdList.forEach((chatIdChannelId) => {
             const chats = ensureMap(channelIdChats, chatIdChannelId.channelId, []);
             if (!chatIdChannelId.chat.channelId || !chatIdChannelId.chat.isMuted) {
               chats.push({
                 chatId: chatIdChannelId.chat.id,
                 createdAt: chatIdChannelId.createdAt,
+                isSkipShortVideos: chatIdChannelId.chat.isSkipShortVideos,
               });
             }
             if (chatIdChannelId.chat.channelId) {
               chats.push({
                 chatId: chatIdChannelId.chat.channelId,
                 createdAt: chatIdChannelId.createdAt,
+                isSkipShortVideos: chatIdChannelId.chat.isSkipShortVideos,
               });
             }
           });
@@ -257,7 +259,11 @@ class Checker {
             if (videoIds) {
               videoIds.forEach((videoId) => {
                 const video = videoIdVideo.get(videoId)!;
-                chats.forEach(({chatId, createdAt}) => {
+                chats.forEach(({chatId, createdAt, isSkipShortVideos}) => {
+                  if (video.duration && isSkipShortVideos && /^(1:00|0:\d{2})$/.test(video.duration)) {
+                    return;
+                  }
+
                   if (
                     video.publishedAt.getTime() > minPublishedAfter.getTime() &&
                     video.publishedAt.getTime() > createdAt.getTime()

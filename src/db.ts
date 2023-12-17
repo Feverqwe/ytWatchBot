@@ -18,6 +18,7 @@ export interface NewChat {
   channelId?: string | null;
   isHidePreview?: boolean;
   isMuted?: boolean;
+  isSkipShortVideos?: boolean;
   sendTimeoutExpiresAt?: Date;
   parentChatId?: string | null;
   createdAt?: Date;
@@ -29,6 +30,7 @@ export class ChatModel extends Sequelize.Model {
   declare channelId: string | null;
   declare isHidePreview: boolean;
   declare isMuted: boolean;
+  declare isSkipShortVideos: boolean;
   declare sendTimeoutExpiresAt: Date;
   declare parentChatId: string | null;
 
@@ -163,6 +165,7 @@ class Db {
         channelId: {type: Sequelize.STRING(191), allowNull: true},
         isHidePreview: {type: Sequelize.BOOLEAN, defaultValue: false},
         isMuted: {type: Sequelize.BOOLEAN, defaultValue: false},
+        isSkipShortVideos: {type: Sequelize.BOOLEAN, defaultValue: false},
         sendTimeoutExpiresAt: {
           type: Sequelize.DATE,
           allowNull: false,
@@ -771,12 +774,12 @@ class Db {
       include: [
         {
           model: ChatModel,
-          attributes: ['id', 'channelId', 'isMuted'],
+          attributes: ['id', 'channelId', 'isMuted', 'isSkipShortVideos'],
           required: true,
         },
       ],
     });
-    assertType<(ChatIdChannelIdModel & {chat: Pick<ChatModel, 'id' | 'channelId' | 'isMuted'>})[]>(
+    assertType<(ChatIdChannelIdModel & {chat: Pick<ChatModel, 'id' | 'channelId' | 'isMuted' | 'isSkipShortVideos'>})[]>(
       results,
     );
     return results;

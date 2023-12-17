@@ -51,6 +51,8 @@ const en = {
   'alert_channel-limit-exceeded': 'Channels limit exceeded',
   'alert_videos-not-found': "Can't find any videos",
   'context_group-note': `Note for groups: Use 'Reply' to answer.`,
+  'action_desable-skip-short-videos': 'Show videos <= 1min (enabled)',
+  'action_enable-skip-short-videos': 'Hide videos <= 1min (disabled)'
 };
 
 export default en;
