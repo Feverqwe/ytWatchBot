@@ -229,7 +229,10 @@ class Checker {
 
           const chatIdChannelIdList =
             await this.main.db.getChatIdChannelIdByChannelIds(checkedChannelIds);
-          const channelIdChats = new Map<string, {chatId: string; createdAt: Date, isSkipShortVideos: boolean}[]>();
+          const channelIdChats = new Map<
+            string,
+            {chatId: string; createdAt: Date; isSkipShortVideos: boolean}[]
+          >();
           chatIdChannelIdList.forEach((chatIdChannelId) => {
             const chats = ensureMap(channelIdChats, chatIdChannelId.channelId, []);
             if (!chatIdChannelId.chat.channelId || !chatIdChannelId.chat.isMuted) {
@@ -260,7 +263,11 @@ class Checker {
               videoIds.forEach((videoId) => {
                 const video = videoIdVideo.get(videoId)!;
                 chats.forEach(({chatId, createdAt, isSkipShortVideos}) => {
-                  if (video.duration && isSkipShortVideos && /^(1:00|0:\d{2})$/.test(video.duration)) {
+                  if (
+                    video.duration &&
+                    isSkipShortVideos &&
+                    /^(1:00|0:\d{2})$/.test(video.duration)
+                  ) {
                     return;
                   }
 

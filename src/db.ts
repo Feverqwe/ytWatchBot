@@ -779,9 +779,11 @@ class Db {
         },
       ],
     });
-    assertType<(ChatIdChannelIdModel & {chat: Pick<ChatModel, 'id' | 'channelId' | 'isMuted' | 'isSkipShortVideos'>})[]>(
-      results,
-    );
+    assertType<
+      (ChatIdChannelIdModel & {
+        chat: Pick<ChatModel, 'id' | 'channelId' | 'isMuted' | 'isSkipShortVideos'>;
+      })[]
+    >(results);
     return results;
   }
 

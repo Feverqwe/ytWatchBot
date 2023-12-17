@@ -1213,6 +1213,22 @@ function getOptions(locale: Locale, chat: ChatModel | ChatModelWithOptionalChann
         },
       ]);
     }
+
+    if (chat.channel.isSkipShortVideos) {
+      btnList.push([
+        {
+          text: locale.m('action_desable-skip-short-videos-for-channel'),
+          callback_data: '/channelOptions/isSkipShortVideos/false',
+        },
+      ]);
+    } else {
+      btnList.push([
+        {
+          text: locale.m('action_enable-skip-short-videos-for-channel'),
+          callback_data: '/channelOptions/isSkipShortVideos/true',
+        },
+      ]);
+    }
   }
 
   return btnList;

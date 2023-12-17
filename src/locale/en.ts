@@ -52,7 +52,9 @@ const en = {
   'alert_videos-not-found': "Can't find any videos",
   'context_group-note': `Note for groups: Use 'Reply' to answer.`,
   'action_desable-skip-short-videos': 'Show videos <= 1min (enabled)',
-  'action_enable-skip-short-videos': 'Hide videos <= 1min (disabled)'
+  'action_enable-skip-short-videos': 'Hide videos <= 1min (disabled)',
+  'action_desable-skip-short-videos-for-channel': 'Show videos <= 1min for channel (enabled)',
+  'action_enable-skip-short-videos-for-channel': 'Hide videos <= 1min for channel (disabled)',
 };
 
 export default en;
