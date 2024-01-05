@@ -94,7 +94,7 @@ export class VideoModel extends Sequelize.Model {
   declare id: string;
   declare url: string;
   declare title: string;
-  declare previews: string[];
+  declare previews: string;
   declare duration: string | null;
   declare channelId: string;
   declare publishedAt: Date;
@@ -110,7 +110,7 @@ export interface NewVideo {
   id: string;
   url: string;
   title: string;
-  previews: string[];
+  previews: string;
   duration?: string | null;
   channelId: string;
   publishedAt: Date;
@@ -337,7 +337,7 @@ class Db {
         id: {type: Sequelize.STRING(191), allowNull: false, primaryKey: true},
         url: {type: Sequelize.STRING(191), allowNull: false},
         title: {type: Sequelize.STRING(191), allowNull: false},
-        previews: {type: Sequelize.JSON, allowNull: false},
+        previews: {type: Sequelize.TEXT, allowNull: false},
         duration: {type: Sequelize.STRING(191), allowNull: true},
         channelId: {type: Sequelize.STRING(191), allowNull: false},
         publishedAt: {type: Sequelize.DATE, allowNull: false},

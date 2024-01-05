@@ -177,7 +177,7 @@ class Youtube implements ServiceInterface {
               id: video.id,
               url: getVideoUrl(video.id),
               title: video.snippet.title,
-              previews: previews,
+              previews: JSON.stringify(previews),
               duration: duration,
               channelId: video.snippet.channelId,
               channelTitle: video.snippet.channelTitle,
