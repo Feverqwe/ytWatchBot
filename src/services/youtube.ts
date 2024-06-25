@@ -98,14 +98,14 @@ const VideosResponseStruct = s.object({
         //   description: s.string(),
         // })
       }),
-      contentDetails: s.object({
+      contentDetails: s.partial(s.object({
         duration: s.string(), // PT2M57S
         // dimension: s.string(), // 2d
         // definition: s.string(), // sd
         // caption: s.string(), // false
         // licensedContent: 'boolean', // true
         // projection: s.string(), // rectangular
-      }),
+      })),
     }),
   ),
   nextPageToken: s.optional(s.string()),
@@ -168,7 +168,9 @@ class Youtube implements ServiceInterface {
 
             let duration = null;
             try {
-              duration = formatDuration(video.contentDetails.duration);
+              if (video.contentDetails.duration) {
+                duration = formatDuration(video.contentDetails.duration);
+              }
             } catch (err) {
               debug('formatDuration %s error %o', video.id, err);
             }
