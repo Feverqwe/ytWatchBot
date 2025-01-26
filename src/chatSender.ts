@@ -49,7 +49,9 @@ class ChatSender {
     try {
       await this.main.sender.provideVideo(videoId, async (video) => {
         try {
-          const previews = !Array.isArray(video.previews) ? JSON.parse(video.previews) : video.previews;
+          const previews = !Array.isArray(video.previews)
+            ? JSON.parse(video.previews)
+            : video.previews;
 
           if (this.chat.isHidePreview || !previews.length) {
             await this.sendVideoAsText(video);

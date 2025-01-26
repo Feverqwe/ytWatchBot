@@ -3,8 +3,10 @@ import https from 'node:https';
 import qs from 'node:querystring';
 import FormData from 'form-data';
 
-import fetch, {Headers, Response} from 'node-fetch';
 import {getDebug} from './getDebug';
+import axios, {AxiosError, AxiosResponse, Cancel, isCancel} from 'axios';
+import http2 from 'http2-wrapper';
+import {createHTTP2Adapter} from 'axios-http2-adapter';
 
 const debug = getDebug('app:fetchRequest');
 
@@ -16,11 +18,8 @@ export interface FetchRequestOptions {
   timeout?: number;
   keepAlive?: boolean;
   body?: string | URLSearchParams | FormData;
-  cookieJar?: {
-    setCookie: (rawCookie: string, url: string) => Promise<unknown>;
-    getCookieString: (url: string) => Promise<string>;
-  };
   throwHttpErrors?: boolean;
+  http2?: boolean;
 }
 
 interface FetchResponse<T = any> {
@@ -34,12 +33,30 @@ interface FetchResponse<T = any> {
   headers: Record<string, string | string[]>;
 }
 
+const http2axiosInstance = axios.create({
+  adapter: createHTTP2Adapter({
+    agent: new http2.Agent(),
+    force: true,
+  }),
+});
+
+const axiosKeepAliveInstance = axios.create({
+  httpAgent: new http.Agent({
+    keepAlive: true,
+  }),
+  httpsAgent: new https.Agent({
+    keepAlive: true,
+  }),
+});
+
+const axiosDefaultInstance = axios.create();
+
 async function fetchRequest<T = any>(url: string, options?: FetchRequestOptions) {
   const {
+    http2,
     responseType,
     keepAlive,
     searchParams,
-    cookieJar,
     throwHttpErrors = true,
     timeout = 60 * 1000,
     ...fetchOptions
@@ -56,19 +73,11 @@ async function fetchRequest<T = any>(url: string, options?: FetchRequestOptions)
       url = uri.toString();
     }
 
-    let agentFn;
-    if (keepAlive) {
-      agentFn = keepAliveAgentFn;
-    }
-
-    if (cookieJar) {
-      const cookieString = await cookieJar.getCookieString(url);
-      if (cookieString) {
-        if (!fetchOptions.headers) {
-          fetchOptions.headers = {};
-        }
-        fetchOptions.headers.cookie = cookieString;
-      }
+    let axiosInstance = axiosDefaultInstance;
+    if (http2) {
+      axiosInstance = http2axiosInstance;
+    } else if (keepAlive) {
+      axiosInstance = axiosKeepAliveInstance;
     }
 
     let isTimeout = false;
@@ -80,22 +89,29 @@ async function fetchRequest<T = any>(url: string, options?: FetchRequestOptions)
       }, timeout);
     }
 
-    const rawResponse: Response & {buffer: () => Promise<Buffer>} = await fetch(url, {
-      agent: agentFn,
-      ...fetchOptions,
+    const axiosResponseType = responseType === 'buffer' ? 'arraybuffer' : responseType;
+
+    const rawResponse: AxiosResponse = await axiosInstance(url, {
+      method: fetchOptions.method,
+      data: fetchOptions.body,
+      headers: fetchOptions.headers,
+      responseType: axiosResponseType,
       signal: controller.signal,
+      validateStatus: null,
     }).catch((err: Error & any) => {
-      if (err.name === 'AbortError' && err.type === 'aborted' && isTimeout) {
+      if (isCancel(err) && isTimeout) {
         throw new TimeoutError(err);
       } else {
         throw new RequestError(err.message, err);
       }
     });
 
+    const ok = rawResponse.status >= 200 && rawResponse.status < 300;
+
     const fetchResponse: FetchResponse<T> = {
-      ok: rawResponse.ok,
-      url: rawResponse.url,
-      method: fetchOptions.method,
+      ok: ok,
+      url: rawResponse.config.url ?? url,
+      method: rawResponse.config.method ?? fetchOptions.method,
       statusCode: rawResponse.status,
       statusMessage: rawResponse.statusText,
       headers: normalizeHeaders(rawResponse.headers),
@@ -103,51 +119,14 @@ async function fetchRequest<T = any>(url: string, options?: FetchRequestOptions)
       body: undefined as any,
     };
 
-    if (cookieJar) {
-      let rawCookies = fetchResponse.headers['set-cookie'];
-      if (rawCookies) {
-        if (!Array.isArray(rawCookies)) {
-          rawCookies = [rawCookies];
-        }
-        await Promise.all(
-          rawCookies.map((rawCookie: string) => {
-            return cookieJar.setCookie(rawCookie, fetchResponse.url);
-          }),
-        );
-      }
+    if (responseType === 'buffer') {
+      fetchResponse.rawBody = Buffer.from(rawResponse.data as ArrayBuffer);
+    } else {
+      fetchResponse.rawBody = rawResponse.data;
     }
+    fetchResponse.body = fetchResponse.rawBody;
 
-    if (fetchOptions.method !== 'HEAD') {
-      try {
-        if (responseType === 'stream') {
-          fetchResponse.rawBody = rawResponse.body;
-        } else if (responseType === 'buffer') {
-          fetchResponse.rawBody = await rawResponse.buffer();
-        } else {
-          fetchResponse.rawBody = await rawResponse.text();
-        }
-      } catch (err: Error & any) {
-        if (err.name === 'AbortError' && err.type === 'aborted' && isTimeout) {
-          throw new TimeoutError(err);
-        } else {
-          throw new ReadError(err, fetchResponse);
-        }
-      }
-
-      if (responseType === 'json') {
-        try {
-          fetchResponse.body = JSON.parse(fetchResponse.rawBody);
-        } catch (err) {
-          if (rawResponse.ok) {
-            throw err;
-          }
-        }
-      } else {
-        fetchResponse.body = fetchResponse.rawBody;
-      }
-    }
-
-    if (throwHttpErrors && !rawResponse.ok) {
+    if (throwHttpErrors && !ok) {
       if (responseType === 'stream') {
         fetchResponse.rawBody.destroy();
       }
@@ -167,11 +146,7 @@ export class RequestError extends Error {
   stack!: string;
   declare readonly response?: FetchResponse;
 
-  constructor(
-    message: string,
-    error: {} | (Error & {code?: string}),
-    response?: FetchResponse | undefined,
-  ) {
+  constructor(message: string, error: AxiosError | {}, response?: FetchResponse | undefined) {
     super(message);
 
     this.name = 'RequestError';
@@ -211,8 +186,8 @@ export class HTTPError extends RequestError {
 export class TimeoutError extends RequestError {
   declare readonly response: undefined;
 
-  constructor(error: Error) {
-    super(error.message, error, undefined);
+  constructor(error: Cancel) {
+    super(error.message ?? 'Empty message', error, undefined);
     this.name = 'TimeoutError';
 
     Error.captureStackTrace(this, this.constructor);
@@ -234,8 +209,8 @@ export class ReadError extends RequestError {
   }
 }
 
-function transformStack(err: Error & {stack: string}, origError: Error) {
-  if (typeof origError.stack !== 'undefined') {
+function transformStack(err: Error & {stack: string}, origError: Error | Cancel) {
+  if ('stack' in origError && typeof origError.stack !== 'undefined') {
     const indexOfMessage = err.stack.indexOf(err.message) + err.message.length;
     const thisStackTrace = err.stack.slice(indexOfMessage).split('\n').reverse();
     const errorStackTrace = origError.stack
@@ -254,30 +229,17 @@ function transformStack(err: Error & {stack: string}, origError: Error) {
   }
 }
 
-const httpAgent = new http.Agent({
-  keepAlive: true,
-});
-
-const httpsAgent = new https.Agent({
-  keepAlive: true,
-});
-
-function keepAliveAgentFn(_parsedURL: URL) {
-  if (_parsedURL.protocol === 'http:') {
-    return httpAgent;
-  } else {
-    return httpsAgent;
-  }
-}
-
-function normalizeHeaders(fetchHeaders: Headers & any) {
+function normalizeHeaders(fetchHeaders: AxiosResponse['headers']) {
   const headers: Record<string, string | string[]> = {};
-  const rawHeaders: Record<string, string[]> = fetchHeaders.raw();
-  Object.entries(rawHeaders).forEach(([key, values]) => {
+  Object.entries(fetchHeaders).forEach(([key, values]) => {
     const lowKey = key.toLowerCase();
-    if (values.length === 1) {
-      headers[lowKey] = values[0];
-    } else if (values.length) {
+    if (Array.isArray(values)) {
+      if (values.length === 1) {
+        headers[lowKey] = values[0];
+      } else if (values.length) {
+        headers[lowKey] = values;
+      }
+    } else {
       headers[lowKey] = values;
     }
   });
