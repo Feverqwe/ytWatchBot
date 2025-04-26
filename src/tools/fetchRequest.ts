@@ -5,8 +5,6 @@ import FormData from 'form-data';
 
 import {getDebug} from './getDebug';
 import axios, {AxiosError, AxiosResponse, Cancel, isCancel} from 'axios';
-import http2 from 'http2-wrapper';
-import {createHTTP2Adapter} from 'axios-http2-adapter';
 
 const debug = getDebug('app:fetchRequest');
 
@@ -19,7 +17,6 @@ export interface FetchRequestOptions {
   keepAlive?: boolean;
   body?: string | URLSearchParams | FormData;
   throwHttpErrors?: boolean;
-  http2?: boolean;
 }
 
 interface FetchResponse<T = any> {
@@ -32,13 +29,6 @@ interface FetchResponse<T = any> {
   body: T;
   headers: Record<string, string | string[]>;
 }
-
-const http2axiosInstance = axios.create({
-  adapter: createHTTP2Adapter({
-    agent: new http2.Agent(),
-    force: true,
-  }),
-});
 
 const axiosKeepAliveInstance = axios.create({
   httpAgent: new http.Agent({
@@ -53,7 +43,6 @@ const axiosDefaultInstance = axios.create();
 
 async function fetchRequest<T = any>(url: string, options?: FetchRequestOptions) {
   const {
-    http2,
     responseType,
     keepAlive,
     searchParams,
@@ -74,9 +63,7 @@ async function fetchRequest<T = any>(url: string, options?: FetchRequestOptions)
     }
 
     let axiosInstance = axiosDefaultInstance;
-    if (http2) {
-      axiosInstance = http2axiosInstance;
-    } else if (keepAlive) {
+    if (keepAlive) {
       axiosInstance = axiosKeepAliveInstance;
     }
 
