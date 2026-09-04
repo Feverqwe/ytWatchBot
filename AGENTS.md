@@ -34,9 +34,8 @@ More specific instructions live in `src/AGENTS.md`, `src/tools/AGENTS.md`, and
 - `npm run typescript:check` performs the fastest repository-wide correctness check.
 - `npm run prettier` checks formatting; `npm run prettier:fix` rewrites `src`.
 - `npm run build` deletes `dist` and compiles the project.
-- Jest is configured through `jest.config.js`, but the repository currently has no committed test
-  suite and no `test` script. If tests are added, run them explicitly with `npx jest` and add a
-  package script only when it is useful to all contributors.
+- Run deterministic unit tests with `npm test -- --runInBand`. The test script enables Node's VM
+  module support so Jest can load the same ESM dependencies as the CommonJS application build.
 
 For ordinary TypeScript changes, run `npm run typescript:check` and `npm run prettier`. Run a full
 build when changing configuration, startup, imports, or emitted runtime behavior. Integration
