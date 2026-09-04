@@ -3,7 +3,6 @@ import qs from 'node:querystring';
 import type {CallbackQuery, Message, User} from 'node-telegram-bot-api';
 import {getDebug} from './tools/getDebug';
 import Locale from './locale';
-import {TelegramBotWrapped} from './tools/telegramBotApi';
 
 const debug = getDebug('app:router');
 
@@ -123,7 +122,6 @@ const RouterImpl = class MessageTypesImpl implements MessageTypesObj {
 };
 
 class Router extends RouterImpl {
-  bot?: TelegramBotWrapped;
   botNameRe?: RegExp;
 
   textOrCallbackQuery = this.custom<RouterTextReq | RouterCallbackQueryReq>([
@@ -131,13 +129,12 @@ class Router extends RouterImpl {
     'callback_query',
   ]);
 
-  init(bot: TelegramBotWrapped, botName: string) {
-    this.bot = bot;
+  init(botName: string) {
     this.botNameRe = new RegExp('^' + botName + '$', 'i');
   }
 
   handle = (event: 'message' | 'callback_query', data: Message | CallbackQuery) => {
-    if (!this.botNameRe || !this.bot) {
+    if (!this.botNameRe) {
       throw new Error('Router is not inited');
     }
 
@@ -147,7 +144,7 @@ class Router extends RouterImpl {
     }
     commands.forEach((command) => {
       const req = new RouterReq(event, data);
-      const res = new RouterRes(this.bot, req);
+      const res = new RouterRes(req);
       let index = 0;
       const next = (): void => {
         const route = this.stack[index++];
@@ -455,10 +452,8 @@ export class RouterReq {
 
 export class RouterRes {
   public locale: Locale;
-  bot: any;
   req: RouterReq;
-  constructor(bot: any, req: RouterReq) {
-    this.bot = bot;
+  constructor(req: RouterReq) {
     this.req = req;
     this.locale = new Locale(req.languageCode || '');
   }

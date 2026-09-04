@@ -63,7 +63,7 @@ class Chat {
     const {username} = await bot.api.getMe();
     if (!username) throw new Error('Bot name is empty');
 
-    this.router.init(bot, username);
+    this.router.init(username);
 
     this.pollingPromise = bot.startPolling(undefined, {
       onError: (err) => debug('polling error, retrying: %o', err),
