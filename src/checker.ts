@@ -187,8 +187,8 @@ class Checker {
           });
 
           const existsVideoIds = await this.main.db.getExistsVideoIds(videoIds);
-          const videos = arrayDifference(videoIds, existsVideoIds).map(
-            (id) => videoIdVideo.get(id)!,
+          const videos = arrayDifference(videoIds, existsVideoIds).map((id) =>
+            videoIdVideo.get(id)!,
           );
 
           const channelIdsChanges: Record<string, NewChannel> = {};

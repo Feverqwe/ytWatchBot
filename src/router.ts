@@ -38,8 +38,7 @@ type RouterMethodCallback<I = RouterReq, O = RouterRes> = (
 ) => void;
 
 export type RouterMethodArgs<I = RouterReq, O = RouterRes> =
-  | [RegExp, ...RouterMethodCallback<I, O>[]]
-  | RouterMethodCallback<I, O>[];
+  [RegExp, ...RouterMethodCallback<I, O>[]] | RouterMethodCallback<I, O>[];
 interface RouterMethod<I = RouterReq, O = RouterRes> {
   (...callbacks: RouterMethodArgs<I, O>): void;
 }
