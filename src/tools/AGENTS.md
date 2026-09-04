@@ -30,8 +30,8 @@ a wider blast radius than their size suggests.
 - `expressPubSub.ts` handles public callback traffic. Preserve raw-body access for HMAC validation,
   reject absent/invalid signatures, validate the hub callback/topic, and acknowledge requests with
   the protocol-compatible status/body.
-- `passTgEx.ts` and the sender classify Telegram errors by both code and message. Add narrowly
-  matched patterns and keep unknown errors retryable/visible.
+- `passTgEx.ts` and the sender classify `TelegramApiError` instances by structured error code and
+  description. Add narrowly matched patterns and keep unknown errors retryable/visible.
 
 Add focused Jest tests for utility behavior when changing parsing, caching, locking, scheduling,
 escaping, request normalization, or error classification. Use fake timers for time-based helpers

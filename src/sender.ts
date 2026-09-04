@@ -9,7 +9,7 @@ import Main from './main';
 import {appConfig} from './appConfig';
 import throttle from 'lodash.throttle';
 import {getDebug} from './tools/getDebug';
-import {TelegramError} from './types';
+import {TelegramApiError} from 'node-telegram-bot-api';
 
 const debug = getDebug('app:Sender');
 
@@ -167,15 +167,16 @@ class Sender {
           try {
             await this.main.bot.api.sendChatAction({chat_id: chatId, action: 'typing'});
           } catch (error) {
-            const err = error as TelegramError;
-            const isBlocked = isBlockedError(err);
+            const isBlocked = error instanceof TelegramApiError && isBlockedError(error);
             if (isBlocked) {
               blockedChatIds.push(chatId);
               this.main.chat.log.write(
-                `[deleted] ${chatId}, cause: (${err.errorCode}) ${JSON.stringify(err.description)}`,
+                `[deleted] ${chatId}, cause: (${error.errorCode}) ${JSON.stringify(
+                  error.description,
+                )}`,
               );
             } else {
-              debug('cleanChats sendChatAction typing to %s error, cause: %o', chatId, err);
+              debug('cleanChats sendChatAction typing to %s error, cause: %o', chatId, error);
               result.errorCount++;
             }
           }

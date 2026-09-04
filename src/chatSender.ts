@@ -5,11 +5,10 @@ import fetchRequest from './tools/fetchRequest';
 import Main from './main';
 import {ChatModel, VideoModelWithChannel} from './db';
 import {tracker} from './tracker';
-import {InputFile, type Message} from 'node-telegram-bot-api';
+import {InputFile, TelegramApiError, type Message} from 'node-telegram-bot-api';
 import {getDebug} from './tools/getDebug';
 import {ErrEnum, errHandler} from './tools/passTgEx';
 import promiseTry from './tools/promiseTry';
-import {TelegramError} from './types';
 import {Readable} from 'node:stream';
 
 const debug = getDebug('app:ChatSender');
@@ -60,8 +59,8 @@ class ChatSender {
 
           await this.main.db.deleteChatIdVideoId(this.chat.id, video.id);
         } catch (error) {
-          const err = error as TelegramError;
-          if (err.code === 'ETELEGRAM') {
+          const err = error;
+          if (err instanceof TelegramApiError) {
             const isBlocked = isBlockedError(err);
             const isSkipMessage = isSkipMessageError(err);
             if (isSkipMessage) {
@@ -165,8 +164,8 @@ class ChatSender {
 
         return {message};
       } catch (error) {
-        const err = error as TelegramError;
-        if (err.code === 'ETELEGRAM') {
+        const err = error;
+        if (err instanceof TelegramApiError) {
           if (/FILE_REFERENCE_.+/.test(err.description)) {
             video.telegramPreviewFileId = null;
 
@@ -243,11 +242,10 @@ class ChatSender {
 
         return message;
       } catch (error) {
-        const err = error as TelegramError;
-
-        let isSendUrlError = sendUrlErrors.some((re) => re.test(err.message));
-        if (!isSendUrlError) {
-          isSendUrlError = err.errorCode === 504;
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        let isSendUrlError = sendUrlErrors.some((re) => re.test(errorMessage));
+        if (!isSendUrlError && error instanceof TelegramApiError) {
+          isSendUrlError = error.errorCode === 504;
         }
 
         if (isSendUrlError) {
@@ -284,7 +282,7 @@ class ChatSender {
           return message;
         }
 
-        throw err;
+        throw error;
       }
     });
 
@@ -385,23 +383,15 @@ function getCaption(video: VideoModelWithChannel) {
   return lines.join('\n');
 }
 
-export function isBlockedError(err: any) {
-  if (err.code === 'ETELEGRAM') {
-    let isBlocked = err.errorCode === 403;
-    if (!isBlocked) {
-      isBlocked = blockedErrors.some((re) => re.test(err.description));
-    }
-
-    return isBlocked;
-  }
-  return false;
+export function isBlockedError(err: unknown): boolean {
+  return (
+    err instanceof TelegramApiError &&
+    (err.errorCode === 403 || blockedErrors.some((re) => re.test(err.description)))
+  );
 }
 
-export function isSkipMessageError(err: any) {
-  if (err.code === 'ETELEGRAM') {
-    return skipMsgErrors.some((re) => re.test(err.description));
-  }
-  return false;
+export function isSkipMessageError(err: unknown): boolean {
+  return err instanceof TelegramApiError && skipMsgErrors.some((re) => re.test(err.description));
 }
 
 export default ChatSender;
