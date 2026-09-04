@@ -5,7 +5,8 @@ import Chat from './chat';
 import Checker, {ServiceInterface} from './checker';
 import Events from 'events';
 import {appConfig} from './appConfig';
-import {getTelegramBot, TelegramBotWrapped} from './tools/telegramBotApi';
+import {getTelegramBot} from './tools/telegramBotApi';
+import type {Bot} from 'node-telegram-bot-api';
 import {getDebug} from './tools/getDebug';
 import WebServer from './webServer';
 
@@ -25,7 +26,7 @@ class Main extends Events {
   serviceIdService: Map<string, ServiceInterface>;
   sender: Sender;
   checker: Checker;
-  bot: TelegramBotWrapped;
+  bot: Bot;
   chat: Chat;
   webServer: WebServer;
 

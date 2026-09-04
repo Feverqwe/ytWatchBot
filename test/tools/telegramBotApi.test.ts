@@ -1,14 +1,14 @@
 import {Readable} from 'node:stream';
 import {describe, expect, jest, test} from '@jest/globals';
 import {
-  Bot,
+  type Api,
   InputFile,
   type Context,
   type SendChatActionParams,
   type SendMessageParams,
   type SendPhotoParams,
 } from 'node-telegram-bot-api';
-import {TelegramBotWrapped} from '../../src/tools/telegramBotApi';
+import {applyTelegramRateLimits, getTelegramBot} from '../../src/tools/telegramBotApi';
 
 type MockApi = {
   sendChatAction: jest.Mock<(params: SendChatActionParams) => Promise<unknown>>;
@@ -16,23 +16,23 @@ type MockApi = {
   sendPhoto: jest.Mock<(params: SendPhotoParams) => Promise<unknown>>;
 };
 
-const getMockApi = (bot: TelegramBotWrapped): MockApi => {
-  return getCoreBot(bot).api as unknown as MockApi;
+const getRateLimitedMockApi = () => {
+  const raw: MockApi = {
+    sendChatAction: jest.fn<(params: SendChatActionParams) => Promise<unknown>>(),
+    sendMessage: jest.fn<(params: SendMessageParams) => Promise<unknown>>(),
+    sendPhoto: jest.fn<(params: SendPhotoParams) => Promise<unknown>>(),
+  };
+  const api = {...raw} as unknown as Api;
+  applyTelegramRateLimits(api);
+  return {api, raw};
 };
 
-const getCoreBot = (bot: TelegramBotWrapped): Bot => {
-  return (bot as unknown as {bot: Bot}).bot;
-};
-
-describe('TelegramBotWrapped', () => {
+describe('Telegram bot setup', () => {
   test('forwards v2 sendMessage parameters through the rate limiter', async () => {
-    const bot = new TelegramBotWrapped('test-token');
-    const api = getMockApi(bot);
-    api.sendMessage = jest
-      .fn<(params: SendMessageParams) => Promise<unknown>>()
-      .mockResolvedValue({});
+    const {api, raw} = getRateLimitedMockApi();
+    raw.sendMessage.mockResolvedValue({});
 
-    await bot.api.sendMessage({
+    await api.sendMessage({
       chat_id: 1,
       text: 'hello',
       link_preview_options: {is_disabled: true},
@@ -40,7 +40,7 @@ describe('TelegramBotWrapped', () => {
       reply_markup: {force_reply: true},
     });
 
-    expect(api.sendMessage).toHaveBeenCalledWith(
+    expect(raw.sendMessage).toHaveBeenCalledWith(
       {
         chat_id: 1,
         text: 'hello',
@@ -53,19 +53,16 @@ describe('TelegramBotWrapped', () => {
   });
 
   test('forwards v2 sendChatAction parameters through its rate limiter', async () => {
-    const bot = new TelegramBotWrapped('test-token');
-    const api = getMockApi(bot);
-    api.sendChatAction = jest
-      .fn<(params: SendChatActionParams) => Promise<unknown>>()
-      .mockResolvedValue(true);
+    const {api, raw} = getRateLimitedMockApi();
+    raw.sendChatAction.mockResolvedValue(true);
 
-    await bot.api.sendChatAction({chat_id: 1, action: 'typing'});
+    await api.sendChatAction({chat_id: 1, action: 'typing'});
 
-    expect(api.sendChatAction).toHaveBeenCalledWith({chat_id: 1, action: 'typing'}, undefined);
+    expect(raw.sendChatAction).toHaveBeenCalledWith({chat_id: 1, action: 'typing'}, undefined);
   });
 
   test('passes the v2 Context to update handlers', async () => {
-    const bot = new TelegramBotWrapped('test-token');
+    const bot = getTelegramBot('test-token');
     const handler = jest.fn<(ctx: Context) => void>();
     const message = {
       message_id: 1,
@@ -75,14 +72,14 @@ describe('TelegramBotWrapped', () => {
     };
     bot.on('message', handler);
 
-    await getCoreBot(bot).handleUpdate({update_id: 1, message});
+    await bot.handleUpdate({update_id: 1, message});
 
     expect(handler).toHaveBeenCalledTimes(1);
     expect(handler.mock.calls[0][0].message).toBe(message);
   });
 
   test('preserves the native polling promise lifecycle', async () => {
-    const bot = new TelegramBotWrapped('test-token');
+    const bot = getTelegramBot('test-token');
     const handler = jest.fn<(ctx: Context) => void>();
     const message = {
       message_id: 2,
@@ -105,17 +102,16 @@ describe('TelegramBotWrapped', () => {
   });
 
   test('forwards InputFile photos through the send limiter', async () => {
-    const bot = new TelegramBotWrapped('test-token');
-    const api = getMockApi(bot);
-    api.sendPhoto = jest.fn<(params: SendPhotoParams) => Promise<unknown>>().mockResolvedValue({});
+    const {api, raw} = getRateLimitedMockApi();
+    raw.sendPhoto.mockResolvedValue({});
 
     const photo = new InputFile(Readable.toWeb(Readable.from(Buffer.from('image'))), {
       contentType: 'image/jpeg',
       filename: 'preview.jpg',
     });
-    await bot.api.sendPhoto({chat_id: 1, photo});
+    await api.sendPhoto({chat_id: 1, photo});
 
-    expect(api.sendPhoto).toHaveBeenCalledWith({chat_id: 1, photo}, undefined);
+    expect(raw.sendPhoto).toHaveBeenCalledWith({chat_id: 1, photo}, undefined);
     expect(photo.meta).toEqual({
       contentType: 'image/jpeg',
       filename: 'preview.jpg',
