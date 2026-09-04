@@ -48,14 +48,16 @@ export class TelegramBotWrapped {
     return this;
   }
 
-  async startPolling(): Promise<void> {
-    void this.bot
-      .startPolling(undefined, {
-        onError: (err) => debug('polling error, retrying: %o', err),
-      })
-      .catch((err) => {
-        debug('polling stopped: %o', err);
-      });
+  startPolling(...args: Parameters<Bot['startPolling']>): ReturnType<Bot['startPolling']> {
+    return this.bot.startPolling(...args);
+  }
+
+  stop(): void {
+    this.bot.stop();
+  }
+
+  isRunning(): boolean {
+    return this.bot.isRunning();
   }
 }
 

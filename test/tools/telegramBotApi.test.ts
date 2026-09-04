@@ -81,6 +81,29 @@ describe('TelegramBotWrapped', () => {
     expect(handler.mock.calls[0][0].message).toBe(message);
   });
 
+  test('preserves the native polling promise lifecycle', async () => {
+    const bot = new TelegramBotWrapped('test-token');
+    const handler = jest.fn<(ctx: Context) => void>();
+    const message = {
+      message_id: 2,
+      date: 0,
+      chat: {id: 1, type: 'private'},
+      text: 'from polling',
+    };
+    async function* updates() {
+      yield {update_id: 2, message};
+    }
+    bot.on('message', handler);
+
+    const polling = bot.startPolling(updates());
+    expect(bot.isRunning()).toBe(true);
+    await polling;
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0][0].message).toBe(message);
+    expect(bot.isRunning()).toBe(false);
+  });
+
   test('forwards InputFile photos through the send limiter', async () => {
     const bot = new TelegramBotWrapped('test-token');
     const api = getMockApi(bot);

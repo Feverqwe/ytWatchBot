@@ -37,6 +37,7 @@ class Chat {
   public log = new LogFile('chat');
   private chatIdAdminIdsCache = new TimeCache<number, number[]>({maxSize: 100, ttl: 5 * 60 * 1000});
   private router: Router;
+  private pollingPromise?: Promise<void>;
   constructor(private main: Main) {
     this.router = new Router();
     this.main.bot.on('message', (ctx) => {
@@ -64,7 +65,12 @@ class Chat {
 
     this.router.init(bot, username);
 
-    await bot.startPolling();
+    this.pollingPromise = bot.startPolling(undefined, {
+      onError: (err) => debug('polling error, retrying: %o', err),
+    });
+    void this.pollingPromise.catch((err) => {
+      debug('polling stopped: %o', err);
+    });
   }
 
   base() {
