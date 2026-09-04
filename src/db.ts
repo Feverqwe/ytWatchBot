@@ -307,16 +307,12 @@ class Db {
             fields: ['chatId', 'channelId'],
           },
           {
-            name: 'chatId_idx',
-            fields: ['chatId'],
-          },
-          {
             name: 'channelId_idx',
             fields: ['channelId'],
           },
           {
-            name: 'createdAt_idx',
-            fields: ['createdAt'],
+            name: 'chatId_createdAt_idx',
+            fields: ['chatId', 'createdAt'],
           },
         ],
       },
@@ -385,10 +381,6 @@ class Db {
             name: 'chatId_videoId_UNIQUE',
             unique: true,
             fields: ['chatId', 'videoId'],
-          },
-          {
-            name: 'chatId_idx',
-            fields: ['chatId'],
           },
         ],
       },
