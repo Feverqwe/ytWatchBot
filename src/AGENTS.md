@@ -49,10 +49,9 @@ The primary data flow is:
   and callback queries where appropriate, and keep callback data within Telegram limits.
 - For routing changes, remember that each extracted bot command gets its own `RouterReq`/`RouterRes`
   dispatch and that calling `next()` controls ordered fall-through.
-- For a database change, update the model declaration, `Model.init`, associations/indexes, creation
-  types, and every bulk/upsert update list that should persist the field. `sequelize.sync()` is the
-  only schema setup currently present, so call out deployment implications of incompatible schema
-  changes.
+- For a database change, add a new migration and update the model declaration, `Model.init`,
+  associations/indexes, creation types, and every bulk/upsert update list that should persist the
+  field. Never edit a migration that may already be applied.
 - For checker changes, distinguish raw provider IDs from wrapped persisted IDs and preserve the
   full-sync window, publication cutoff, skipped-channel handling, and merged-video IDs.
 - For sender changes, delete queue rows only after success or an explicitly skippable Telegram

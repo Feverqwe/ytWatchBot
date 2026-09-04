@@ -3,13 +3,14 @@ import arrayByPart from './tools/arrayByPart';
 import serviceId from './tools/serviceId';
 import arrayDifference from './tools/arrayDifference';
 import Sequelize, {Op, Transaction} from 'sequelize';
-import Main from './main';
-import {ServiceChannel, ServiceInterface} from './checker';
+import type Main from './main';
+import type {ServiceChannel, ServiceInterface} from './checker';
 import assertType from './tools/assertType';
 import {Feed} from './ytPubSub';
 import {appConfig} from './appConfig';
 import {getDebug} from './tools/getDebug';
 import isDatabaseDeadlock from './tools/isDatabaseDeadlock';
+import createMigrator from './migrator';
 
 const debug = getDebug('app:db');
 const ISOLATION_LEVELS = Transaction.ISOLATION_LEVELS;
@@ -412,7 +413,7 @@ class Db {
 
   async init() {
     await this.sequelize.authenticate();
-    await this.sequelize.sync();
+    await createMigrator(this.sequelize).up();
     await this.removeChannelByIds(appConfig.channelBlackList);
   }
 

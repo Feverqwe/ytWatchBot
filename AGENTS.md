@@ -15,8 +15,8 @@ database state transitions, retry behavior, and concurrency limits intact when c
 - `src/chat.ts` and `src/router.ts` implement Telegram commands and callback-query routing.
 - `src/checker.ts` discovers videos and creates per-chat delivery queue entries.
 - `src/sender.ts` and `src/chatSender.ts` drain that queue and handle Telegram failures.
-- `src/db.ts` contains Sequelize models, associations, schema initialization, and all persistence
-  operations. There is no migrations directory.
+- `src/db.ts` contains Sequelize models, associations, and persistence operations.
+- `src/migrator.ts` and `src/migrations/` contain the Umzug runner and ordered schema changes.
 - `src/ytPubSub.ts` and `src/webServer.ts` manage the WebSub callback and subscription renewal.
 - `src/services/youtube.ts` is the YouTube Data API adapter.
 - `src/tools/` contains shared concurrency, HTTP, Telegram, formatting, and scheduling helpers.
