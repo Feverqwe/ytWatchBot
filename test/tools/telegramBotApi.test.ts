@@ -58,24 +58,19 @@ describe('TelegramBotWrapped', () => {
     expect(api.sendChatAction).toHaveBeenCalledWith({chat_id: 1, action: 'typing'}, undefined);
   });
 
-  test('wraps Node streams in an InputFile', async () => {
+  test('forwards InputFile photos through the send limiter', async () => {
     const bot = new TelegramBotWrapped('test-token');
     const api = getMockApi(bot);
     api.sendPhoto = jest.fn<(params: SendPhotoParams) => Promise<unknown>>().mockResolvedValue({});
 
-    await bot.sendPhoto(
-      1,
-      Readable.from(Buffer.from('image')),
-      {},
-      {
-        contentType: 'image/jpeg',
-        filename: 'preview.jpg',
-      },
-    );
+    const photo = new InputFile(Readable.toWeb(Readable.from(Buffer.from('image'))), {
+      contentType: 'image/jpeg',
+      filename: 'preview.jpg',
+    });
+    await bot.api.sendPhoto({chat_id: 1, photo});
 
-    const photo = api.sendPhoto.mock.calls[0][0].photo;
-    expect(photo).toBeInstanceOf(InputFile);
-    expect((photo as InputFile).meta).toEqual({
+    expect(api.sendPhoto).toHaveBeenCalledWith({chat_id: 1, photo}, undefined);
+    expect(photo.meta).toEqual({
       contentType: 'image/jpeg',
       filename: 'preview.jpg',
     });

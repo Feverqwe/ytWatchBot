@@ -24,9 +24,9 @@ a wider blast radius than their size suggests.
 - `fetchRequest.ts` is the common Axios-based compatibility wrapper. Preserve normalized lowercase
   headers, response body modes, timeouts, keep-alive behavior, and the exported error classes when
   changing it.
-- `telegramBotApi.ts` exposes migrated v2 `Api` methods through a rate-limited facade and retains
-  transitional positional photo calls. It converts Node streams to `InputFile`; never expose the
-  bot token in errors or debug logs.
+- `telegramBotApi.ts` exposes migrated v2 `Api` methods through a rate-limited facade. Node streams
+  must be converted to `InputFile` at the upload boundary; never expose the bot token in errors or
+  debug logs.
 - `expressPubSub.ts` handles public callback traffic. Preserve raw-body access for HMAC validation,
   reject absent/invalid signatures, validate the hub callback/topic, and acknowledge requests with
   the protocol-compatible status/body.

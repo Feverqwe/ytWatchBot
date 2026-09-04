@@ -1,31 +1,9 @@
-import {Readable, Stream} from 'node:stream';
-import {
-  Bot,
-  InputFile,
-  type Api,
-  type CallbackQuery,
-  type Message,
-  type ReplyMarkup,
-  type SendMessageParams,
-  type SendPhotoParams,
-  type SendPhotoResult,
-} from 'node-telegram-bot-api';
+import {Bot, type Api, type CallbackQuery, type Message} from 'node-telegram-bot-api';
 import RateLimit2 from './rateLimit2';
 import {getDebug} from './getDebug';
 
 const debug = getDebug('app:telegramBotApi');
 
-type LegacyReplyOptions = {
-  disable_web_page_preview?: boolean;
-  link_preview_options?: SendMessageParams['link_preview_options'];
-  reply_parameters?: SendMessageParams['reply_parameters'];
-  reply_to_message_id?: number;
-  reply_markup?: ReplyMarkup | string;
-};
-
-type SendPhotoOptions = Omit<SendPhotoParams, 'chat_id' | 'photo' | 'reply_markup'> &
-  LegacyReplyOptions;
-type FileOptions = {contentType?: string; filename?: string};
 type DirectApi = Pick<
   Api,
   | 'answerCallbackQuery'
@@ -36,49 +14,8 @@ type DirectApi = Pick<
   | 'getMe'
   | 'sendChatAction'
   | 'sendMessage'
+  | 'sendPhoto'
 >;
-
-type MigratedReplyOptions<T> = Omit<
-  T,
-  'disable_web_page_preview' | 'reply_markup' | 'reply_to_message_id'
-> & {
-  reply_markup?: Exclude<T extends {reply_markup?: infer R} ? R : never, string>;
-};
-
-function migrateLegacyOptions<T extends LegacyReplyOptions>(options: T): MigratedReplyOptions<T> {
-  const {disable_web_page_preview, reply_markup, reply_to_message_id, ...migrated} = options;
-
-  return {
-    ...migrated,
-    ...(disable_web_page_preview === undefined
-      ? {}
-      : {link_preview_options: {is_disabled: disable_web_page_preview}}),
-    ...(reply_to_message_id === undefined
-      ? {}
-      : {reply_parameters: {message_id: reply_to_message_id}}),
-    ...(reply_markup === undefined
-      ? {}
-      : {
-          reply_markup:
-            typeof reply_markup === 'string'
-              ? (JSON.parse(reply_markup) as Exclude<
-                  T extends {reply_markup?: infer R} ? R : never,
-                  string
-                >)
-              : reply_markup,
-        }),
-  } as unknown as MigratedReplyOptions<T>;
-}
-
-function asInputFile(photo: string | Stream | Buffer, fileOptions?: FileOptions) {
-  if (typeof photo === 'string') return photo;
-
-  if (Buffer.isBuffer(photo)) {
-    return new InputFile(photo, fileOptions);
-  }
-
-  return new InputFile(Readable.toWeb(photo as Readable), fileOptions);
-}
 
 export class TelegramBotWrapped {
   private readonly bot: Bot;
@@ -99,6 +36,7 @@ export class TelegramBotWrapped {
       sendChatAction: (params, signal) =>
         this.chatActionLimit.run(() => api.sendChatAction(params, signal)),
       sendMessage: (params, signal) => this.sendLimit.run(() => api.sendMessage(params, signal)),
+      sendPhoto: (params, signal) => this.sendLimit.run(() => api.sendPhoto(params, signal)),
     };
     this.bot.catch((err) => {
       debug('handler error %o', err);
@@ -128,28 +66,6 @@ export class TelegramBotWrapped {
       .catch((err) => {
         debug('polling stopped: %o', err);
       });
-  }
-
-  sendPhoto(
-    chatId: number | string,
-    photo: string | Stream | Buffer,
-    options: SendPhotoOptions = {},
-    fileOptions?: FileOptions,
-  ): Promise<SendPhotoResult> {
-    return this.bot.api.sendPhoto({
-      ...migrateLegacyOptions(options),
-      chat_id: chatId,
-      photo: asInputFile(photo, fileOptions),
-    });
-  }
-
-  sendPhotoQuote(
-    chatId: number | string,
-    photo: string | Stream | Buffer,
-    options: SendPhotoOptions = {},
-    fileOptions?: FileOptions,
-  ): Promise<SendPhotoResult> {
-    return this.sendLimit.run(() => this.sendPhoto(chatId, photo, options, fileOptions));
   }
 }
 

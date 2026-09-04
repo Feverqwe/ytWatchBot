@@ -5,13 +5,12 @@ import fetchRequest from './tools/fetchRequest';
 import Main from './main';
 import {ChatModel, VideoModelWithChannel} from './db';
 import {tracker} from './tracker';
-import type {Message} from 'node-telegram-bot-api';
+import {InputFile, type Message} from 'node-telegram-bot-api';
 import {getDebug} from './tools/getDebug';
 import {ErrEnum, errHandler} from './tools/passTgEx';
 import promiseTry from './tools/promiseTry';
 import {TelegramError} from './types';
-import ReadableStream = NodeJS.ReadableStream;
-import {Stream} from 'stream';
+import {Readable} from 'node:stream';
 
 const debug = getDebug('app:ChatSender');
 
@@ -147,13 +146,11 @@ class ChatSender {
   async sendVideoAsPhoto(video: VideoModelWithChannel): Promise<{message: Message}> {
     if (video.telegramPreviewFileId) {
       try {
-        const message = await this.main.bot.sendPhotoQuote(
-          this.chat.id,
-          video.telegramPreviewFileId,
-          {
-            caption: getCaption(video),
-          },
-        );
+        const message = await this.main.bot.api.sendPhoto({
+          chat_id: this.chat.id,
+          photo: video.telegramPreviewFileId,
+          caption: getCaption(video),
+        });
 
         tracker.track(this.chat.id, {
           ec: 'bot',
@@ -227,7 +224,11 @@ class ChatSender {
 
     const message = await promiseTry(async () => {
       try {
-        const message = await this.main.bot.sendPhoto(this.chat.id, url, {caption});
+        const message = await this.main.bot.api.sendPhoto({
+          chat_id: this.chat.id,
+          photo: url,
+          caption,
+        });
 
         this.main.sender.log.write(
           `[send photo as url] ${this.chat.id} ${video.channelId} ${video.id}`,
@@ -255,17 +256,19 @@ class ChatSender {
             contentType = 'image/jpeg';
           }
 
-          const response = await fetchRequest<ReadableStream>(url, {
+          const response = await fetchRequest<NodeJS.ReadableStream>(url, {
             responseType: 'stream',
             keepAlive: true,
           });
 
-          const message = await this.main.bot.sendPhoto(
-            this.chat.id,
-            response.body as unknown as Stream,
-            {caption},
-            {contentType, filename: '-'},
-          );
+          const message = await this.main.bot.api.sendPhoto({
+            chat_id: this.chat.id,
+            photo: new InputFile(Readable.toWeb(response.body as Readable), {
+              contentType,
+              filename: '-',
+            }),
+            caption,
+          });
 
           this.main.sender.log.write(
             `[send photo as file] ${this.chat.id} ${video.channelId} ${video.id}`,
