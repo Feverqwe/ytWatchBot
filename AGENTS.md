@@ -21,7 +21,6 @@ database state transitions, retry behavior, and concurrency limits intact when c
 - `src/services/youtube.ts` is the YouTube Data API adapter.
 - `src/tools/` contains shared concurrency, HTTP, Telegram, formatting, and scheduling helpers.
 - `src/locale/en.ts` is the user-facing message dictionary.
-- `packages/noop/` replaces unused transitive Cypress request packages during installation.
 
 More specific instructions live in `src/AGENTS.md`, `src/tools/AGENTS.md`, and
 `src/services/AGENTS.md`.
