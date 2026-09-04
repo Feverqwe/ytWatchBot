@@ -23,8 +23,6 @@ type LegacyReplyOptions = {
   reply_markup?: ReplyMarkup | string;
 };
 
-type SendMessageOptions = Omit<SendMessageParams, 'chat_id' | 'reply_markup' | 'text'> &
-  LegacyReplyOptions;
 type SendPhotoOptions = Omit<SendPhotoParams, 'chat_id' | 'photo' | 'reply_markup'> &
   LegacyReplyOptions;
 type FileOptions = {contentType?: string; filename?: string};
@@ -36,6 +34,7 @@ type DirectApi = Pick<
   | 'getChat'
   | 'getChatAdministrators'
   | 'getMe'
+  | 'sendMessage'
 >;
 
 type MigratedReplyOptions<T> = Omit<
@@ -88,7 +87,16 @@ export class TelegramBotWrapped {
 
   constructor(token: string) {
     this.bot = new Bot(token);
-    this.api = this.bot.api;
+    const api = this.bot.api;
+    this.api = {
+      answerCallbackQuery: api.answerCallbackQuery.bind(api),
+      editMessageReplyMarkup: api.editMessageReplyMarkup.bind(api),
+      editMessageText: api.editMessageText.bind(api),
+      getChat: api.getChat.bind(api),
+      getChatAdministrators: api.getChatAdministrators.bind(api),
+      getMe: api.getMe.bind(api),
+      sendMessage: (params, signal) => this.sendLimit.run(() => api.sendMessage(params, signal)),
+    };
     this.bot.catch((err) => {
       debug('handler error %o', err);
     });
@@ -117,20 +125,6 @@ export class TelegramBotWrapped {
       .catch((err) => {
         debug('polling stopped: %o', err);
       });
-  }
-
-  sendMessage(
-    chatId: number | string,
-    text: string,
-    options: SendMessageOptions = {},
-  ): Promise<Message> {
-    return this.sendLimit.run(() =>
-      this.bot.api.sendMessage({
-        ...migrateLegacyOptions(options),
-        chat_id: chatId,
-        text,
-      }),
-    );
   }
 
   sendPhoto(

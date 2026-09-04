@@ -119,7 +119,9 @@ class ChatSender {
   }
 
   async sendVideoAsText(video: VideoModelWithChannel, isFallback = false) {
-    const message = await this.main.bot.sendMessage(this.chat.id, getDescription(video), {
+    const message = await this.main.bot.api.sendMessage({
+      chat_id: this.chat.id,
+      text: getDescription(video),
       parse_mode: 'HTML',
     });
 

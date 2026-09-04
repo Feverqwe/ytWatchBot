@@ -17,7 +17,7 @@ import assertType from './tools/assertType';
 import {ChannelModel, ChatModel, ChatModelWithOptionalChannel, NewChat} from './db';
 import {appConfig} from './appConfig';
 import {tracker} from './tracker';
-import {ParseMode} from 'node-telegram-bot-api';
+import {ParseMode, type SendMessageParams} from 'node-telegram-bot-api';
 import {getDebug} from './tools/getDebug';
 import jsonStringifyPretty from 'json-stringify-pretty-compact';
 import Locale from './locale';
@@ -152,7 +152,7 @@ class Chat {
 
     this.router.text(/\/ping/, async (req, res) => {
       try {
-        await this.main.bot.sendMessage(req.chatId, 'pong');
+        await this.main.bot.api.sendMessage({chat_id: req.chatId, text: 'pong'});
       } catch (err) {
         debug('%j error %o', req.command, err);
       }
@@ -162,8 +162,10 @@ class Chat {
   menu() {
     const sendMenu = (locale: Locale, chatId: number, page: number) => {
       const help = locale.m('help');
-      return this.main.bot.sendMessage(chatId, help, {
-        disable_web_page_preview: true,
+      return this.main.bot.api.sendMessage({
+        chat_id: chatId,
+        text: help,
+        link_preview_options: {is_disabled: true},
         reply_markup: {
           inline_keyboard: getMenu(locale, page),
         },
@@ -230,8 +232,10 @@ class Chat {
           lines.push(chatCount + ' - ' + title);
         });
 
-        await this.main.bot.sendMessage(req.chatId, lines.join('\n'), {
-          disable_web_page_preview: true,
+        await this.main.bot.api.sendMessage({
+          chat_id: req.chatId,
+          text: lines.join('\n'),
+          link_preview_options: {is_disabled: true},
         });
       } catch (err) {
         debug('%j error %o', req.command, err);
@@ -241,7 +245,10 @@ class Chat {
     this.router.textOrCallbackQuery(/\/about/, async (req, res) => {
       const {locale} = res;
       try {
-        await this.main.bot.sendMessage(req.chatId, locale.m('about'));
+        await this.main.bot.api.sendMessage({
+          chat_id: req.chatId,
+          text: locale.m('about'),
+        });
       } catch (err) {
         debug('%j error %o', req.command, err);
       }
@@ -265,7 +272,10 @@ class Chat {
           next();
         } catch (err) {
           debug('ensureChat error! %o', err);
-          await this.main.bot.sendMessage(chatId, locale.m('alert_unknown-error'));
+          await this.main.bot.api.sendMessage({
+            chat_id: chatId,
+            text: locale.m('alert_unknown-error'),
+          });
         }
       } catch (err) {
         debug('provideChat error: %o', err);
@@ -288,7 +298,10 @@ class Chat {
           next();
         } catch (err) {
           debug('getChannelsByChatId error! %o', err);
-          await this.main.bot.sendMessage(chatId, locale.m('alert_unknown-error'));
+          await this.main.bot.api.sendMessage({
+            chat_id: chatId,
+            text: locale.m('alert_unknown-error'),
+          });
         }
       } catch (err) {
         debug('provideChannels error: %o', err);
@@ -311,7 +324,10 @@ class Chat {
       }
 
       try {
-        await this.main.bot.sendMessage(chatId, locale.m('emptyServiceList'));
+        await this.main.bot.api.sendMessage({
+          chat_id: chatId,
+          text: locale.m('emptyServiceList'),
+        });
       } catch (err) {
         debug('withChannels sendMessage error: %o', err);
       }
@@ -399,7 +415,7 @@ class Chat {
             message = locale.m('alert_unexpected-error');
           }
           await editOrSendNewMessage(req.chatId, messageId, message, {
-            disable_web_page_preview: true,
+            link_preview_options: {is_disabled: true},
           });
           if (!isResolved) {
             throw err;
@@ -419,7 +435,7 @@ class Chat {
         }
 
         await editOrSendNewMessage(req.chatId, messageId, message, {
-          disable_web_page_preview: true,
+          link_preview_options: {is_disabled: true},
           parse_mode: 'HTML',
         });
       } catch (error) {
@@ -453,7 +469,9 @@ class Chat {
       const {locale} = res;
 
       try {
-        await this.main.bot.sendMessage(req.chatId, locale.m('clearSure'), {
+        await this.main.bot.api.sendMessage({
+          chat_id: req.chatId,
+          text: locale.m('clearSure'),
           reply_markup: {
             inline_keyboard: [
               [
@@ -548,7 +566,9 @@ class Chat {
             [ErrEnum.MessageNotModified],
           );
         } else {
-          await this.main.bot.sendMessage(req.chatId, locale.m('selectDelChannel'), {
+          await this.main.bot.api.sendMessage({
+            chat_id: req.chatId,
+            text: locale.m('selectDelChannel'),
             reply_markup: {
               inline_keyboard: page,
             },
@@ -775,7 +795,9 @@ class Chat {
             message_id: req.messageId,
           });
         } else {
-          await this.main.bot.sendMessage(req.chatId, locale.m('context_options'), {
+          await this.main.bot.api.sendMessage({
+            chat_id: req.chatId,
+            text: locale.m('context_options'),
             reply_markup: {
               inline_keyboard: getOptions(locale, req.chat),
             },
@@ -853,7 +875,11 @@ class Chat {
             message_id: req.messageId,
           });
         } else {
-          await this.main.bot.sendMessage(req.chatId, pageText, options);
+          await this.main.bot.api.sendMessage({
+            ...options,
+            chat_id: req.chatId,
+            text: pageText,
+          });
         }
       } catch (err) {
         debug('%j error %o', req.command, err);
@@ -890,22 +916,26 @@ class Chat {
       cancelText: string,
     ) => {
       const {chatId, fromId} = req;
-      const options: {[s: string]: any} = {};
+      const options: Omit<SendMessageParams, 'chat_id' | 'text'> = {};
       let msgText = messageText;
       if (chatId < 0) {
         msgText += '\n' + locale.m('context_group-note');
         if (req.callback_query) {
           msgText = '@' + req.callback_query.from.username + ' ' + messageText;
         } else {
-          options.reply_to_message_id = req.messageId;
+          options.reply_parameters = {message_id: req.messageId};
         }
-        options.reply_markup = JSON.stringify({
+        options.reply_markup = {
           force_reply: true,
           selective: true,
-        });
+        };
       }
 
-      const msg = await this.main.bot.sendMessage(chatId, msgText, options);
+      const msg = await this.main.bot.api.sendMessage({
+        ...options,
+        chat_id: chatId,
+        text: msgText,
+      });
 
       try {
         const {req} = await this.router.waitResponse<RouterTextReq>(
@@ -933,7 +963,7 @@ class Chat {
       chatId: number,
       messageId: number | undefined,
       text: string,
-      form?: object,
+      form?: Pick<SendMessageParams, 'link_preview_options' | 'parse_mode'>,
     ): Promise<number> => {
       try {
         if (!messageId) {
@@ -959,7 +989,11 @@ class Chat {
           errHandler[ErrEnum.MessageCantBeEdited](err) ||
           errHandler[ErrEnum.MessageToEditNotFound](err)
         ) {
-          const msg = await this.main.bot.sendMessage(chatId, text, form);
+          const msg = await this.main.bot.api.sendMessage({
+            ...form,
+            chat_id: chatId,
+            text,
+          });
           return msg.message_id;
         }
         throw err;
@@ -980,12 +1014,12 @@ class Chat {
       }
 
       try {
-        await this.main.bot.sendMessage(
-          req.chatId,
-          locale.m('alert_access-denied', {
+        await this.main.bot.api.sendMessage({
+          chat_id: req.chatId,
+          text: locale.m('alert_access-denied', {
             chat: req.chatId,
           }),
-        );
+        });
       } catch (err) {
         debug('isAdmin sendMessage error: %o', err);
       }
@@ -1023,21 +1057,21 @@ class Chat {
             },
           );
         } catch (err) {
-          await this.main.bot.sendMessage(
-            req.chatId,
-            locale.m('alert_command-error', {
+          await this.main.bot.api.sendMessage({
+            chat_id: req.chatId,
+            text: locale.m('alert_command-error', {
               command: command.name,
             }),
-          );
+          });
           throw err;
         }
 
-        await this.main.bot.sendMessage(
-          req.chatId,
-          `${locale.m('alert_command-complete', {
+        await this.main.bot.api.sendMessage({
+          chat_id: req.chatId,
+          text: `${locale.m('alert_command-complete', {
             command: command.name,
           })}\n${resultStr}`,
-        );
+        });
       } catch (err) {
         debug('%j error %o', req.command, err);
       }
@@ -1048,7 +1082,9 @@ class Chat {
       type Button = {text: string; callback_data: string};
 
       try {
-        await this.main.bot.sendMessage(req.chatId, locale.m('title_admin-menu'), {
+        await this.main.bot.api.sendMessage({
+          chat_id: req.chatId,
+          text: locale.m('title_admin-menu'),
           reply_markup: {
             inline_keyboard: commands.reduce<Button[][]>((menu, {name, method}, index) => {
               const buttons: Button[] = index % 2 ? menu.pop()! : [];

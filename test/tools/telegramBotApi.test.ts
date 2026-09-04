@@ -13,26 +13,31 @@ const getMockApi = (bot: TelegramBotWrapped): MockApi => {
 };
 
 describe('TelegramBotWrapped', () => {
-  test('converts legacy message options to the v2 shape', async () => {
+  test('forwards v2 sendMessage parameters through the rate limiter', async () => {
     const bot = new TelegramBotWrapped('test-token');
     const api = getMockApi(bot);
     api.sendMessage = jest
       .fn<(params: SendMessageParams) => Promise<unknown>>()
       .mockResolvedValue({});
 
-    await bot.sendMessage(1, 'hello', {
-      disable_web_page_preview: true,
-      reply_to_message_id: 7,
-      reply_markup: JSON.stringify({force_reply: true}),
-    });
-
-    expect(api.sendMessage).toHaveBeenCalledWith({
+    await bot.api.sendMessage({
       chat_id: 1,
       text: 'hello',
       link_preview_options: {is_disabled: true},
       reply_parameters: {message_id: 7},
       reply_markup: {force_reply: true},
     });
+
+    expect(api.sendMessage).toHaveBeenCalledWith(
+      {
+        chat_id: 1,
+        text: 'hello',
+        link_preview_options: {is_disabled: true},
+        reply_parameters: {message_id: 7},
+        reply_markup: {force_reply: true},
+      },
+      undefined,
+    );
   });
 
   test('wraps Node streams in an InputFile', async () => {
