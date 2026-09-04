@@ -165,7 +165,7 @@ class Sender {
           result.chatCount++;
 
           try {
-            await this.main.bot.sendChatAction(chatId, 'typing');
+            await this.main.bot.api.sendChatAction({chat_id: chatId, action: 'typing'});
           } catch (error) {
             const err = error as TelegramError;
             const isBlocked = isBlockedError(err);

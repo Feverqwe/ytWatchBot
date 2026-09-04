@@ -642,7 +642,10 @@ class Chat {
               }
             }
 
-            await this.main.bot.sendChatAction(rawChannelId, 'typing');
+            await this.main.bot.api.sendChatAction({
+              chat_id: rawChannelId,
+              action: 'typing',
+            });
             const chat = await this.main.bot.api.getChat({chat_id: rawChannelId});
 
             if (chat.type !== 'channel') {

@@ -34,6 +34,7 @@ type DirectApi = Pick<
   | 'getChat'
   | 'getChatAdministrators'
   | 'getMe'
+  | 'sendChatAction'
   | 'sendMessage'
 >;
 
@@ -95,6 +96,8 @@ export class TelegramBotWrapped {
       getChat: api.getChat.bind(api),
       getChatAdministrators: api.getChatAdministrators.bind(api),
       getMe: api.getMe.bind(api),
+      sendChatAction: (params, signal) =>
+        this.chatActionLimit.run(() => api.sendChatAction(params, signal)),
       sendMessage: (params, signal) => this.sendLimit.run(() => api.sendMessage(params, signal)),
     };
     this.bot.catch((err) => {
@@ -147,13 +150,6 @@ export class TelegramBotWrapped {
     fileOptions?: FileOptions,
   ): Promise<SendPhotoResult> {
     return this.sendLimit.run(() => this.sendPhoto(chatId, photo, options, fileOptions));
-  }
-
-  sendChatAction(
-    chatId: number | string,
-    action: Parameters<Bot['api']['sendChatAction']>[0]['action'],
-  ): Promise<boolean> {
-    return this.chatActionLimit.run(() => this.bot.api.sendChatAction({chat_id: chatId, action}));
   }
 }
 

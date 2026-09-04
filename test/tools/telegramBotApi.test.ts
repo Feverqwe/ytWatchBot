@@ -1,9 +1,15 @@
 import {Readable} from 'node:stream';
 import {describe, expect, jest, test} from '@jest/globals';
-import {InputFile, type SendMessageParams, type SendPhotoParams} from 'node-telegram-bot-api';
+import {
+  InputFile,
+  type SendChatActionParams,
+  type SendMessageParams,
+  type SendPhotoParams,
+} from 'node-telegram-bot-api';
 import {TelegramBotWrapped} from '../../src/tools/telegramBotApi';
 
 type MockApi = {
+  sendChatAction: jest.Mock<(params: SendChatActionParams) => Promise<unknown>>;
   sendMessage: jest.Mock<(params: SendMessageParams) => Promise<unknown>>;
   sendPhoto: jest.Mock<(params: SendPhotoParams) => Promise<unknown>>;
 };
@@ -38,6 +44,18 @@ describe('TelegramBotWrapped', () => {
       },
       undefined,
     );
+  });
+
+  test('forwards v2 sendChatAction parameters through its rate limiter', async () => {
+    const bot = new TelegramBotWrapped('test-token');
+    const api = getMockApi(bot);
+    api.sendChatAction = jest
+      .fn<(params: SendChatActionParams) => Promise<unknown>>()
+      .mockResolvedValue(true);
+
+    await bot.api.sendChatAction({chat_id: 1, action: 'typing'});
+
+    expect(api.sendChatAction).toHaveBeenCalledWith({chat_id: 1, action: 'typing'}, undefined);
   });
 
   test('wraps Node streams in an InputFile', async () => {
