@@ -25,8 +25,8 @@ a wider blast radius than their size suggests.
   headers, response body modes, timeouts, keep-alive behavior, and the exported error classes when
   changing it.
 - `telegramBotApi.ts` exposes migrated v2 `Api` methods through a rate-limited facade. Node streams
-  must be converted to `InputFile` at the upload boundary; never expose the bot token in errors or
-  debug logs.
+  must be converted to `InputFile` at the upload boundary, and update handlers receive the v2
+  `Context`. Never expose the bot token in errors or debug logs.
 - `expressPubSub.ts` handles public callback traffic. Preserve raw-body access for HMAC validation,
   reject absent/invalid signatures, validate the hub callback/topic, and acknowledge requests with
   the protocol-compatible status/body.

@@ -39,11 +39,15 @@ class Chat {
   private router: Router;
   constructor(private main: Main) {
     this.router = new Router();
-    this.main.bot.on('message', (message) => {
-      this.router.handle('message', message);
+    this.main.bot.on('message', (ctx) => {
+      if (ctx.message) {
+        this.router.handle('message', ctx.message);
+      }
     });
-    this.main.bot.on('callback_query', (message) => {
-      this.router.handle('callback_query', message);
+    this.main.bot.on('callback_query', (ctx) => {
+      if (ctx.callbackQuery) {
+        this.router.handle('callback_query', ctx.callbackQuery);
+      }
     });
 
     this.base();

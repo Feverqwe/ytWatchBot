@@ -1,4 +1,4 @@
-import {Bot, type Api, type CallbackQuery, type Message} from 'node-telegram-bot-api';
+import {Bot, type Api, type Context, type Middleware, type UpdateType} from 'node-telegram-bot-api';
 import RateLimit2 from './rateLimit2';
 import {getDebug} from './getDebug';
 
@@ -43,18 +43,8 @@ export class TelegramBotWrapped {
     });
   }
 
-  on(event: 'message', listener: (message: Message) => void): this;
-  on(event: 'callback_query', listener: (query: CallbackQuery) => void): this;
-  on(
-    event: 'message' | 'callback_query',
-    listener: ((message: Message) => void) | ((query: CallbackQuery) => void),
-  ) {
-    this.bot.on(event, (ctx) => {
-      const payload = event === 'message' ? ctx.message : ctx.callbackQuery;
-      if (payload) {
-        (listener as (payload: Message | CallbackQuery) => void)(payload);
-      }
-    });
+  on(kind: UpdateType | UpdateType[], ...handlers: Middleware<Context>[]) {
+    this.bot.on(kind, ...handlers);
     return this;
   }
 
