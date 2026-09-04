@@ -32,12 +32,12 @@ More specific instructions live in `src/AGENTS.md`, `src/tools/AGENTS.md`, and
 - Use `example.env` as the list of supported environment variables. Never commit real tokens,
   chat IDs, callback secrets, or database credentials.
 - `npm run typescript:check` performs the fastest repository-wide correctness check.
-- `npm run prettier` checks formatting; `npm run prettier:fix` rewrites `src`.
+- `npm run lint` checks ESLint and Prettier; `npm run lint:fix` applies automatic fixes.
 - `npm run build` deletes `dist` and compiles the project.
 - Run deterministic unit tests with `npm test -- --runInBand`. The test script enables Node's VM
   module support so Jest can load the same ESM dependencies as the CommonJS application build.
 
-For ordinary TypeScript changes, run `npm run typescript:check` and `npm run prettier`. Run a full
+For ordinary TypeScript changes, run `npm run typescript:check` and `npm run lint`. Run a full
 build when changing configuration, startup, imports, or emitted runtime behavior. Integration
 testing needs disposable Telegram/YouTube credentials and MariaDB; do not point automated checks
 at the production bot or database.

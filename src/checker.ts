@@ -325,7 +325,7 @@ class Checker {
           removedCount: 0,
         };
 
-        let limit = 500;
+        const limit = 500;
         let offset = 0;
         while (true) {
           const channelIds = await this.main.db.getChannelIdsByServiceId(service.id, offset, limit);

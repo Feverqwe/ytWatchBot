@@ -145,7 +145,7 @@ class YtPubSub {
             videoIdsFromFeeds.push(videoId);
           }
 
-          let publishedAt = channelIdPublishedAt.get(channelId);
+          const publishedAt = channelIdPublishedAt.get(channelId);
           if (!publishedAt || publishedAt.getTime() > feed.publishedAt.getTime()) {
             channelIdPublishedAt.set(channelId, feed.publishedAt);
             channelIdPublishedVideoId.set(channelId, videoId);

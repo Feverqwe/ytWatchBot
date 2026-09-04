@@ -33,7 +33,7 @@ interface WithChannels {
 }
 
 class Chat {
-  public log = new LogFile('chat');
+  log = new LogFile('chat');
   private chatIdAdminIdsCache = new TimeCache<number, number[]>({maxSize: 100, ttl: 5 * 60 * 1000});
   private router: Router;
   private pollingPromise?: Promise<void>;
@@ -142,7 +142,7 @@ class Chat {
       } else if (req.callback_query) {
         const data = req.callback_query.data;
         let command = '';
-        let m = /(\/[^?\s]+)/.exec(data);
+        const m = /(\/[^?\s]+)/.exec(data);
         if (m) {
           command = m[1];
         }
