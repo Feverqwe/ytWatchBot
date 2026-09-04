@@ -2,19 +2,13 @@ import {Readable, Stream} from 'node:stream';
 import {
   Bot,
   InputFile,
+  type Api,
   type CallbackQuery,
-  type EditMessageReplyMarkupParams,
-  type EditMessageReplyMarkupResult,
-  type EditMessageTextParams,
-  type EditMessageTextResult,
-  type GetChatAdministratorsResult,
-  type GetChatResult,
   type Message,
   type ReplyMarkup,
   type SendMessageParams,
   type SendPhotoParams,
   type SendPhotoResult,
-  type User,
 } from 'node-telegram-bot-api';
 import RateLimit2 from './rateLimit2';
 import {getDebug} from './getDebug';
@@ -34,6 +28,15 @@ type SendMessageOptions = Omit<SendMessageParams, 'chat_id' | 'reply_markup' | '
 type SendPhotoOptions = Omit<SendPhotoParams, 'chat_id' | 'photo' | 'reply_markup'> &
   LegacyReplyOptions;
 type FileOptions = {contentType?: string; filename?: string};
+type DirectApi = Pick<
+  Api,
+  | 'answerCallbackQuery'
+  | 'editMessageReplyMarkup'
+  | 'editMessageText'
+  | 'getChat'
+  | 'getChatAdministrators'
+  | 'getMe'
+>;
 
 type MigratedReplyOptions<T> = Omit<
   T,
@@ -79,11 +82,13 @@ function asInputFile(photo: string | Stream | Buffer, fileOptions?: FileOptions)
 
 export class TelegramBotWrapped {
   private readonly bot: Bot;
+  readonly api: DirectApi;
   private readonly sendLimit = new RateLimit2(30);
   private readonly chatActionLimit = new RateLimit2(30);
 
   constructor(token: string) {
     this.bot = new Bot(token);
+    this.api = this.bot.api;
     this.bot.catch((err) => {
       debug('handler error %o', err);
     });
@@ -104,10 +109,6 @@ export class TelegramBotWrapped {
     return this;
   }
 
-  getMe(): Promise<User> {
-    return this.bot.api.getMe();
-  }
-
   async startPolling(): Promise<void> {
     void this.bot
       .startPolling(undefined, {
@@ -116,18 +117,6 @@ export class TelegramBotWrapped {
       .catch((err) => {
         debug('polling stopped: %o', err);
       });
-  }
-
-  answerCallbackQuery(callbackQueryId: string): Promise<boolean> {
-    return this.bot.api.answerCallbackQuery({callback_query_id: callbackQueryId});
-  }
-
-  getChatAdministrators(chatId: number | string): Promise<GetChatAdministratorsResult> {
-    return this.bot.api.getChatAdministrators({chat_id: chatId});
-  }
-
-  getChat(chatId: number | string): Promise<GetChatResult> {
-    return this.bot.api.getChat({chat_id: chatId});
   }
 
   sendMessage(
@@ -171,20 +160,6 @@ export class TelegramBotWrapped {
     action: Parameters<Bot['api']['sendChatAction']>[0]['action'],
   ): Promise<boolean> {
     return this.chatActionLimit.run(() => this.bot.api.sendChatAction({chat_id: chatId, action}));
-  }
-
-  editMessageText(
-    text: string,
-    options: Omit<EditMessageTextParams, 'text'>,
-  ): Promise<EditMessageTextResult> {
-    return this.bot.api.editMessageText({...migrateLegacyOptions(options), text});
-  }
-
-  editMessageReplyMarkup(
-    replyMarkup: EditMessageReplyMarkupParams['reply_markup'],
-    options: Omit<EditMessageReplyMarkupParams, 'reply_markup'>,
-  ): Promise<EditMessageReplyMarkupResult> {
-    return this.bot.api.editMessageReplyMarkup({...options, reply_markup: replyMarkup});
   }
 }
 

@@ -55,7 +55,7 @@ class Chat {
   async init() {
     const {bot} = this.main;
 
-    const {username} = await bot.getMe();
+    const {username} = await bot.api.getMe();
     if (!username) throw new Error('Bot name is empty');
 
     this.router.init(bot, username);
@@ -86,7 +86,7 @@ class Chat {
     });
 
     this.router.callback_query(async (req, res, next) => {
-      await this.main.bot.answerCallbackQuery(req.callback_query.id);
+      await this.main.bot.api.answerCallbackQuery({callback_query_id: req.callback_query.id});
       next();
     });
 
@@ -104,7 +104,9 @@ class Chat {
         try {
           let adminIds = this.chatIdAdminIdsCache.get(req.chatId);
           if (!adminIds) {
-            const chatMembers = await this.main.bot.getChatAdministrators(req.chatId);
+            const chatMembers = await this.main.bot.api.getChatAdministrators({
+              chat_id: req.chatId,
+            });
             adminIds = chatMembers.map((chatMember) => chatMember.user.id);
             this.chatIdAdminIdsCache.set(req.chatId, adminIds);
           }
@@ -183,15 +185,13 @@ class Chat {
         try {
           await passEx(
             () =>
-              this.main.bot.editMessageReplyMarkup(
-                {
+              this.main.bot.api.editMessageReplyMarkup({
+                reply_markup: {
                   inline_keyboard: getMenu(locale, page),
                 },
-                {
-                  chat_id: req.chatId,
-                  message_id: req.messageId,
-                },
-              ),
+                chat_id: req.chatId,
+                message_id: req.messageId,
+              }),
             [ErrEnum.MessageNotModified],
           );
         } catch (error) {
@@ -322,7 +322,8 @@ class Chat {
       const command = req.params.command;
 
       try {
-        await this.main.bot.editMessageText(locale.m('commandCanceled', {command}), {
+        await this.main.bot.api.editMessageText({
+          text: locale.m('commandCanceled', {command}),
           chat_id: req.chatId,
           message_id: req.messageId,
         });
@@ -438,7 +439,8 @@ class Chat {
         await this.main.db.deleteChatById('' + req.chatId);
         this.log.write(`[deleted] ${req.chatId}, cause: /clear`);
 
-        await this.main.bot.editMessageText(locale.m('cleared'), {
+        await this.main.bot.api.editMessageText({
+          text: locale.m('cleared'),
           chat_id: req.chatId,
           message_id: req.messageId,
         });
@@ -491,7 +493,8 @@ class Chat {
           } else {
             message = locale.m('alert_unexpected-error');
           }
-          await this.main.bot.editMessageText(message, {
+          await this.main.bot.api.editMessageText({
+            text: message,
             chat_id: req.chatId,
             message_id: req.messageId,
           });
@@ -501,15 +504,13 @@ class Chat {
           return;
         }
 
-        await this.main.bot.editMessageText(
-          locale.m('channelDeleted', {
+        await this.main.bot.api.editMessageText({
+          text: locale.m('channelDeleted', {
             channelName: channel.title,
           }),
-          {
-            chat_id: req.chatId,
-            message_id: req.messageId,
-          },
-        );
+          chat_id: req.chatId,
+          message_id: req.messageId,
+        });
       } catch (err) {
         debug('%j error %o', req.command, err);
       }
@@ -537,15 +538,13 @@ class Chat {
         if (req.callback_query && !req.query.rel) {
           await passEx(
             () =>
-              this.main.bot.editMessageReplyMarkup(
-                {
+              this.main.bot.api.editMessageReplyMarkup({
+                reply_markup: {
                   inline_keyboard: page,
                 },
-                {
-                  chat_id: req.chatId,
-                  message_id: req.messageId,
-                },
-              ),
+                chat_id: req.chatId,
+                message_id: req.messageId,
+              }),
             [ErrEnum.MessageNotModified],
           );
         } else {
@@ -572,15 +571,13 @@ class Chat {
 
         await passEx(
           () =>
-            this.main.bot.editMessageReplyMarkup(
-              {
+            this.main.bot.api.editMessageReplyMarkup({
+              reply_markup: {
                 inline_keyboard: getOptions(locale, req.chat),
               },
-              {
-                chat_id: req.chatId,
-                message_id: req.messageId,
-              },
-            ),
+              chat_id: req.chatId,
+              message_id: req.messageId,
+            }),
           [ErrEnum.MessageNotModified],
         );
       } catch (err) {
@@ -626,7 +623,7 @@ class Chat {
             }
 
             await this.main.bot.sendChatAction(rawChannelId, 'typing');
-            const chat = await this.main.bot.getChat(rawChannelId);
+            const chat = await this.main.bot.api.getChat({chat_id: rawChannelId});
 
             if (chat.type !== 'channel') {
               throw new ErrorWithCode('This chat type is not supported', 'INCORRECT_CHAT_TYPE');
@@ -677,15 +674,13 @@ class Chat {
           if (req.callback_query) {
             await passEx(
               () =>
-                this.main.bot.editMessageReplyMarkup(
-                  {
+                this.main.bot.api.editMessageReplyMarkup({
+                  reply_markup: {
                     inline_keyboard: getOptions(locale, req.chat),
                   },
-                  {
-                    chat_id: req.chatId,
-                    message_id: req.messageId,
-                  },
-                ),
+                  chat_id: req.chatId,
+                  message_id: req.messageId,
+                }),
               [ErrEnum.MessageNotModified],
             );
           }
@@ -751,15 +746,13 @@ class Chat {
 
           await passEx(
             () =>
-              this.main.bot.editMessageReplyMarkup(
-                {
+              this.main.bot.api.editMessageReplyMarkup({
+                reply_markup: {
                   inline_keyboard: getOptions(locale, req.chat),
                 },
-                {
-                  chat_id: req.chatId,
-                  message_id: req.messageId,
-                },
-              ),
+                chat_id: req.chatId,
+                message_id: req.messageId,
+              }),
             [ErrEnum.MessageNotModified],
           );
         } catch (err) {
@@ -774,15 +767,13 @@ class Chat {
 
       try {
         if (req.callback_query && !req.query.rel) {
-          await this.main.bot.editMessageReplyMarkup(
-            {
+          await this.main.bot.api.editMessageReplyMarkup({
+            reply_markup: {
               inline_keyboard: getOptions(locale, req.chat),
             },
-            {
-              chat_id: req.chatId,
-              message_id: req.messageId,
-            },
-          );
+            chat_id: req.chatId,
+            message_id: req.messageId,
+          });
         } else {
           await this.main.bot.sendMessage(req.chatId, locale.m('context_options'), {
             reply_markup: {
@@ -846,7 +837,7 @@ class Chat {
       }
 
       const options = {
-        disable_web_page_preview: true,
+        link_preview_options: {is_disabled: true},
         parse_mode: 'HTML' as ParseMode,
         reply_markup: {
           inline_keyboard: [pageControls],
@@ -855,8 +846,9 @@ class Chat {
 
       try {
         if (req.callback_query && !req.query.rel) {
-          await this.main.bot.editMessageText(pageText, {
+          await this.main.bot.api.editMessageText({
             ...options,
+            text: pageText,
             chat_id: req.chatId,
             message_id: req.messageId,
           });
@@ -948,13 +940,12 @@ class Chat {
           throw new ErrorWithCode('messageId is empty', 'MESSAGE_ID_IS_EMPTY');
         }
 
-        const result = await this.main.bot.editMessageText(
+        const result = await this.main.bot.api.editMessageText({
+          ...form,
           text,
-          Object.assign({}, form, {
-            chat_id: chatId,
-            message_id: messageId,
-          }),
-        );
+          chat_id: chatId,
+          message_id: messageId,
+        });
 
         if (typeof result === 'object') {
           return result.message_id;
