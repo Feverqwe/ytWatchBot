@@ -171,11 +171,8 @@ class Sender {
             const isBlocked = isBlockedError(err);
             if (isBlocked) {
               blockedChatIds.push(chatId);
-              const body = err.response.body;
               this.main.chat.log.write(
-                `[deleted] ${chatId}, cause: (${body.error_code}) ${JSON.stringify(
-                  body.description,
-                )}`,
+                `[deleted] ${chatId}, cause: (${err.errorCode}) ${JSON.stringify(err.description)}`,
               );
             } else {
               debug('cleanChats sendChatAction typing to %s error, cause: %o', chatId, err);

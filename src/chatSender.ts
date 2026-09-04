@@ -5,7 +5,7 @@ import fetchRequest from './tools/fetchRequest';
 import Main from './main';
 import {ChatModel, VideoModelWithChannel} from './db';
 import {tracker} from './tracker';
-import TelegramBot from 'node-telegram-bot-api';
+import type {Message} from 'node-telegram-bot-api';
 import {getDebug} from './tools/getDebug';
 import {ErrEnum, errHandler} from './tools/passTgEx';
 import promiseTry from './tools/promiseTry';
@@ -63,8 +63,6 @@ class ChatSender {
         } catch (error) {
           const err = error as TelegramError;
           if (err.code === 'ETELEGRAM') {
-            const body = err.response.body;
-
             const isBlocked = isBlockedError(err);
             const isSkipMessage = isSkipMessageError(err);
             if (isSkipMessage) {
@@ -73,13 +71,13 @@ class ChatSender {
             } else if (isBlocked) {
               await this.main.db.deleteChatById(this.chat.id);
               this.main.chat.log.write(
-                `[deleted] ${this.chat.id}, cause: (${body.error_code}) ${JSON.stringify(
-                  body.description,
+                `[deleted] ${this.chat.id}, cause: (${err.errorCode}) ${JSON.stringify(
+                  err.description,
                 )}`,
               );
               throw new ErrorWithCode(`Chat ${this.chat.id} is deleted`, 'CHAT_IS_DELETED');
-            } else if (body.parameters?.migrate_to_chat_id) {
-              const newChatId = body.parameters.migrate_to_chat_id;
+            } else if (err.migrateToChatId) {
+              const newChatId = err.migrateToChatId;
               try {
                 await this.main.db.changeChatId(this.chat.id, '' + newChatId);
               } catch (error) {
@@ -144,7 +142,7 @@ class ChatSender {
     return {message};
   }
 
-  async sendVideoAsPhoto(video: VideoModelWithChannel): Promise<{message: TelegramBot.Message}> {
+  async sendVideoAsPhoto(video: VideoModelWithChannel): Promise<{message: Message}> {
     if (video.telegramPreviewFileId) {
       try {
         const message = await this.main.bot.sendPhotoQuote(
@@ -170,9 +168,7 @@ class ChatSender {
       } catch (error) {
         const err = error as TelegramError;
         if (err.code === 'ETELEGRAM') {
-          const body = err.response.body;
-
-          if (/FILE_REFERENCE_.+/.test(body.description)) {
+          if (/FILE_REFERENCE_.+/.test(err.description)) {
             video.telegramPreviewFileId = null;
 
             return this.sendVideoAsPhoto(video);
@@ -248,7 +244,7 @@ class ChatSender {
 
         let isSendUrlError = sendUrlErrors.some((re) => re.test(err.message));
         if (!isSendUrlError) {
-          isSendUrlError = err.response && err.response.statusCode === 504;
+          isSendUrlError = err.errorCode === 504;
         }
 
         if (isSendUrlError) {
@@ -321,7 +317,7 @@ const sendUrlErrors = [
   /FILE_REFERENCE_.+/,
 ];
 
-function getPhotoFileIdFromMessage(message: TelegramBot.Message): string | null {
+function getPhotoFileIdFromMessage(message: Message): string | null {
   let fileId = null;
   message.photo
     ?.slice(0)
@@ -386,11 +382,9 @@ function getCaption(video: VideoModelWithChannel) {
 
 export function isBlockedError(err: any) {
   if (err.code === 'ETELEGRAM') {
-    const body = err.response.body;
-
-    let isBlocked = body.error_code === 403;
+    let isBlocked = err.errorCode === 403;
     if (!isBlocked) {
-      isBlocked = blockedErrors.some((re) => re.test(body.description));
+      isBlocked = blockedErrors.some((re) => re.test(err.description));
     }
 
     return isBlocked;
@@ -400,9 +394,7 @@ export function isBlockedError(err: any) {
 
 export function isSkipMessageError(err: any) {
   if (err.code === 'ETELEGRAM') {
-    const body = err.response.body;
-
-    return skipMsgErrors.some((re) => re.test(body.description));
+    return skipMsgErrors.some((re) => re.test(err.description));
   }
   return false;
 }

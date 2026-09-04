@@ -1,6 +1,6 @@
 import ErrorWithCode from './tools/errorWithCode';
 import qs from 'node:querystring';
-import TelegramBot from 'node-telegram-bot-api';
+import type {CallbackQuery, Message, User} from 'node-telegram-bot-api';
 import {getDebug} from './tools/getDebug';
 import Locale from './locale';
 import {TelegramBotWrapped} from './tools/telegramBotApi';
@@ -55,26 +55,26 @@ interface RouterRouteDetails {
 }
 
 export interface RouterTextReq extends RouterMessageReq {
-  message: TelegramBot.Message & {text: string};
+  message: Message & {text: string};
   fromId: number | undefined;
 }
 
 export interface RouterMessageReq extends RouterReqWithAnyMessage {
-  message: TelegramBot.Message;
+  message: Message;
   callback_query: undefined;
   params: {[s: string]: string};
 }
 
 export interface RouterCallbackQueryReq extends RouterReqWithAnyMessage {
   message: undefined;
-  callback_query: TelegramBot.CallbackQuery & {data: string};
+  callback_query: CallbackQuery & {data: string};
   fromId: number;
 }
 
 export interface RouterReqWithAnyMessage extends RouterReqCallback {
   messageId: number;
   chatId: number;
-  chatType: TelegramBot.ChatType;
+  chatType: string;
 }
 
 interface RouterReqCallback extends RouterReq {
@@ -123,7 +123,7 @@ const RouterImpl = class MessageTypesImpl implements MessageTypesObj {
 };
 
 class Router extends RouterImpl {
-  bot?: TelegramBot;
+  bot?: TelegramBotWrapped;
   botNameRe?: RegExp;
 
   textOrCallbackQuery = this.custom<RouterTextReq | RouterCallbackQueryReq>([
@@ -136,10 +136,7 @@ class Router extends RouterImpl {
     this.botNameRe = new RegExp('^' + botName + '$', 'i');
   }
 
-  handle = (
-    event: 'message' | 'callback_query',
-    data: TelegramBot.Message | TelegramBot.CallbackQuery,
-  ) => {
+  handle = (event: 'message' | 'callback_query', data: Message | CallbackQuery) => {
     if (!this.botNameRe || !this.bot) {
       throw new Error('Router is not inited');
     }
@@ -266,13 +263,13 @@ class RouterRoute {
   re: RegExp | null;
   dispatch: RouterMethodCallback;
   event?: ['message', 'callback_query'][number];
-  type?: keyof (TelegramBot.Message | TelegramBot.CallbackQuery);
+  type?: keyof (Message | CallbackQuery);
   fromId?: number;
   chatId?: number;
   constructor(details: RouterRouteDetails, re: RegExp | null, callback: RouterMethodCallback) {
     this.re = re;
     this.event = details.event;
-    this.type = details.type as keyof (TelegramBot.Message | TelegramBot.CallbackQuery) | undefined;
+    this.type = details.type as keyof (Message | CallbackQuery) | undefined;
     this.fromId = details.fromId;
     this.chatId = details.chatId;
     this.dispatch = (req, res, next) => {
@@ -323,21 +320,21 @@ export class RouterReq {
   commands = [] as string[];
   command = '';
   params: {[s: string]: string} | null = null;
-  message?: TelegramBot.Message;
-  callback_query?: TelegramBot.CallbackQuery;
+  message?: Message;
+  callback_query?: CallbackQuery;
   private _cache = {} as {[s: string]: {value?: any}};
 
   constructor(
     public event: 'message' | 'callback_query',
-    data: TelegramBot.Message | TelegramBot.CallbackQuery,
+    data: Message | CallbackQuery,
   ) {
     switch (event) {
       case 'message': {
-        this.message = data as TelegramBot.Message;
+        this.message = data as Message;
         break;
       }
       case 'callback_query': {
-        this.callback_query = data as TelegramBot.CallbackQuery;
+        this.callback_query = data as CallbackQuery;
         break;
       }
       default: {
@@ -411,10 +408,8 @@ export class RouterReq {
 
   get entities() {
     return this._useCache('entities', () => {
-      const entities: Record<
-        string,
-        {type: string; value: string; url?: string; user?: TelegramBot.User}[]
-      > = {};
+      const entities: Record<string, {type: string; value: string; url?: string; user?: User}[]> =
+        {};
 
       if (this.message?.entities) {
         const text = this.message.text || '';
@@ -480,11 +475,7 @@ function prepareArgs(callbacks: RouterMethodArgs<any, any>) {
   };
 }
 
-function getCommands(
-  event: string,
-  data: TelegramBot.Message | TelegramBot.CallbackQuery,
-  botNameRe: RegExp,
-) {
+function getCommands(event: string, data: Message | CallbackQuery, botNameRe: RegExp) {
   const commands: string[] = [];
   switch (event) {
     case 'message': {
@@ -517,7 +508,7 @@ function getCommands(
       break;
     }
     case 'callback_query': {
-      const callbackQuery = data as TelegramBot.CallbackQuery;
+      const callbackQuery = data as CallbackQuery;
       if (typeof callbackQuery.data === 'string') {
         commands.push(callbackQuery.data);
       }

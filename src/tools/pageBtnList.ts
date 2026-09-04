@@ -1,16 +1,15 @@
-import TelegramBot from 'node-telegram-bot-api';
+import type {InlineKeyboardButton} from 'node-telegram-bot-api';
 
 const pageBtnList = (
   query: {
     [s: string]: any;
   },
-  btnList: TelegramBot.InlineKeyboardButton[][],
+  btnList: InlineKeyboardButton[][],
   command: string,
-  _middleBtn?: TelegramBot.InlineKeyboardButton | TelegramBot.InlineKeyboardButton[],
+  _middleBtn?: InlineKeyboardButton | InlineKeyboardButton[],
 ) => {
   const page = parseInt(query.page) || 0;
-  let middleBtns: TelegramBot.InlineKeyboardButton[] | null =
-    _middleBtn as TelegramBot.InlineKeyboardButton[];
+  let middleBtns: InlineKeyboardButton[] | null = _middleBtn as InlineKeyboardButton[];
   if (middleBtns && !Array.isArray(middleBtns)) {
     middleBtns = [middleBtns];
   }

@@ -93,7 +93,11 @@ class Chat {
     this.router.textOrCallbackQuery(async (req, res, next) => {
       if (['group', 'supergroup'].includes(req.chatType)) {
         const message = req.message || req.callback_query.message;
-        if (message && message.chat.all_members_are_administrators) {
+        if (
+          message &&
+          (message.chat as typeof message.chat & {all_members_are_administrators?: boolean})
+            .all_members_are_administrators
+        ) {
           return next();
         }
 
