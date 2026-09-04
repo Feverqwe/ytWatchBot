@@ -37,7 +37,6 @@
     "@types/jest": "^29.5.3",
     "@types/lodash.throttle": "^4.1.7",
     "@types/node": "^24.10.11",
-    "@types/node-fetch": "^2.6.4",
     "@types/node-telegram-bot-api": "^0.64.7",
     "@types/xmldoc": "^1.1.6",
     "cross-env": "^7.0.3",
