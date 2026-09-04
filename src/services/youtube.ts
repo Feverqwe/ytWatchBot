@@ -1,5 +1,5 @@
 import ErrorWithCode from '../tools/errorWithCode';
-import * as s from 'superstruct';
+import * as v from 'valibot';
 import arrayByPart from '../tools/arrayByPart';
 import parallel from '../tools/parallel';
 import formatDuration from '../tools/formatDuration';
@@ -15,110 +15,110 @@ const debug = getDebug('app:Youtube');
 
 const costCounter = ytCostCounter(150000);
 
-const VideosItemsSnippetStruct = s.object({
-  items: s.array(
-    s.object({
-      snippet: s.object({
-        channelId: s.string(),
+const VideosItemsSnippetSchema = v.object({
+  items: v.array(
+    v.object({
+      snippet: v.object({
+        channelId: v.string(),
       }),
     }),
   ),
 });
 
-const ChannelsItemsIdStruct = s.object({
-  items: s.optional(
-    s.array(
-      s.object({
-        id: s.string(),
+const ChannelsItemsIdSchema = v.object({
+  items: v.optional(
+    v.array(
+      v.object({
+        id: v.string(),
       }),
     ),
   ),
-  nextPageToken: s.optional(s.string()),
+  nextPageToken: v.optional(v.string()),
 });
 
-const SearchItemsIdStruct = s.object({
-  items: s.array(
-    s.object({
-      id: s.object({
-        channelId: s.optional(s.string()),
+const SearchItemsIdSchema = v.object({
+  items: v.array(
+    v.object({
+      id: v.object({
+        channelId: v.optional(v.string()),
       }),
     }),
   ),
 });
 
-const SearchItemsSnippetStruct = s.object({
-  items: s.array(
-    s.object({
-      snippet: s.object({
-        channelId: s.string(),
-        channelTitle: s.string(),
+const SearchItemsSnippetSchema = v.object({
+  items: v.array(
+    v.object({
+      snippet: v.object({
+        channelId: v.string(),
+        channelTitle: v.string(),
       }),
     }),
   ),
 });
 
-const ActivitiesResponseStruct = s.object({
-  items: s.array(
-    s.object({
-      contentDetails: s.object({
-        upload: s.optional(
-          s.object({
-            videoId: s.string(),
+const ActivitiesResponseSchema = v.object({
+  items: v.array(
+    v.object({
+      contentDetails: v.object({
+        upload: v.optional(
+          v.object({
+            videoId: v.string(),
           }),
         ),
       }),
     }),
   ),
-  nextPageToken: s.optional(s.string()),
+  nextPageToken: v.optional(v.string()),
 });
 
-const VideosResponseStruct = s.object({
-  items: s.array(
-    s.object({
-      id: s.string(),
-      snippet: s.object({
-        publishedAt: s.string(), // 2007-03-05T08:22:25.000Z
-        channelId: s.string(),
-        title: s.string(),
-        // description: s.string(),
-        thumbnails: s.record(
-          s.string(),
-          s.object({
-            url: s.string(),
-            width: s.number(),
-            height: s.number(),
+const VideosResponseSchema = v.object({
+  items: v.array(
+    v.object({
+      id: v.string(),
+      snippet: v.object({
+        publishedAt: v.string(), // 2007-03-05T08:22:25.000Z
+        channelId: v.string(),
+        title: v.string(),
+        // description: v.string(),
+        thumbnails: v.record(
+          v.string(),
+          v.object({
+            url: v.string(),
+            width: v.number(),
+            height: v.number(),
           }),
         ),
-        channelTitle: s.string(),
-        // tags: [s.string()],
-        // categoryId: s.string(), // 10
-        liveBroadcastContent: s.string(), // live none upcoming
-        // localized: s.object({
-        //   title: s.string(),
-        //   description: s.string(),
+        channelTitle: v.string(),
+        // tags: [v.string()],
+        // categoryId: v.string(), // 10
+        liveBroadcastContent: v.string(), // live none upcoming
+        // localized: v.object({
+        //   title: v.string(),
+        //   description: v.string(),
         // })
       }),
-      contentDetails: s.partial(
-        s.object({
-          duration: s.string(), // PT2M57S
-          // dimension: s.string(), // 2d
-          // definition: s.string(), // sd
-          // caption: s.string(), // false
+      contentDetails: v.partial(
+        v.object({
+          duration: v.string(), // PT2M57S
+          // dimension: v.string(), // 2d
+          // definition: v.string(), // sd
+          // caption: v.string(), // false
           // licensedContent: 'boolean', // true
-          // projection: s.string(), // rectangular
+          // projection: v.string(), // rectangular
         }),
       ),
     }),
   ),
-  nextPageToken: s.optional(s.string()),
+  nextPageToken: v.optional(v.string()),
 });
 
-const FineChannelByVideoIdResponseStruct = s.object({
-  items: s.array(
-    s.object({
-      snippet: s.object({
-        channelId: s.string(),
-        channelTitle: s.string(),
+const FineChannelByVideoIdResponseSchema = v.object({
+  items: v.array(
+    v.object({
+      snippet: v.object({
+        channelId: v.string(),
+        channelTitle: v.string(),
       }),
     }),
   ),
@@ -157,7 +157,7 @@ class Youtube implements ServiceInterface {
             keepAlive: true,
           });
 
-          const videos = s.mask(body, VideosResponseStruct);
+          const videos = v.parse(VideosResponseSchema, body);
 
           videos.items.forEach((video) => {
             if (video.snippet.liveBroadcastContent !== 'none') return;
@@ -224,7 +224,7 @@ class Youtube implements ServiceInterface {
               keepAlive: true,
             });
 
-            const activities = s.mask(body, ActivitiesResponseStruct);
+            const activities = v.parse(ActivitiesResponseSchema, body);
             activities.items.forEach((item) => {
               if (!item.contentDetails.upload) return;
               const videoId = item.contentDetails.upload.videoId;
@@ -276,7 +276,7 @@ class Youtube implements ServiceInterface {
           keepAlive: true,
         });
 
-        const channelsItemsId = s.mask(body, ChannelsItemsIdStruct);
+        const channelsItemsId = v.parse(ChannelsItemsIdSchema, body);
         if (channelsItemsId.items) {
           channelsItemsId.items.forEach((item) => {
             resultChannelIds.push(item.id);
@@ -309,7 +309,7 @@ class Youtube implements ServiceInterface {
       keepAlive: true,
     });
 
-    const searchItemsId = s.mask(body, SearchItemsIdStruct);
+    const searchItemsId = v.parse(SearchItemsIdSchema, body);
     let channelId: string | undefined;
     searchItemsId.items.some((item) => {
       if (item.id.channelId) {
@@ -362,7 +362,7 @@ class Youtube implements ServiceInterface {
         keepAlive: true,
       });
 
-      const channelsItemsId = s.mask(body, ChannelsItemsIdStruct);
+      const channelsItemsId = v.parse(ChannelsItemsIdSchema, body);
       if (!channelsItemsId.items || !channelsItemsId.items.length) {
         throw new ErrorWithCode('Channel by user is not found', 'CHANNEL_BY_USER_IS_NOT_FOUND');
       }
@@ -408,7 +408,7 @@ class Youtube implements ServiceInterface {
       keepAlive: true,
     });
 
-    const videosItemsSnippet = s.mask(body, VideosItemsSnippetStruct);
+    const videosItemsSnippet = v.parse(VideosItemsSnippetSchema, body);
     if (!videosItemsSnippet.items.length) {
       throw new ErrorWithCode('Video by id is not found', 'CHANNEL_BY_VIDEO_ID_IS_NOT_FOUND');
     }
@@ -478,7 +478,7 @@ class Youtube implements ServiceInterface {
         keepAlive: true,
       });
 
-      const activities = s.mask(body, ActivitiesResponseStruct);
+      const activities = v.parse(ActivitiesResponseSchema, body);
       let videoId = null;
       activities.items.some((item) => {
         if (!item.contentDetails.upload) return;
@@ -505,7 +505,7 @@ class Youtube implements ServiceInterface {
       keepAlive: true,
     });
 
-    const searchItemsSnippet = s.mask(body, FineChannelByVideoIdResponseStruct);
+    const searchItemsSnippet = v.parse(FineChannelByVideoIdResponseSchema, body);
     if (!searchItemsSnippet.items.length) {
       throw new ErrorWithCode('Channel is not found', 'CHANNEL_BY_ID_IS_NOT_FOUND');
     }

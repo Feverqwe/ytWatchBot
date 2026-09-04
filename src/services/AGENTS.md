@@ -5,7 +5,7 @@ provider-specific raw IDs inside this adapter; the checker wraps them before per
 
 ## YouTube API behavior
 
-- Validate external JSON with the existing Superstruct response schemas before consuming it. If a
+- Validate external JSON with the existing Valibot response schemas before consuming it. If a
   requested field becomes optional, model and handle that absence explicitly.
 - Route HTTP calls through the shared request wrapper and preserve request timeouts, retries, and
   YouTube error classification.
