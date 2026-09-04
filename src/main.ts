@@ -12,13 +12,6 @@ import WebServer from './webServer';
 
 const debug = getDebug('app:Main');
 
-process.on('unhandledRejection', (err: Error & {code?: string}, _promise) => {
-  debug('unhandledRejection %o', err);
-  if (err.code === 'EFATAL') {
-    process.exit(1);
-  }
-});
-
 class Main extends Events {
   db: Db;
   youtube: Youtube;
@@ -29,6 +22,7 @@ class Main extends Events {
   bot: Bot;
   chat: Chat;
   webServer: WebServer;
+  private stopPromise?: Promise<void>;
 
   constructor() {
     super();
@@ -57,19 +51,49 @@ class Main extends Events {
     this.sender.init();
   }
 
+  stop() {
+    this.stopPromise ??= this.stopOnce();
+    return this.stopPromise;
+  }
+
+  private async stopOnce() {
+    this.checker.stop();
+    this.sender.stop();
+    await Promise.all([this.webServer.close(), this.chat.stop()]);
+    await this.db.close();
+  }
+
   getServiceById(id: string) {
     return this.serviceIdService.get(id);
   }
 }
 
 const main = new Main();
+
+const shutdown = (exitCode: number) => {
+  void main.stop().then(
+    () => process.exit(exitCode),
+    (err) => {
+      debug('shutdown error %o', err);
+      process.exit(1);
+    },
+  );
+};
+
+process.once('SIGINT', () => shutdown(0));
+process.once('SIGTERM', () => shutdown(0));
+process.on('unhandledRejection', (err: Error & {code?: string}) => {
+  debug('unhandledRejection %o', err);
+  if (err.code === 'EFATAL') shutdown(1);
+});
+
 main.init().then(
   () => {
     debug('ready');
   },
   (err) => {
     debug('init error', err);
-    process.exit(1);
+    shutdown(1);
   },
 );
 

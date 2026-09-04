@@ -9,6 +9,7 @@ import assertType from './tools/assertType';
 import {Feed} from './ytPubSub';
 import {appConfig} from './appConfig';
 import {getDebug} from './tools/getDebug';
+import isDatabaseDeadlock from './tools/isDatabaseDeadlock';
 
 const debug = getDebug('app:db');
 const ISOLATION_LEVELS = Transaction.ISOLATION_LEVELS;
@@ -75,7 +76,7 @@ export class YtPubSubModel extends Sequelize.Model {
   declare videoId: string;
   declare channelId: string | null;
   declare publishedAt: Date | null;
-  declare lastSyncAt: Date;
+  declare lastPushAt: Date;
 
   declare createdAt: Date;
 }
@@ -413,6 +414,10 @@ class Db {
     await this.sequelize.authenticate();
     await this.sequelize.sync();
     await this.removeChannelByIds(appConfig.channelBlackList);
+  }
+
+  async close() {
+    await this.sequelize.close();
   }
 
   async ensureChat(id: string) {
@@ -840,8 +845,9 @@ class Db {
           },
         )
         .catch((err) => {
-          if (/Deadlock found when trying to get lock/.test(err.message) && --retry > 0) {
-            return new Promise((r) => setTimeout(r, 250)).then(() => doTry());
+          if (isDatabaseDeadlock(err) && --retry > 0) {
+            const delay = 250 * 2 ** (2 - retry) + Math.random() * 100;
+            return new Promise((resolve) => setTimeout(resolve, delay)).then(() => doTry());
           }
           throw err;
         });
