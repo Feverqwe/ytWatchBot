@@ -13,7 +13,6 @@ import LogFile from './logFile';
 import ensureMap from './tools/ensureMap';
 import TimeCache from './tools/timeCache';
 import Main from './main';
-import assertType from './tools/assertType';
 import {ChannelModel, ChatModel, ChatModelWithOptionalChannel, NewChat} from './db';
 import {appConfig} from './appConfig';
 import {tracker} from './tracker';
@@ -266,11 +265,7 @@ class Chat {
   }
 
   user() {
-    const provideChat = async <I extends RouterReq, O extends RouterRes>(
-      req: I,
-      res: O,
-      next: () => void,
-    ) => {
+    const provideChat = this.router.middleware<WithChat>(async (req, res, next) => {
       const {locale} = res;
       const {chatId} = req;
       if (!chatId) return;
@@ -290,13 +285,9 @@ class Chat {
       } catch (err) {
         debug('provideChat error: %o', err);
       }
-    };
+    });
 
-    const provideChannels = async <I extends RouterReq, O extends RouterRes>(
-      req: I,
-      res: O,
-      next: () => void,
-    ) => {
+    const provideChannels = this.router.middleware<WithChannels>(async (req, res, next) => {
       const {locale} = res;
       const {chatId} = req;
       if (!chatId) return;
@@ -316,18 +307,16 @@ class Chat {
       } catch (err) {
         debug('provideChannels error: %o', err);
       }
-    };
+    });
 
-    const withChannels = async <I extends RouterReq, O extends RouterRes>(
-      req: I,
-      res: O,
+    const withChannels = async (
+      req: RouterReq & WithChannels,
+      res: RouterRes,
       next: () => void,
     ) => {
       const {locale} = res;
       const {chatId} = req;
       if (!chatId) return;
-
-      assertType<typeof req & WithChannels>(req);
 
       if (req.channels.length) {
         return next();
@@ -359,7 +348,6 @@ class Chat {
     });
 
     this.router.textOrCallbackQuery(/\/add(?:\s+(?<query>.+$))?/, provideChat, async (req, res) => {
-      assertType<typeof req & WithChat>(req);
       const {locale} = res;
 
       const service = this.main.youtube;
@@ -546,7 +534,6 @@ class Chat {
 
     this.router.textOrCallbackQuery(/\/delete/, provideChannels, withChannels, async (req, res) => {
       const {locale} = res;
-      assertType<typeof req & WithChannels>(req);
 
       try {
         const channels = req.channels.map((channel) => {
@@ -591,7 +578,6 @@ class Chat {
 
     this.router.callback_query(/\/unsetChannel/, provideChat, async (req, res) => {
       const {locale} = res;
-      assertType<typeof req & WithChat>(req);
 
       try {
         if (!req.chat.channelId) {
@@ -620,7 +606,6 @@ class Chat {
       provideChat,
       async (req, res) => {
         const {locale} = res;
-        assertType<typeof req & WithChat>(req);
 
         let requestedData: string | undefined;
 
@@ -733,7 +718,6 @@ class Chat {
       provideChat,
       async (req, res) => {
         const {locale} = res;
-        assertType<typeof req & WithChat>(req);
 
         const {optionsType, key, value} = req.params;
         try {
@@ -796,7 +780,6 @@ class Chat {
 
     this.router.textOrCallbackQuery(/\/options/, provideChat, async (req, res) => {
       const {locale} = res;
-      assertType<typeof req & WithChat>(req);
 
       try {
         if (req.callback_query && !req.query.rel) {
@@ -822,8 +805,6 @@ class Chat {
     });
 
     this.router.textOrCallbackQuery(/\/list/, provideChannels, withChannels, async (req, res) => {
-      assertType<typeof req & WithChannels>(req);
-
       const serviceIds: string[] = [];
       const serviceIdChannels = new Map<string, ChannelModel[]>();
       req.channels.forEach((channel) => {
