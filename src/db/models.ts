@@ -1,22 +1,19 @@
 import Sequelize from 'sequelize';
 import type {
+  CreationAttributes,
   CreationOptional,
   InferAttributes,
   InferCreationAttributes,
   NonAttribute,
 } from 'sequelize';
 
-export interface NewChat {
-  id: string;
-  channelId?: string | null;
-  isHidePreview?: boolean;
-  isMuted?: boolean;
-  isSkipShortVideos?: boolean;
-  sendTimeoutExpiresAt?: Date;
-  parentChatId?: string | null;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
+type WithDefinedProperty<Model, Key extends keyof Model> = Model & {
+  [Property in Key]-?: Exclude<Model[Property], undefined>;
+};
+
+type WithPresentProperty<Model, Key extends keyof Model> = Model & {
+  [Property in Key]-?: NonNullable<Model[Property]>;
+};
 
 export class ChatModel extends Sequelize.Model<
   InferAttributes<ChatModel>,
@@ -35,9 +32,8 @@ export class ChatModel extends Sequelize.Model<
 
   declare channel?: NonAttribute<ChatModel | null>;
 }
-export interface ChatModelWithOptionalChannel extends ChatModel {
-  channel: ChatModel | null;
-}
+export type NewChat = CreationAttributes<ChatModel>;
+export type ChatModelWithOptionalChannel = WithDefinedProperty<ChatModel, 'channel'>;
 
 export class ChannelModel extends Sequelize.Model<
   InferAttributes<ChannelModel>,
@@ -58,19 +54,7 @@ export class ChannelModel extends Sequelize.Model<
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 }
-export interface NewChannel {
-  id: string;
-  service: string;
-  title: string;
-  url: string;
-  hasChanges?: boolean;
-  lastVideoPublishedAt?: Date;
-  lastSyncAt?: Date;
-  lastFullSyncAt?: Date;
-  syncTimeoutExpiresAt?: Date;
-  subscriptionExpiresAt?: Date;
-  subscriptionTimeoutExpiresAt?: Date;
-}
+export type NewChannel = CreationAttributes<ChannelModel>;
 
 export class YtPubSubModel extends Sequelize.Model<
   InferAttributes<YtPubSubModel>,
@@ -96,10 +80,7 @@ export class ChatIdChannelIdModel extends Sequelize.Model<
   declare chat?: NonAttribute<ChatModel>;
   declare chatCount?: NonAttribute<number>;
 }
-export interface NewChatIdChannelIdModel {
-  chatId: string;
-  channelId: string;
-}
+export type NewChatIdChannelIdModel = CreationAttributes<ChatIdChannelIdModel>;
 
 export class VideoModel extends Sequelize.Model<
   InferAttributes<VideoModel>,
@@ -119,21 +100,8 @@ export class VideoModel extends Sequelize.Model<
 
   declare channel?: NonAttribute<ChannelModel>;
 }
-export interface VideoModelWithChannel extends VideoModel {
-  channel: ChannelModel;
-}
-export interface NewVideo {
-  id: string;
-  url: string;
-  title: string;
-  previews: string;
-  duration?: string | null;
-  channelId: string;
-  publishedAt: Date;
-  telegramPreviewFileId?: string | null;
-  mergedId?: string | null;
-  mergedChannelId?: string | null;
-}
+export type VideoModelWithChannel = WithPresentProperty<VideoModel, 'channel'>;
+export type NewVideo = CreationAttributes<VideoModel>;
 
 export class ChatIdVideoIdModel extends Sequelize.Model<
   InferAttributes<ChatIdVideoIdModel>,
@@ -146,10 +114,7 @@ export class ChatIdVideoIdModel extends Sequelize.Model<
 
   declare video?: NonAttribute<VideoModel>;
 }
-export interface NewChatIdVideoId {
-  chatId: string;
-  videoId: string;
-}
+export type NewChatIdVideoId = CreationAttributes<ChatIdVideoIdModel>;
 
 export function initModels(sequelize: Sequelize.Sequelize) {
   ChatModel.init(
