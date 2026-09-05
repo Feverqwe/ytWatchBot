@@ -78,7 +78,6 @@ export class ChatIdChannelIdModel extends Sequelize.Model<
 
   declare channel?: NonAttribute<ChannelModel>;
   declare chat?: NonAttribute<ChatModel>;
-  declare chatCount?: NonAttribute<number>;
 }
 export type NewChatIdChannelIdModel = CreationAttributes<ChatIdChannelIdModel>;
 

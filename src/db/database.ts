@@ -9,6 +9,7 @@ import {Feed} from '../ytPubSub';
 import {appConfig} from '../appConfig';
 import {getDebug} from '../shared/tools/getDebug';
 import isDatabaseDeadlock from '../shared/tools/isDatabaseDeadlock';
+import parseAggregateCount from '../shared/tools/parseAggregateCount';
 import createMigrator from '../shared/migrator';
 import {
   ChannelModel,
@@ -224,11 +225,26 @@ class Db {
       limit: 10,
     });
 
-    return results.map(({channel, channelId, chatCount}) => {
-      if (!channel || chatCount === undefined) {
+    return results.map((result) => {
+      const {channel, channelId, chatCount} = result.get({plain: true}) as unknown as {
+        channel?: {title?: unknown; service?: unknown};
+        channelId?: unknown;
+        chatCount?: unknown;
+      };
+      if (
+        !channel ||
+        typeof channelId !== 'string' ||
+        typeof channel.title !== 'string' ||
+        typeof channel.service !== 'string'
+      ) {
         throw new Error('Top channel query did not return all selected fields');
       }
-      return {channelId, chatCount, title: channel.title, service: channel.service};
+      return {
+        channelId,
+        chatCount: parseAggregateCount(chatCount, 'Top channel query'),
+        title: channel.title,
+        service: channel.service,
+      };
     });
   }
 
