@@ -8,7 +8,8 @@ import {appConfig} from './appConfig';
 import {getTelegramBot} from './shared/tools/telegramBotApi';
 import type {Bot} from 'node-telegram-bot-api';
 import {getDebug} from './shared/tools/getDebug';
-import WebServer from './webServer';
+import WebServer from './shared/webServer';
+import YtPubSub from './ytPubSub';
 
 const debug = getDebug('app:Main');
 
@@ -22,6 +23,7 @@ class Main extends Events {
   bot: Bot;
   chat: Chat;
   webServer: WebServer;
+  ytPubSub: YtPubSub;
   private stopPromise?: Promise<void>;
 
   constructor() {
@@ -38,7 +40,8 @@ class Main extends Events {
 
     this.sender = new Sender(this);
     this.checker = new Checker(this);
-    this.webServer = new WebServer(this);
+    this.webServer = new WebServer(appConfig.webServer);
+    this.ytPubSub = new YtPubSub(this);
 
     this.bot = getTelegramBot(appConfig.token, appConfig.telegramProxyUrl);
     this.chat = new Chat(this);
@@ -46,6 +49,7 @@ class Main extends Events {
 
   async init() {
     await this.db.init();
+    this.ytPubSub.init(this.webServer.app);
     await Promise.all([this.webServer.init(), this.chat.init()]);
     this.checker.init();
     this.sender.init();

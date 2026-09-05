@@ -1,24 +1,23 @@
-import Main from './main';
-import YtPubSub from './ytPubSub';
-import {Server} from 'http';
-import express from 'express';
-import {appConfig} from './appConfig';
+import {Server} from 'node:http';
+import express, {Express} from 'express';
+
+type WebServerOptions = {
+  host?: string;
+  port: number;
+};
 
 class WebServer {
-  ytPubSub: YtPubSub;
+  readonly app: Express = express();
   private server: Server | undefined;
-  private app = express();
-  private host = appConfig.webServer.host || 'localhost';
-  private port = appConfig.webServer.port;
+  private host: string;
+  private port: number;
 
-  constructor(private main: Main) {
-    this.ytPubSub = new YtPubSub(this.main);
+  constructor(options: WebServerOptions) {
+    this.host = options.host || 'localhost';
+    this.port = options.port;
   }
 
   init() {
-    this.initApi();
-    this.ytPubSub.init(this.app);
-
     return new Promise<void>((resolve, reject) => {
       this.server = this.app.listen(this.port, this.host, (error) => {
         if (error) {
@@ -42,8 +41,6 @@ class WebServer {
       });
     });
   }
-
-  initApi() {}
 }
 
 export default WebServer;

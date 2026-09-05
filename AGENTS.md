@@ -37,7 +37,8 @@ database state transitions, retry behavior, and concurrency limits intact when c
 - `src/sender.ts` and `src/chatSender.ts` drain that queue and handle Telegram failures.
 - `src/db/` contains Sequelize models, associations, and persistence operations.
 - `src/shared/migrator.ts` and `src/migrations/` contain the Umzug runner and ordered schema changes.
-- `src/ytPubSub.ts` and `src/webServer.ts` manage the WebSub callback and subscription renewal.
+- `src/shared/webServer.ts` manages the Express/HTTP lifecycle; `src/ytPubSub.ts` registers the
+  WebSub callback and manages subscription renewal.
 - `src/services/youtube.ts` is the YouTube Data API adapter.
 - `src/shared/` contains infrastructure kept byte-identical with `twiMonBot`; `src/tools/`
   contains project-specific helpers.

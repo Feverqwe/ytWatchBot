@@ -1029,9 +1029,9 @@ class Chat {
       {name: 'Check channels', method: this.main.checker.check},
       {name: 'Sender check', method: this.main.sender.check},
       {name: 'Active sender threads', method: this.main.sender.getActiveThreads},
-      {name: 'Update pubsub', method: this.main.webServer.ytPubSub.updateSubscribes},
+      {name: 'Update pubsub', method: this.main.ytPubSub.updateSubscribes},
       {name: 'Clean chats & channels & videos', method: this.main.checker.clean},
-      {name: 'Clean pubsub', method: this.main.webServer.ytPubSub.clean},
+      {name: 'Clean pubsub', method: this.main.ytPubSub.clean},
     ];
 
     this.router.callback_query(/\/admin\/(?<commandIndex>.+)/, isAdmin, async (req, res) => {
