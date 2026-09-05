@@ -4,7 +4,7 @@ import arrayByPart from '../shared/tools/arrayByPart';
 import parallel from '../shared/tools/parallel';
 import formatDuration from '../tools/formatDuration';
 import ensureMap from '../shared/tools/ensureMap';
-import fetchRequest, {HTTPError} from '../tools/fetchRequest';
+import fetchRequest, {HTTPError} from '../shared/tools/fetchRequest';
 import {FilterFn, RawChannel, RawVideo, ServiceInterface} from '../checker';
 import Main from '../main';
 import ytCostCounter from '../shared/tools/ytCostCounter';

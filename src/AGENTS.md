@@ -58,7 +58,7 @@ The primary data flow is:
   error. Blocking errors remove the chat; transient errors leave work retryable and apply a send
   timeout.
 - For WebSub changes, preserve challenge handling and signature verification in
-  `tools/expressPubSub.ts`; do not trust or parse an unauthenticated POST body.
+  `shared/expressPubSub.ts`; do not trust or parse an unauthenticated POST body.
 
 ## Verification
 

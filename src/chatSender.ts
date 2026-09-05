@@ -1,7 +1,7 @@
 import htmlSanitize from './shared/tools/htmlSanitize';
 import ErrorWithCode from './shared/tools/errorWithCode';
 import inlineInspect from './tools/inlineInspect';
-import fetchRequest from './tools/fetchRequest';
+import fetchRequest from './shared/tools/fetchRequest';
 import Main from './main';
 import {ChatModel, VideoModelWithChannel} from './db';
 import {tracker} from './tracker';

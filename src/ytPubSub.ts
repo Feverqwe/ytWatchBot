@@ -3,7 +3,7 @@ import ErrorWithCode from './shared/tools/errorWithCode';
 import getInProgress from './shared/tools/getInProgress';
 import serviceId from './tools/serviceId';
 import {everyMinutes} from './shared/tools/everyTime';
-import ExpressPubSub from './tools/expressPubSub';
+import ExpressPubSub from './shared/expressPubSub';
 import promiseLimit from './shared/tools/promiseLimit';
 import qs from 'node:querystring';
 import Main from './main';

@@ -17,12 +17,12 @@ helpers shared with `twiMonBot` live in `src/shared/tools/` and follow
 
 ## External-boundary helpers
 
-- `fetchRequest.ts` is the common Axios-based compatibility wrapper. Preserve normalized lowercase
+- `shared/tools/fetchRequest.ts` is the common Axios-based compatibility wrapper. Preserve normalized lowercase
   headers, response body modes, timeouts, keep-alive behavior, and the exported error classes when
   changing it.
 - `src/shared/tools/telegramBotApi.ts` is shared sibling infrastructure. Never expose the bot token
   in errors or debug logs.
-- `expressPubSub.ts` handles public callback traffic. Preserve raw-body access for HMAC validation,
+- `shared/expressPubSub.ts` handles public callback traffic. Preserve raw-body access for HMAC validation,
   reject absent/invalid signatures, validate the hub callback/topic, and acknowledge requests with
   the protocol-compatible status/body.
 - `src/shared/tools/passTgEx.ts` and the sender classify `TelegramApiError` instances by structured
