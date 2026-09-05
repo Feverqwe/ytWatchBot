@@ -1,5 +1,6 @@
 import getProvider from './shared/tools/getProvider';
-import ChatSender, {isBlockedError} from './chatSender';
+import ChatSender from './chatSender';
+import {isBlockedError} from './shared/tools/passTgEx';
 import parallel from './shared/tools/parallel';
 import {everyMinutes} from './shared/tools/everyTime';
 import getInProgress from './shared/tools/getInProgress';
