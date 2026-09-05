@@ -1,7 +1,7 @@
 import Main from '../main';
 import Router from '../shared/router';
 import {getDebug} from '../shared/tools/getDebug';
-import TimeCache from '../shared/tools/timeCache';
+import QuickLRU from 'quick-lru';
 import registerAdminRoutes from './admin';
 import registerBaseRoutes from './base';
 import registerMenuRoutes from './menu';
@@ -10,9 +10,9 @@ import registerUserRoutes from './user';
 const debug = getDebug('app:Chat');
 
 class Chat {
-  private readonly chatIdAdminIdsCache = new TimeCache<number, number[]>({
+  private readonly chatIdAdminIdsCache = new QuickLRU<number, number[]>({
     maxSize: 100,
-    ttl: 5 * 60 * 1000,
+    maxAge: 5 * 60 * 1000,
   });
   private readonly router: Router;
   private pollingPromise?: Promise<void>;
