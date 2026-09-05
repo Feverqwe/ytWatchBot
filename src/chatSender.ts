@@ -68,7 +68,7 @@ class ChatSender {
               return await this.main.db.deleteChatIdVideoId(this.chat.id, video.id);
             } else if (isBlocked) {
               await this.main.db.deleteChatById(this.chat.id);
-              this.main.chat.log.write(
+              this.main.logs.chat.write(
                 `[deleted] ${this.chat.id}, cause: (${err.errorCode}) ${JSON.stringify(
                   err.description,
                 )}`,
@@ -82,7 +82,7 @@ class ChatSender {
                 const err = error as ErrorWithCode;
                 if (/would lead to a duplicate entry in table/.test(err.message)) {
                   await this.main.db.deleteChatById(this.chat.id);
-                  this.main.chat.log.write(
+                  this.main.logs.chat.write(
                     `[deleted] ${this.chat.id}, cause: ${inlineInspect(err)}`,
                   );
                   throw new ErrorWithCode(`Chat ${this.chat.id} is deleted`, 'CHAT_IS_DELETED');
@@ -90,7 +90,7 @@ class ChatSender {
                 throw err;
               }
 
-              this.main.chat.log.write(`[migrate] ${this.chat.id} > ${newChatId}`);
+              this.main.logs.chat.write(`[migrate] ${this.chat.id} > ${newChatId}`);
               throw new ErrorWithCode(
                 `Chat ${this.chat.id} is migrated to ${newChatId}`,
                 'CHAT_IS_MIGRATED',
@@ -137,7 +137,7 @@ class ChatSender {
       t: 'event',
     });
 
-    this.main.sender.log.write(`[${type}] ${this.chat.id} ${video.channelId} ${video.id}`);
+    this.main.logs.sender.write(`[${type}] ${this.chat.id} ${video.channelId} ${video.id}`);
 
     return {message};
   }
@@ -158,7 +158,7 @@ class ChatSender {
           t: 'event',
         });
 
-        this.main.sender.log.write(
+        this.main.logs.sender.write(
           `[send photo as id] ${this.chat.id} ${video.channelId} ${video.id}`,
         );
 
@@ -229,7 +229,7 @@ class ChatSender {
           caption,
         });
 
-        this.main.sender.log.write(
+        this.main.logs.sender.write(
           `[send photo as url] ${this.chat.id} ${video.channelId} ${video.id}`,
         );
 
@@ -268,7 +268,7 @@ class ChatSender {
             caption,
           });
 
-          this.main.sender.log.write(
+          this.main.logs.sender.write(
             `[send photo as file] ${this.chat.id} ${video.channelId} ${video.id}`,
           );
 

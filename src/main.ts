@@ -10,10 +10,12 @@ import type {Bot} from 'node-telegram-bot-api';
 import {getDebug} from './shared/tools/getDebug';
 import WebServer from './shared/webServer';
 import YtPubSub from './ytPubSub';
+import AppLogs from './shared/appLogs';
 
 const debug = getDebug('app:Main');
 
 class Main extends Events {
+  readonly logs = new AppLogs();
   db: Db;
   youtube: Youtube;
   services: ServiceInterface[];

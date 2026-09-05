@@ -1,6 +1,5 @@
 import getProvider from './shared/tools/getProvider';
 import ChatSender, {isBlockedError} from './chatSender';
-import LogFile from './shared/logFile';
 import parallel from './shared/tools/parallel';
 import {everyMinutes} from './shared/tools/everyTime';
 import getInProgress from './shared/tools/getInProgress';
@@ -16,7 +15,6 @@ const debug = getDebug('app:Sender');
 const oneLimit = promiseLimit(1);
 
 class Sender {
-  log = new LogFile('sender');
   constructor(private main: Main) {}
 
   init() {
@@ -178,7 +176,7 @@ class Sender {
             const isBlocked = error instanceof TelegramApiError && isBlockedError(error);
             if (isBlocked) {
               blockedChatIds.push(chatId);
-              this.main.chat.log.write(
+              this.main.logs.chat.write(
                 `[deleted] ${chatId}, cause: (${error.errorCode}) ${JSON.stringify(
                   error.description,
                 )}`,
