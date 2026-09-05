@@ -319,7 +319,10 @@ class Db {
         syncTimeoutExpiresAt: {[Op.lt]: new Date()},
         [Op.or]: [{hasChanges: true}, {lastSyncAt: {[Op.lt]: date}}],
       },
-      order: Sequelize.literal(`lastVideoPublishedAt IS NULL, lastSyncAt`),
+      order: [
+        [Sequelize.fn('ISNULL', Sequelize.col('lastVideoPublishedAt')), 'ASC'],
+        ['lastSyncAt', 'ASC'],
+      ],
       limit: limit,
     });
   }
@@ -557,7 +560,7 @@ class Db {
           required: true,
         },
       ],
-      order: [Sequelize.literal('video.publishedAt')],
+      order: [[VideoModel, 'publishedAt', 'ASC']],
       attributes: ['videoId'],
       limit: limit,
     });
