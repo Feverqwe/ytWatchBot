@@ -32,7 +32,9 @@ database state transitions, retry behavior, and concurrency limits intact when c
 ## Repository map
 
 - `src/main.ts` wires the application together and starts it as a module side effect.
-- `src/chat.ts` and `src/shared/router.ts` implement Telegram commands and callback-query routing.
+- `src/chat/` and `src/shared/router.ts` implement Telegram commands and callback-query routing.
+  Keep `src/chat/index.ts` as a pure entry point containing only re-exports; put lifecycle and
+  route-registration logic in the other `src/chat/` modules.
 - `src/checker.ts` discovers videos and creates per-chat delivery queue entries.
 - `src/sender.ts` and `src/chatSender.ts` drain that queue and handle Telegram failures.
 - `src/db/` contains Sequelize models, associations, and persistence operations.
@@ -48,6 +50,9 @@ More specific instructions live in `src/AGENTS.md`, `src/shared/AGENTS.md`,
 `src/tools/AGENTS.md`, and `src/services/AGENTS.md`.
 
 ## Setup and commands
+
+- Keep directory `index.ts` files declarative: `src/chat/index.ts` must only expose exports and must
+  not contain application logic.
 
 - Use Node.js 24 (`.nvmrc`).
 - Install exact dependencies with `npm ci`.
