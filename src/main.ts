@@ -5,9 +5,9 @@ import Chat from './chat';
 import Checker, {ServiceInterface} from './checker';
 import Events from 'events';
 import {appConfig} from './appConfig';
-import {getTelegramBot} from './tools/telegramBotApi';
+import {getTelegramBot} from './shared/tools/telegramBotApi';
 import type {Bot} from 'node-telegram-bot-api';
-import {getDebug} from './tools/getDebug';
+import {getDebug} from './shared/tools/getDebug';
 import WebServer from './webServer';
 
 const debug = getDebug('app:Main');

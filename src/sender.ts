@@ -1,14 +1,14 @@
-import getProvider from './tools/getProvider';
+import getProvider from './shared/tools/getProvider';
 import ChatSender, {isBlockedError} from './chatSender';
-import LogFile from './logFile';
-import parallel from './tools/parallel';
-import {everyMinutes} from './tools/everyTime';
-import getInProgress from './tools/getInProgress';
-import promiseLimit from './tools/promiseLimit';
+import LogFile from './shared/logFile';
+import parallel from './shared/tools/parallel';
+import {everyMinutes} from './shared/tools/everyTime';
+import getInProgress from './shared/tools/getInProgress';
+import promiseLimit from './shared/tools/promiseLimit';
 import Main from './main';
 import {appConfig} from './appConfig';
 import throttle from 'lodash.throttle';
-import {getDebug} from './tools/getDebug';
+import {getDebug} from './shared/tools/getDebug';
 import {TelegramApiError} from 'node-telegram-bot-api';
 
 const debug = getDebug('app:Sender');

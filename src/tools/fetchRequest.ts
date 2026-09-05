@@ -3,7 +3,7 @@ import https from 'node:https';
 import qs from 'node:querystring';
 import FormData from 'form-data';
 
-import {getDebug} from './getDebug';
+import {getDebug} from '../shared/tools/getDebug';
 import axios, {AxiosError, AxiosResponse, Cancel, CreateAxiosDefaults, isCancel} from 'axios';
 
 const debug = getDebug('app:fetchRequest');

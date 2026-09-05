@@ -4,23 +4,23 @@ import Router, {
   RouterReqWithAnyMessage,
   RouterRes,
   RouterTextReq,
-} from './router';
-import htmlSanitize from './tools/htmlSanitize';
-import ErrorWithCode from './tools/errorWithCode';
+} from './shared/router';
+import htmlSanitize from './shared/tools/htmlSanitize';
+import ErrorWithCode from './shared/tools/errorWithCode';
 import pageBtnList from './tools/pageBtnList';
-import splitTextByPages from './tools/splitTextByPages';
-import LogFile from './logFile';
-import ensureMap from './tools/ensureMap';
-import TimeCache from './tools/timeCache';
+import splitTextByPages from './shared/tools/splitTextByPages';
+import LogFile from './shared/logFile';
+import ensureMap from './shared/tools/ensureMap';
+import TimeCache from './shared/tools/timeCache';
 import Main from './main';
 import {ChannelModel, ChatModel, ChatModelWithOptionalChannel, NewChat} from './db';
 import {appConfig} from './appConfig';
 import {tracker} from './tracker';
 import {ParseMode, type SendMessageParams} from 'node-telegram-bot-api';
-import {getDebug} from './tools/getDebug';
+import {getDebug} from './shared/tools/getDebug';
 import jsonStringifyPretty from 'json-stringify-pretty-compact';
-import Locale from './locale';
-import {ErrEnum, errHandler, passEx} from './tools/passTgEx';
+import Locale from './shared/locale';
+import {ErrEnum, errHandler, passEx} from './shared/tools/passTgEx';
 
 const debug = getDebug('app:Chat');
 

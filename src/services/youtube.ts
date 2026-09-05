@@ -1,15 +1,15 @@
-import ErrorWithCode from '../tools/errorWithCode';
+import ErrorWithCode from '../shared/tools/errorWithCode';
 import * as v from 'valibot';
-import arrayByPart from '../tools/arrayByPart';
-import parallel from '../tools/parallel';
+import arrayByPart from '../shared/tools/arrayByPart';
+import parallel from '../shared/tools/parallel';
 import formatDuration from '../tools/formatDuration';
-import ensureMap from '../tools/ensureMap';
+import ensureMap from '../shared/tools/ensureMap';
 import fetchRequest, {HTTPError} from '../tools/fetchRequest';
 import {FilterFn, RawChannel, RawVideo, ServiceInterface} from '../checker';
 import Main from '../main';
-import ytCostCounter from '../tools/ytCostCounter';
+import ytCostCounter from '../shared/tools/ytCostCounter';
 import {appConfig} from '../appConfig';
-import {getDebug} from '../tools/getDebug';
+import {getDebug} from '../shared/tools/getDebug';
 
 const debug = getDebug('app:Youtube');
 

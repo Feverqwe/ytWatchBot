@@ -1,14 +1,14 @@
-import htmlSanitize from './tools/htmlSanitize';
-import ErrorWithCode from './tools/errorWithCode';
+import htmlSanitize from './shared/tools/htmlSanitize';
+import ErrorWithCode from './shared/tools/errorWithCode';
 import inlineInspect from './tools/inlineInspect';
 import fetchRequest from './tools/fetchRequest';
 import Main from './main';
 import {ChatModel, VideoModelWithChannel} from './db';
 import {tracker} from './tracker';
 import {InputFile, TelegramApiError, type Message} from 'node-telegram-bot-api';
-import {getDebug} from './tools/getDebug';
-import {ErrEnum, errHandler} from './tools/passTgEx';
-import promiseTry from './tools/promiseTry';
+import {getDebug} from './shared/tools/getDebug';
+import {ErrEnum, errHandler} from './shared/tools/passTgEx';
+import promiseTry from './shared/tools/promiseTry';
 import {Readable} from 'node:stream';
 
 const debug = getDebug('app:ChatSender');

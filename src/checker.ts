@@ -1,15 +1,15 @@
-import arrayDifference from './tools/arrayDifference';
-import LogFile from './logFile';
-import getInProgress from './tools/getInProgress';
-import ensureMap from './tools/ensureMap';
+import arrayDifference from './shared/tools/arrayDifference';
+import LogFile from './shared/logFile';
+import getInProgress from './shared/tools/getInProgress';
+import ensureMap from './shared/tools/ensureMap';
 import serviceId from './tools/serviceId';
-import parallel from './tools/parallel';
-import {everyMinutes} from './tools/everyTime';
-import promiseLimit from './tools/promiseLimit';
+import parallel from './shared/tools/parallel';
+import {everyMinutes} from './shared/tools/everyTime';
+import promiseLimit from './shared/tools/promiseLimit';
 import Main from './main';
 import {ChannelModel, NewChannel, NewChatIdVideoId, NewVideo} from './db';
 import {appConfig} from './appConfig';
-import {getDebug} from './tools/getDebug';
+import {getDebug} from './shared/tools/getDebug';
 
 const debug = getDebug('app:Checker');
 

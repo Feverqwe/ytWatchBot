@@ -12,15 +12,16 @@ database state transitions, retry behavior, and concurrency limits intact when c
 ## Repository map
 
 - `src/main.ts` wires the application together and starts it as a module side effect.
-- `src/chat.ts` and `src/router.ts` implement Telegram commands and callback-query routing.
+- `src/chat.ts` and `src/shared/router.ts` implement Telegram commands and callback-query routing.
 - `src/checker.ts` discovers videos and creates per-chat delivery queue entries.
 - `src/sender.ts` and `src/chatSender.ts` drain that queue and handle Telegram failures.
 - `src/db.ts` contains Sequelize models, associations, and persistence operations.
-- `src/migrator.ts` and `src/migrations/` contain the Umzug runner and ordered schema changes.
+- `src/shared/migrator.ts` and `src/migrations/` contain the Umzug runner and ordered schema changes.
 - `src/ytPubSub.ts` and `src/webServer.ts` manage the WebSub callback and subscription renewal.
 - `src/services/youtube.ts` is the YouTube Data API adapter.
-- `src/tools/` contains shared concurrency, HTTP, Telegram, formatting, and scheduling helpers.
-- `src/locale/en.ts` is the user-facing message dictionary.
+- `src/shared/` contains infrastructure kept byte-identical with `twiMonBot`; `src/tools/`
+  contains project-specific helpers.
+- `src/locale/` contains the English and Russian user-facing message dictionaries.
 
 More specific instructions live in `src/AGENTS.md`, `src/tools/AGENTS.md`, and
 `src/services/AGENTS.md`.

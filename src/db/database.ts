@@ -1,15 +1,15 @@
-import ErrorWithCode from '../tools/errorWithCode';
-import arrayByPart from '../tools/arrayByPart';
+import ErrorWithCode from '../shared/tools/errorWithCode';
+import arrayByPart from '../shared/tools/arrayByPart';
 import serviceId from '../tools/serviceId';
-import arrayDifference from '../tools/arrayDifference';
+import arrayDifference from '../shared/tools/arrayDifference';
 import Sequelize, {Op, Transaction} from 'sequelize';
 import type Main from '../main';
 import type {ServiceChannel, ServiceInterface} from '../checker';
 import {Feed} from '../ytPubSub';
 import {appConfig} from '../appConfig';
-import {getDebug} from '../tools/getDebug';
-import isDatabaseDeadlock from '../tools/isDatabaseDeadlock';
-import createMigrator from '../migrator';
+import {getDebug} from '../shared/tools/getDebug';
+import isDatabaseDeadlock from '../shared/tools/isDatabaseDeadlock';
+import createMigrator from '../shared/migrator';
 import {
   ChannelModel,
   ChatIdChannelIdModel,

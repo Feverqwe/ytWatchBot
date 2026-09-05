@@ -1,17 +1,17 @@
-import parallel from './tools/parallel';
-import ErrorWithCode from './tools/errorWithCode';
-import getInProgress from './tools/getInProgress';
+import parallel from './shared/tools/parallel';
+import ErrorWithCode from './shared/tools/errorWithCode';
+import getInProgress from './shared/tools/getInProgress';
 import serviceId from './tools/serviceId';
-import {everyMinutes} from './tools/everyTime';
+import {everyMinutes} from './shared/tools/everyTime';
 import ExpressPubSub from './tools/expressPubSub';
-import promiseLimit from './tools/promiseLimit';
+import promiseLimit from './shared/tools/promiseLimit';
 import qs from 'node:querystring';
 import Main from './main';
 import {IncomingHttpHeaders} from 'node:http';
 import {NewChannel} from './db';
 import {appConfig} from './appConfig';
 import throttle from 'lodash.throttle';
-import {getDebug} from './tools/getDebug';
+import {getDebug} from './shared/tools/getDebug';
 import {XmlDocument, XmlElement} from 'xmldoc';
 import {Express} from 'express';
 
