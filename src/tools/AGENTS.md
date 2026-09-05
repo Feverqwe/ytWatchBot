@@ -1,7 +1,8 @@
-# Shared tools guide
+# Project-specific tools guide
 
-This directory contains low-level helpers used across multiple background flows. Changes here have
-a wider blast radius than their size suggests.
+This directory contains helpers whose implementations are specific to `ytWatchBot`. Generic
+helpers shared with `twiMonBot` live in `src/shared/tools/` and follow
+`src/shared/AGENTS.md`. Move a helper into `shared` when the two implementations can be identical.
 
 ## Expectations
 
@@ -9,29 +10,24 @@ a wider blast radius than their size suggests.
 - Preserve rejection behavior. Callers depend on errors propagating through retry, fallback, and
   cleanup branches; do not silently convert failures to `undefined` unless that is the helper's
   documented behavior.
-- For concurrency helpers, release locks/cache entries in `finally` and handle both resolved and
-  rejected promises. `getInProgress` intentionally skips overlapping calls, while `promiseLimit`
-  queues them; they are not interchangeable.
-- Scheduling helpers return cancellation functions and align their first run to the configured
-  time boundary. A replacement scheduler must retain alignment and cancellation semantics.
 - `serviceId` is a persistence format. Any encoding change needs backward compatibility for IDs
   already stored in MariaDB.
-- Telegram HTML must go through `htmlSanitize`/`escapeTextForBrowser`. Keep Telegram's 4096-character
-  message limit in `splitTextByPages`.
+- Shared concurrency, scheduling, Telegram HTML, and API helpers must be changed in both sibling
+  repositories and verified with `npm run shared:check`.
 
 ## External-boundary helpers
 
 - `fetchRequest.ts` is the common Axios-based compatibility wrapper. Preserve normalized lowercase
   headers, response body modes, timeouts, keep-alive behavior, and the exported error classes when
   changing it.
-- `telegramBotApi.ts` creates a native v2 `Bot` and applies the library's `RateLimiter` directly to
-  selected `Api` methods. Node streams must be converted to `InputFile` at the upload boundary.
-  Never expose the bot token in errors or debug logs.
+- `src/shared/tools/telegramBotApi.ts` is shared sibling infrastructure. Never expose the bot token
+  in errors or debug logs.
 - `expressPubSub.ts` handles public callback traffic. Preserve raw-body access for HMAC validation,
   reject absent/invalid signatures, validate the hub callback/topic, and acknowledge requests with
   the protocol-compatible status/body.
-- `passTgEx.ts` and the sender classify `TelegramApiError` instances by structured error code and
-  description. Add narrowly matched patterns and keep unknown errors retryable/visible.
+- `src/shared/tools/passTgEx.ts` and the sender classify `TelegramApiError` instances by structured
+  error code and description. Add narrowly matched patterns and keep unknown errors
+  retryable/visible.
 
 Add focused Jest tests for utility behavior when changing parsing, caching, locking, scheduling,
 escaping, request normalization, or error classification. Use fake timers for time-based helpers

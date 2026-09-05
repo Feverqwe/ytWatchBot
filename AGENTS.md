@@ -9,13 +9,33 @@ sends new-video notifications through Telegram.
 The process has several cooperating loops rather than a request/response-only lifecycle. Keep
 database state transitions, retry behavior, and concurrency limits intact when changing a flow.
 
+## Sibling repository contract
+
+- `ytWatchBot` and the adjacent `../twiMonBot` checkout are sibling projects maintained together.
+  `ytWatchBot` owns YouTube video discovery/delivery behavior; `twiMonBot` owns multi-provider
+  livestream monitoring behavior.
+- Reusable infrastructure belongs under `src/shared/`. Every path and file below that directory
+  must remain byte-for-byte identical in both repositories. Never add project-name checks or
+  divergent implementations inside `shared`; expose stable project-specific inputs from outside.
+- When changing a shared file, apply the same change to the corresponding sibling path in the same
+  work session. Add/update relevant tests in both repositories and run `npm run shared:check` from
+  either checkout before handoff.
+- A reusable change outside `src/shared/` requires reviewing the sibling implementation and either
+  moving the common part into `shared` or documenting why domain behavior must remain separate.
+  Do not blindly copy provider, checker, sender, database, migration, configuration, or locale
+  dictionary logic when their video/stream semantics differ.
+- Shared dependency changes must be reflected in both `package.json` and lockfiles. Git commits are
+  created separately in each repository; report both commit IDs and keep both worktrees clean.
+- If the sibling checkout is unavailable, `shared:check` may skip. In that case, do not claim the
+  shared trees are synchronized; call out that sibling verification is still required.
+
 ## Repository map
 
 - `src/main.ts` wires the application together and starts it as a module side effect.
 - `src/chat.ts` and `src/shared/router.ts` implement Telegram commands and callback-query routing.
 - `src/checker.ts` discovers videos and creates per-chat delivery queue entries.
 - `src/sender.ts` and `src/chatSender.ts` drain that queue and handle Telegram failures.
-- `src/db.ts` contains Sequelize models, associations, and persistence operations.
+- `src/db/` contains Sequelize models, associations, and persistence operations.
 - `src/shared/migrator.ts` and `src/migrations/` contain the Umzug runner and ordered schema changes.
 - `src/ytPubSub.ts` and `src/webServer.ts` manage the WebSub callback and subscription renewal.
 - `src/services/youtube.ts` is the YouTube Data API adapter.
@@ -23,8 +43,8 @@ database state transitions, retry behavior, and concurrency limits intact when c
   contains project-specific helpers.
 - `src/locale/` contains the English and Russian user-facing message dictionaries.
 
-More specific instructions live in `src/AGENTS.md`, `src/tools/AGENTS.md`, and
-`src/services/AGENTS.md`.
+More specific instructions live in `src/AGENTS.md`, `src/shared/AGENTS.md`,
+`src/tools/AGENTS.md`, and `src/services/AGENTS.md`.
 
 ## Setup and commands
 
@@ -34,6 +54,7 @@ More specific instructions live in `src/AGENTS.md`, `src/tools/AGENTS.md`, and
   chat IDs, callback secrets, or database credentials.
 - `npm run typescript:check` performs the fastest repository-wide correctness check.
 - `npm run lint` checks ESLint and Prettier; `npm run lint:fix` applies automatic fixes.
+- `npm run shared:check` verifies that `src/shared/` matches the sibling repository.
 - `npm run build` deletes `dist` and compiles the project.
 - Run deterministic unit tests with `npm test -- --runInBand`. The test script enables Node's VM
   module support so Jest can load the same ESM dependencies as the CommonJS application build.
