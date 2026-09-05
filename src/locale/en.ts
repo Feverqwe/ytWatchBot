@@ -7,7 +7,6 @@ const en = {
   channelAdded: 'Success! The channel {channelName} has been added!',
   telegramChannelEnter: 'Enter the channel name (example: @telegram):',
   telegramChannelSet: 'Success! The channel {channelName} has been assigned!',
-  telegramChannelError: `Oops! I can't add a {channelName} channel!`,
   commandCanceled: 'Command {command} was canceled.',
   channelDontExist: `Oops! Can't find a channel in the watchlist!`,
   channelDeleted: 'Success! The channel {channelName} has been deleted!',
@@ -17,7 +16,6 @@ const en = {
   clearSure: 'Are you sure?',
   users: 'Users: {count}',
   channels: 'Channels: {count}',
-  preview: 'preview',
   about: 'Source code: https://bit.ly/ytWatchBot\nHosting: Yandex Cloud',
   'alert_unknown-error': 'Oops something went wrong...',
   'alert_unexpected-error': 'Unexpected error',
@@ -51,10 +49,10 @@ const en = {
   'alert_channel-limit-exceeded': 'Channels limit exceeded',
   'alert_videos-not-found': "Can't find any videos",
   'context_group-note': `Note for groups: Use 'Reply' to answer.`,
-  'action_desable-skip-short-videos': 'Skip videos <= 1min (enabled)',
+  'action_disable-skip-short-videos': 'Skip videos <= 1min (enabled)',
   'action_enable-skip-short-videos': 'Skip videos <= 1min (disabled)',
-  'action_desable-skip-short-videos-for-channel': 'Skip videos <= 1min for channel (enabled)',
+  'action_disable-skip-short-videos-for-channel': 'Skip videos <= 1min for channel (enabled)',
   'action_enable-skip-short-videos-for-channel': 'Skip videos <= 1min for channel (disabled)',
-};
+} as const;
 
 export default en;
