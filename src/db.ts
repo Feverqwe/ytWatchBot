@@ -3,9 +3,14 @@ import arrayByPart from './tools/arrayByPart';
 import serviceId from './tools/serviceId';
 import arrayDifference from './tools/arrayDifference';
 import Sequelize, {Op, Transaction} from 'sequelize';
+import type {
+  CreationOptional,
+  InferAttributes,
+  InferCreationAttributes,
+  NonAttribute,
+} from 'sequelize';
 import type Main from './main';
 import type {ServiceChannel, ServiceInterface} from './checker';
-import assertType from './tools/assertType';
 import {Feed} from './ytPubSub';
 import {appConfig} from './appConfig';
 import {getDebug} from './tools/getDebug';
@@ -27,37 +32,45 @@ export interface NewChat {
   updatedAt?: Date;
 }
 
-export class ChatModel extends Sequelize.Model {
+export class ChatModel extends Sequelize.Model<
+  InferAttributes<ChatModel>,
+  InferCreationAttributes<ChatModel>
+> {
   declare id: string;
-  declare channelId: string | null;
-  declare isHidePreview: boolean;
-  declare isMuted: boolean;
-  declare isSkipShortVideos: boolean;
-  declare sendTimeoutExpiresAt: Date;
-  declare parentChatId: string | null;
+  declare channelId: CreationOptional<string | null>;
+  declare isHidePreview: CreationOptional<boolean>;
+  declare isMuted: CreationOptional<boolean>;
+  declare isSkipShortVideos: CreationOptional<boolean>;
+  declare sendTimeoutExpiresAt: CreationOptional<Date>;
+  declare parentChatId: CreationOptional<string | null>;
 
-  declare createdAt: Date;
-  declare updatedAt: Date;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+
+  declare channel?: NonAttribute<ChatModel | null>;
 }
 export interface ChatModelWithOptionalChannel extends ChatModel {
   channel: ChatModel | null;
 }
 
-export class ChannelModel extends Sequelize.Model {
+export class ChannelModel extends Sequelize.Model<
+  InferAttributes<ChannelModel>,
+  InferCreationAttributes<ChannelModel>
+> {
   declare id: string;
   declare service: string;
   declare title: string;
   declare url: string;
-  declare hasChanges: boolean;
-  declare lastVideoPublishedAt: Date | null;
-  declare lastSyncAt: Date;
-  declare lastFullSyncAt: Date;
-  declare syncTimeoutExpiresAt: Date;
-  declare subscriptionExpiresAt: Date;
-  declare subscriptionTimeoutExpiresAt: Date;
+  declare hasChanges: CreationOptional<boolean>;
+  declare lastVideoPublishedAt: CreationOptional<Date | null>;
+  declare lastSyncAt: CreationOptional<Date>;
+  declare lastFullSyncAt: CreationOptional<Date>;
+  declare syncTimeoutExpiresAt: CreationOptional<Date>;
+  declare subscriptionExpiresAt: CreationOptional<Date>;
+  declare subscriptionTimeoutExpiresAt: CreationOptional<Date>;
 
-  declare createdAt: Date;
-  declare updatedAt: Date;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
 }
 export interface NewChannel {
   id: string;
@@ -73,37 +86,52 @@ export interface NewChannel {
   subscriptionTimeoutExpiresAt?: Date;
 }
 
-export class YtPubSubModel extends Sequelize.Model {
+export class YtPubSubModel extends Sequelize.Model<
+  InferAttributes<YtPubSubModel>,
+  InferCreationAttributes<YtPubSubModel>
+> {
   declare videoId: string;
-  declare channelId: string | null;
-  declare publishedAt: Date | null;
+  declare channelId: CreationOptional<string | null>;
+  declare publishedAt: CreationOptional<Date | null>;
   declare lastPushAt: Date;
 
-  declare createdAt: Date;
+  declare createdAt: CreationOptional<Date>;
 }
 
-export class ChatIdChannelIdModel extends Sequelize.Model {
+export class ChatIdChannelIdModel extends Sequelize.Model<
+  InferAttributes<ChatIdChannelIdModel>,
+  InferCreationAttributes<ChatIdChannelIdModel>
+> {
   declare chatId: string;
   declare channelId: string;
-  declare createdAt: Date;
+  declare createdAt: CreationOptional<Date>;
+
+  declare channel?: NonAttribute<ChannelModel>;
+  declare chat?: NonAttribute<ChatModel>;
+  declare chatCount?: NonAttribute<number>;
 }
 export interface NewChatIdChannelIdModel {
   chatId: string;
   channelId: string;
 }
 
-export class VideoModel extends Sequelize.Model {
+export class VideoModel extends Sequelize.Model<
+  InferAttributes<VideoModel>,
+  InferCreationAttributes<VideoModel>
+> {
   declare id: string;
   declare url: string;
   declare title: string;
   declare previews: string;
-  declare duration: string | null;
+  declare duration: CreationOptional<string | null>;
   declare channelId: string;
   declare publishedAt: Date;
-  declare telegramPreviewFileId: string | null;
-  declare mergedId: string | null;
-  declare mergedChannelId: string | null;
-  declare createdAt: Date;
+  declare telegramPreviewFileId: CreationOptional<string | null>;
+  declare mergedId: CreationOptional<string | null>;
+  declare mergedChannelId: CreationOptional<string | null>;
+  declare createdAt: CreationOptional<Date>;
+
+  declare channel?: NonAttribute<ChannelModel>;
 }
 export interface VideoModelWithChannel extends VideoModel {
   channel: ChannelModel;
@@ -121,11 +149,16 @@ export interface NewVideo {
   mergedChannelId?: string | null;
 }
 
-export class ChatIdVideoIdModel extends Sequelize.Model {
-  declare id: number;
+export class ChatIdVideoIdModel extends Sequelize.Model<
+  InferAttributes<ChatIdVideoIdModel>,
+  InferCreationAttributes<ChatIdVideoIdModel>
+> {
+  declare id: CreationOptional<number>;
   declare chatId: string;
   declare videoId: string;
-  declare createdAt: Date;
+  declare createdAt: CreationOptional<Date>;
+
+  declare video?: NonAttribute<VideoModel>;
 }
 export interface NewChatIdVideoId {
   chatId: string;
@@ -174,6 +207,8 @@ class Db {
           defaultValue: '1970-01-01 00:00:00',
         },
         parentChatId: {type: Sequelize.STRING(191), allowNull: true},
+        createdAt: {type: Sequelize.DATE, allowNull: false},
+        updatedAt: {type: Sequelize.DATE, allowNull: false},
       },
       {
         sequelize: this.sequelize,
@@ -237,6 +272,8 @@ class Db {
           allowNull: false,
           defaultValue: '1970-01-01 00:00:00',
         },
+        createdAt: {type: Sequelize.DATE, allowNull: false},
+        updatedAt: {type: Sequelize.DATE, allowNull: false},
       },
       {
         sequelize: this.sequelize,
@@ -274,6 +311,7 @@ class Db {
         channelId: {type: Sequelize.STRING(191), allowNull: true, defaultValue: null},
         publishedAt: {type: Sequelize.DATE, allowNull: true, defaultValue: null},
         lastPushAt: {type: Sequelize.DATE, allowNull: false},
+        createdAt: {type: Sequelize.DATE, allowNull: false},
       },
       {
         sequelize: this.sequelize,
@@ -293,6 +331,7 @@ class Db {
       {
         chatId: {type: Sequelize.STRING(191), allowNull: false},
         channelId: {type: Sequelize.STRING(191), allowNull: false},
+        createdAt: {type: Sequelize.DATE, allowNull: false},
       },
       {
         sequelize: this.sequelize,
@@ -342,6 +381,7 @@ class Db {
         telegramPreviewFileId: {type: Sequelize.TEXT, allowNull: true},
         mergedId: {type: Sequelize.STRING(191), allowNull: true},
         mergedChannelId: {type: Sequelize.STRING(191), allowNull: true},
+        createdAt: {type: Sequelize.DATE, allowNull: false},
       },
       {
         sequelize: this.sequelize,
@@ -369,6 +409,7 @@ class Db {
         id: {type: Sequelize.INTEGER, allowNull: false, primaryKey: true, autoIncrement: true},
         chatId: {type: Sequelize.STRING(191), allowNull: false},
         videoId: {type: Sequelize.STRING(191), allowNull: false},
+        createdAt: {type: Sequelize.DATE, allowNull: false},
       },
       {
         sequelize: this.sequelize,
@@ -418,8 +459,11 @@ class Db {
       where: {id},
       include: [{model: ChatModel, as: 'channel'}],
     });
-    assertType<ChatModelWithOptionalChannel>(model);
-    return model;
+    const {channel} = model;
+    if (channel === undefined) {
+      throw new Error('Chat channel association was not loaded');
+    }
+    return Object.assign(model, {channel});
   }
 
   createChatChannel(chatId: string, channelId: string) {
@@ -523,7 +567,7 @@ class Db {
 
     const [channel, isCreated] = await ChannelModel.findOrCreate({
       where: {id},
-      defaults: Object.assign({}, rawChannel, {id, service: service.id}) as any,
+      defaults: Object.assign({}, rawChannel, {id, service: service.id}),
     });
     return channel;
   }
@@ -568,21 +612,28 @@ class Db {
       limit: 10,
     });
 
-    return results.map((value) => {
-      const {channel, ...other} = value.get({plain: true});
-      return {...other, ...channel};
+    return results.map(({channel, channelId, chatCount}) => {
+      if (!channel || chatCount === undefined) {
+        throw new Error('Top channel query did not return all selected fields');
+      }
+      return {channelId, chatCount, title: channel.title, service: channel.service};
     });
   }
 
   async getChannelsByChatId(chatId: string) {
-    const chatIdChannelIdList: unknown[] = await ChatIdChannelIdModel.findAll({
+    const chatIdChannelIdList = await ChatIdChannelIdModel.findAll({
       include: [{model: ChannelModel, required: true}],
       where: {chatId},
       attributes: [],
       order: ['createdAt'],
     });
-    assertType<{channel: ChannelModel}[]>(chatIdChannelIdList);
-    return chatIdChannelIdList.map((chatIdChannelId) => chatIdChannelId.channel);
+    return chatIdChannelIdList.map((chatIdChannelId) => {
+      const {channel} = chatIdChannelId;
+      if (!channel) {
+        throw new Error('Channel association was not loaded');
+      }
+      return channel;
+    });
   }
 
   getChannelsByIds(ids: string[]) {
@@ -716,7 +767,7 @@ class Db {
           });
         }),*/
           bulk(channelsChanges, (channelsChanges) => {
-            return ChannelModel.bulkCreate(channelsChanges as any, {
+            return ChannelModel.bulkCreate(channelsChanges, {
               updateOnDuplicate: ['lastVideoPublishedAt'],
               transaction,
             });
@@ -777,12 +828,13 @@ class Db {
         },
       ],
     });
-    assertType<
-      (ChatIdChannelIdModel & {
-        chat: Pick<ChatModel, 'id' | 'channelId' | 'isMuted' | 'isSkipShortVideos'>;
-      })[]
-    >(results);
-    return results;
+    return results.map((result) => {
+      const {chat} = result;
+      if (!chat) {
+        throw new Error('Chat association was not loaded');
+      }
+      return Object.assign(result, {chat});
+    });
   }
 
   cleanVideos() {
@@ -813,7 +865,7 @@ class Db {
           async (transaction) => {
             await Promise.all([
               bulk(channelsChanges, (channelsChanges) => {
-                return ChannelModel.bulkCreate(channelsChanges as any, {
+                return ChannelModel.bulkCreate(channelsChanges, {
                   updateOnDuplicate: [
                     'lastSyncAt',
                     'lastFullSyncAt',
@@ -824,14 +876,14 @@ class Db {
                 });
               }),
               bulk(videos, (videos) => {
-                return VideoModel.bulkCreate(videos as any, {
+                return VideoModel.bulkCreate(videos, {
                   transaction,
                 });
               }),
             ]);
 
             await bulk(chatIdVideoIdChanges, (chatIdVideoIdChanges) => {
-              return ChatIdVideoIdModel.bulkCreate(chatIdVideoIdChanges as any, {
+              return ChatIdVideoIdModel.bulkCreate(chatIdVideoIdChanges, {
                 transaction,
               });
             });
@@ -881,9 +933,6 @@ class Db {
       attributes: ['videoId'],
       limit: limit,
     });
-    assertType<(Pick<ChatIdVideoIdModel, 'videoId'> & {video: Pick<VideoModel, 'publishedAt'>})[]>(
-      results,
-    );
     return results.map((chatIdVideoId) => chatIdVideoId.videoId);
   }
 
@@ -895,8 +944,11 @@ class Db {
     if (!video) {
       throw new ErrorWithCode('Video is not found', 'VIDEO_IS_NOT_FOUND');
     }
-    assertType<VideoModelWithChannel>(video);
-    return video;
+    const {channel} = video;
+    if (!channel) {
+      throw new Error('Video channel association was not loaded');
+    }
+    return Object.assign(video, {channel});
   }
 
   deleteChatIdVideoId(chatId: string, videoId: string) {
