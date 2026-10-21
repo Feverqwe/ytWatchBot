@@ -553,14 +553,10 @@ class Db {
   async getVideoIdsByChatId(chatId: string, limit = 10) {
     const results: Pick<ChatIdVideoIdModel, 'videoId'>[] = await ChatIdVideoIdModel.findAll({
       where: {chatId},
-      include: [
-        {
-          model: VideoModel,
-          attributes: ['publishedAt'],
-          required: true,
-        },
+      order: [
+        ['publishedAt', 'ASC'],
+        ['videoId', 'ASC'],
       ],
-      order: [[VideoModel, 'publishedAt', 'ASC']],
       attributes: ['videoId'],
       limit: limit,
     });

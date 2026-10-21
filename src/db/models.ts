@@ -109,6 +109,7 @@ export class ChatIdVideoIdModel extends Sequelize.Model<
   declare id: CreationOptional<number>;
   declare chatId: string;
   declare videoId: string;
+  declare publishedAt: Date;
   declare createdAt: CreationOptional<Date>;
 
   declare video?: NonAttribute<VideoModel>;
@@ -331,6 +332,7 @@ export function initModels(sequelize: Sequelize.Sequelize) {
       id: {type: Sequelize.INTEGER, allowNull: false, primaryKey: true, autoIncrement: true},
       chatId: {type: Sequelize.STRING(191), allowNull: false},
       videoId: {type: Sequelize.STRING(191), allowNull: false},
+      publishedAt: {type: Sequelize.DATE, allowNull: false},
       createdAt: {type: Sequelize.DATE, allowNull: false},
     },
     {
@@ -344,6 +346,10 @@ export function initModels(sequelize: Sequelize.Sequelize) {
           name: 'chatId_videoId_UNIQUE',
           unique: true,
           fields: ['chatId', 'videoId'],
+        },
+        {
+          name: 'chatId_publishedAt_videoId_idx',
+          fields: ['chatId', 'publishedAt', 'videoId'],
         },
       ],
     },

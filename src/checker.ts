@@ -282,7 +282,7 @@ class Checker {
                     video.publishedAt.getTime() > minPublishedAfter.getTime() &&
                     video.publishedAt.getTime() > createdAt.getTime()
                   ) {
-                    chatIdVideoIdChanges.push({chatId, videoId});
+                    chatIdVideoIdChanges.push({chatId, videoId, publishedAt: video.publishedAt});
                   }
                 });
               });
