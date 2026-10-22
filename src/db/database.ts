@@ -11,6 +11,7 @@ import {getDebug} from '../shared/tools/getDebug';
 import isDatabaseDeadlock from '../shared/tools/isDatabaseDeadlock';
 import parseAggregateCount from '../shared/tools/parseAggregateCount';
 import createMigrator from '../shared/migrator';
+import deleteInBatches from '../shared/tools/deleteInBatches';
 import {
   ChannelModel,
   ChatIdChannelIdModel,
@@ -163,12 +164,15 @@ class Db {
   }
 
   cleanChats() {
-    return ChatModel.destroy({
-      where: {
-        id: {[Op.notIn]: Sequelize.literal(`(SELECT DISTINCT chatId FROM chatIdChannelId)`)},
-        parentChatId: null,
-      },
-    });
+    return deleteInBatches((limit) =>
+      ChatModel.destroy({
+        limit,
+        where: {
+          id: {[Op.notIn]: Sequelize.literal(`(SELECT DISTINCT chatId FROM chatIdChannelId)`)},
+          parentChatId: null,
+        },
+      }),
+    );
   }
 
   async ensureChannel(service: ServiceInterface, rawChannel: ServiceChannel) {
@@ -377,11 +381,14 @@ class Db {
   }
 
   cleanChannels() {
-    return ChannelModel.destroy({
-      where: {
-        id: {[Op.notIn]: Sequelize.literal(`(SELECT DISTINCT channelId FROM chatIdChannelId)`)},
-      },
-    });
+    return deleteInBatches((limit) =>
+      ChannelModel.destroy({
+        limit,
+        where: {
+          id: {[Op.notIn]: Sequelize.literal(`(SELECT DISTINCT channelId FROM chatIdChannelId)`)},
+        },
+      }),
+    );
   }
 
   putYtPubSub(feeds: Feed[], channelsChanges: NewChannel[], channelIds: string[]) {
@@ -428,11 +435,14 @@ class Db {
   cleanYtPubSub() {
     const date = new Date();
     date.setDate(date.getDate() - appConfig.cleanPubSubFeedIfPushOlderThanDays);
-    return YtPubSubModel.destroy({
-      where: {
-        lastPushAt: {[Op.lt]: date},
-      },
-    });
+    return deleteInBatches((limit) =>
+      YtPubSubModel.destroy({
+        limit,
+        where: {
+          lastPushAt: {[Op.lt]: date},
+        },
+      }),
+    );
   }
 
   async getExistsVideoIds(ids: string[]) {
@@ -472,11 +482,14 @@ class Db {
     const date = new Date();
     date.setDate(date.getDate() - appConfig.cleanVideosIfPublishedOlderThanDays);
     return Promise.all([
-      VideoModel.destroy({
-        where: {
-          publishedAt: {[Op.lt]: date},
-        },
-      }),
+      deleteInBatches((limit) =>
+        VideoModel.destroy({
+          limit,
+          where: {
+            publishedAt: {[Op.lt]: date},
+          },
+        }),
+      ),
     ]);
   }
 
