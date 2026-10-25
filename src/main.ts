@@ -11,6 +11,7 @@ import {getDebug} from './shared/tools/getDebug';
 import WebServer from './shared/webServer';
 import YtPubSub from './ytPubSub';
 import AppLogs from './shared/appLogs';
+import requireDatabaseReady from './shared/requireDatabaseReady';
 
 const debug = getDebug('app:Main');
 
@@ -26,6 +27,7 @@ class Main extends Events {
   chat: Chat;
   webServer: WebServer;
   ytPubSub: YtPubSub;
+  private runtimeStarted = false;
   private stopPromise?: Promise<void>;
 
   constructor() {
@@ -50,11 +52,20 @@ class Main extends Events {
   }
 
   async init() {
+    this.webServer.app.use(requireDatabaseReady(() => this.isReady));
+    this.ytPubSub.bind(this.webServer.app);
+    await this.webServer.init();
+    await this.db.health.start();
     await this.db.init();
-    this.ytPubSub.init(this.webServer.app);
-    await Promise.all([this.webServer.init(), this.chat.init()]);
+    await this.chat.init();
+    this.ytPubSub.init();
     this.checker.init();
     this.sender.init();
+    this.runtimeStarted = true;
+  }
+
+  get isReady() {
+    return this.runtimeStarted && this.db.health.isAvailable;
   }
 
   stop() {
@@ -63,9 +74,12 @@ class Main extends Events {
   }
 
   private async stopOnce() {
+    this.runtimeStarted = false;
+    const healthStopped = this.db.health.stop();
+    this.ytPubSub.stop();
     this.checker.stop();
     this.sender.stop();
-    await Promise.all([this.webServer.close(), this.chat.stop()]);
+    await Promise.all([healthStopped, this.webServer.close(), this.chat.stop()]);
     await this.db.close();
   }
 

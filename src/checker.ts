@@ -101,7 +101,7 @@ class Checker {
     return this.inProgress(() =>
       this.oneLimit(async () => {
         const results = [];
-        while (true) {
+        while (this.main.db.health.isAvailable) {
           const channels = await this.main.db.getChannelsForSync(50);
           if (!channels.length) {
             break;
@@ -334,7 +334,7 @@ class Checker {
 
         const limit = 500;
         let offset = 0;
-        while (true) {
+        while (this.main.db.health.isAvailable) {
           const channelIds = await this.main.db.getChannelIdsByServiceId(service.id, offset, limit);
           offset += limit;
           if (!channelIds.length) break;
@@ -359,6 +359,7 @@ class Checker {
 
   clean = () => {
     return this.oneLimit(async () => {
+      if (!this.main.db.health.isAvailable) return;
       const [[removedChats, removedChannels], removedVideos] = await Promise.all([
         (async () => {
           const chatsCount = await this.main.db.cleanChats();

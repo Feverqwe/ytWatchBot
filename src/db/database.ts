@@ -12,6 +12,7 @@ import {getDebug} from '../shared/tools/getDebug';
 import isDatabaseDeadlock from '../shared/tools/isDatabaseDeadlock';
 import parseAggregateCount from '../shared/tools/parseAggregateCount';
 import createMigrator from '../shared/migrator';
+import DatabaseHealth, {databaseDialectOptions} from '../shared/databaseHealth';
 import deleteInBatches from '../shared/tools/deleteInBatches';
 import {
   ChannelModel,
@@ -28,6 +29,7 @@ const debug = getDebug('app:db');
 const ISOLATION_LEVELS = Transaction.ISOLATION_LEVELS;
 
 class Db {
+  readonly health: DatabaseHealth;
   private sequelize: Sequelize.Sequelize;
   constructor(private main: Main) {
     this.sequelize = new Sequelize.Sequelize(
@@ -38,12 +40,9 @@ class Db {
         host: appConfig.db.host,
         port: appConfig.db.port,
         dialect: 'mariadb',
+        dialectOptions: databaseDialectOptions,
         omitNull: true,
         logging: false,
-        /*dialectOptions: {
-        charset: 'utf8mb4',
-        collate: 'utf8mb4_general_ci'
-      },*/
         define: {
           charset: 'utf8mb4',
         },
@@ -56,11 +55,11 @@ class Db {
       },
     );
 
+    this.health = new DatabaseHealth(this.sequelize);
     initModels(this.sequelize);
   }
 
   async init() {
-    await this.sequelize.authenticate();
     await createMigrator(this.sequelize).up();
     await this.removeChannelByIds(appConfig.channelBlackList);
   }
